@@ -1,311 +1,329 @@
-Roadmap
+# Hybrid Administration Platform Roadmap
+
+## Vision
 
 Hybrid Administration Platform (HAP) is a modular PowerShell application designed to simplify administration of hybrid Microsoft environments.
 
 The platform is:
 
-Enterprise-first
-Profile-driven
-Provider-agnostic
-Plugin-native
-Offline developable
-Commercially extensible
+* Enterprise-first
+* Profile-driven
+* Provider-agnostic
+* Plugin-native
+* Offline developable
+* Commercially extensible
 
 Atlas Technologies serves as the initial deployment profile and reference implementation. Long-term, the platform will support multiple organizations through configuration profiles without requiring code changes.
 
-Development Philosophy
+---
+
+## Development Philosophy
 
 Every feature must satisfy the following principles:
 
-Enterprise quality over rapid implementation
-Separation of concerns
-Strong typing where practical
-Testability
-Extensibility
-Documentation-first
-Provider abstraction
-UI independence
-Performance through caching
-Safe by default
-Current Progress
-✅ Milestone 1 – Core Framework
+* Enterprise quality over rapid implementation
+* Separation of concerns
+* Strong typing where practical
+* Testability
+* Extensibility
+* Documentation-first
+* Provider abstraction
+* UI independence
+* Performance through caching
+* Safe by default
 
-Completed
+---
 
-Bootstrap
-Module Loader
-Configuration Manager
-Logging Framework
-Service Registry
-Plugin Loader
-Mock Provider
-Shell Host
-Framework Test Harness
+## Current Progress
 
-Status:
+### Version 0.4.0
 
-Complete
+Status: Released
 
-✅ Milestone 2 – Domain Foundation
+Completed:
 
-Completed
+* Core framework
+* Domain foundation
+* Hybrid User Engine
+* Active Directory Provider
+* Shared provider base
+* Provider lifecycle
+* Provider health
+* Capability discovery
 
-Domain Models
-User Service
-Mock Directory Provider
-Search-HybridUser
-Get-HybridUser
-Initial Unit Tests
+---
 
-Deferred
+## Milestone 1 - Core Framework
 
-User Hydration
-Strong PowerShell Classes
+Status: Complete
 
-Status:
+Completed:
 
-Complete
+* Bootstrap
+* Module Loader
+* Configuration Manager
+* Logging Framework
+* Service Registry
+* Plugin Loader
+* Mock Provider
+* Shell Host
+* Framework Test Harness
 
-Milestone 3 – Hybrid User Engine
+---
 
-Objective
+## Milestone 2 - Domain Foundation
+
+Status: Complete
+
+Completed:
+
+* Domain Models
+* User Service
+* Mock Directory Provider
+* Search-HybridUser
+* Get-HybridUser
+* Initial Unit Tests
+
+---
+
+## Milestone 3 - Hybrid User Engine
+
+Status: Complete
+
+Objective:
 
 Create the canonical HybridUser object used throughout the platform.
 
-Deliverables
+Completed:
 
-Strongly typed domain classes
-User hydration
-Mailbox hydration
-Group hydration
-Device hydration
-License hydration
-Manager hydration
-Direct Reports hydration
-Cache integration
-Unit tests
+* Strong domain models
+* User hydration
+* Mailbox hydration
+* Group hydration
+* Device hydration
+* License hydration
+* Manager hydration
+* Direct Reports hydration
+* Cache integration
+* Unit tests
 
-Result
+Result:
 
 Every UI component consumes one HybridUser object.
 
-Milestone 4 – Active Directory Provider
+---
 
-Objective
+## Milestone 4 - Active Directory Provider
 
-Extract all Active Directory functionality from the legacy application.
+Status: Complete
 
-Deliverables
+Objective:
 
-Search
-User retrieval
-Groups
-Manager
-Direct Reports
-Password Reset
-Enable/Disable
-Unlock
-OU operations
-Milestone 5 – Microsoft Graph Provider
+Extract Active Directory functionality from the legacy application into a provider-driven infrastructure module.
 
-Objective
+Completed:
 
-Provider abstraction for Entra ID.
+* Search
+* User retrieval
+* Groups
+* Manager
+* Direct Reports
+* Password Reset
+* Enable / Disable
+* Unlock
+* OU operations
+* Group add / remove
+* Manager update
+* Provider registration
+* Shared provider base
+* Provider lifecycle
+* Provider health
+* Capability discovery
+* Command wrapper
+* Cache integration
+* Structured errors
+* NoNet support
+* Provider contract tests
 
-Deliverables
+Result:
 
-User properties
-Authentication Methods
-Azure Roles
-Conditional Access information
-PIM support
-Devices
-Sign-in information
-Risk information
-Milestone 6 – Exchange Provider
+Active Directory is now represented by a provider that follows the shared platform provider contract.
 
-Deliverables
+---
 
-Mailboxes
-Delegation
-Shared Mailboxes
-Distribution Groups
-Mail Contacts
-Forwarders
-Send As
-Send on Behalf
-Full Access
-Milestone 7 – Intune Provider
+## Milestone 5 - Microsoft Graph Provider
 
-Deliverables
+Status: Next
 
-Devices
-Compliance
-Primary User
-BitLocker
-Autopilot
-Device Actions
-Milestone 8 – Workflow Engine
+Objective:
 
-Extract business workflows from the legacy application.
+Create a Microsoft Graph provider for Entra ID and Graph-backed identity data.
 
-Deliverables
+Deliverables:
 
-Create User
-Disable User
-Move User
-Change Manager
-Password Reset
-Azure AD Sync
-Sync All DCs
-Employee Transfers
-Offboarding
-Milestone 9 – Modern UI
+* Provider skeleton using shared provider base
+* GCC High endpoint support
+* App-only authentication
+* Delegated authentication
+* Delegated PIM-compatible role access
+* User properties
+* Authentication methods
+* Azure roles
+* Conditional Access information
+* Devices
+* Sign-in information
+* Risk information
+* Provider health
+* Capability discovery
+* Unit tests
 
-Replace the legacy UI with a modular shell.
+---
 
-Deliverables
+## Milestone 6 - Exchange Provider
 
-Dashboard
-Navigation
-Dynamic Cards
-Search
-Notifications
-Theme Engine
-Command Palette
-Debug Console
-Milestone 10 – Atlas Feature Migration
+Deliverables:
 
-Port all remaining Atlas functionality.
+* Mailboxes
+* Delegation
+* Shared Mailboxes
+* Distribution Groups
+* Mail Contacts
+* Forwarders
+* Send As
+* Send on Behalf
+* Full Access
 
-Includes
+---
 
-User Overview
-Azure Cards
-Exchange Cards
-Group Management
-Azure AD Roles
-Mailbox Delegation
-Utilities
-Azure Sync
-DC Sync
-Search Experience
+## Milestone 7 - Intune Provider
 
-Goal
+Deliverables:
 
-Legacy application retired.
+* Devices
+* Compliance
+* Primary User
+* BitLocker
+* Autopilot
+* Device Actions
 
-Milestone 11 – Plugin SDK
+---
 
-Deliverables
+## Milestone 8 - Workflow Engine
 
-Plugin API
-Dynamic Menu Registration
-Command Registration
-Dependency Injection
-Plugin Discovery
-Plugin Lifecycle
-SDK Documentation
+Deliverables:
 
-Initial Plugins
+* Create User
+* Disable User
+* Move User
+* Change Manager
+* Password Reset
+* Azure AD Sync
+* Sync All DCs
+* Employee Transfers
+* Offboarding
 
-ScreenConnect
-JAMIS
-Zammad
-Bastion
-Defender
-VMware
-DNS
-DHCP
-Milestone 12 – Productization
+---
 
-Deliverables
+## Milestone 9 - Modern UI
 
-Installer
-Automatic Updates
-Configuration Wizard
-Profile Manager
-Branding Engine
-Documentation Generator
-Code Signing
-Release Pipeline
-Version Targets
-Version 0.2
+Deliverables:
 
-Core Framework
+* Dashboard
+* Navigation
+* Dynamic Cards
+* Search
+* Notifications
+* Theme Engine
+* Command Palette
+* Debug Console
 
-Status
+---
 
-Released
+## Milestone 10 - Atlas Feature Migration
 
-Version 0.3
+Goal:
 
-Hybrid User Engine
+Retire the legacy application.
 
-Version 0.4
+Includes:
 
-Infrastructure Providers
+* User Overview
+* Azure Cards
+* Exchange Cards
+* Group Management
+* Azure AD Roles
+* Mailbox Delegation
+* Utilities
+* Azure Sync
+* DC Sync
+* Search Experience
 
-Version 0.5
+---
 
-Workflow Engine
+## Milestone 11 - Plugin SDK
 
-Version 0.6
+Deliverables:
 
-Modern UI
+* Plugin API
+* Dynamic Menu Registration
+* Command Registration
+* Dependency Injection
+* Plugin Discovery
+* Plugin Lifecycle
+* SDK Documentation
 
-Version 0.7
+Initial Plugins:
 
-Plugin SDK
+* ScreenConnect
+* JAMIS
+* Zammad
+* Bastion
+* Defender
+* VMware
+* DNS
+* DHCP
 
-Version 0.8
+---
 
-Atlas Migration Complete
+## Milestone 12 - Productization
 
-Version 0.9
+Deliverables:
 
-Beta
+* Installer
+* Automatic Updates
+* Configuration Wizard
+* Profile Manager
+* Branding Engine
+* Documentation Generator
+* Code Signing
+* Release Pipeline
 
-Version 1.0
+---
 
-Production Release
+## Version Targets
 
-Long-Term Vision
+| Version | Target                              |
+| ------- | ----------------------------------- |
+| 0.2     | Core Framework                      |
+| 0.3     | Hybrid User Engine                  |
+| 0.4     | Infrastructure Provider Foundation  |
+| 0.5     | Graph / Exchange / Intune Providers |
+| 0.6     | Workflow Engine                     |
+| 0.7     | Modern UI                           |
+| 0.8     | Plugin SDK                          |
+| 0.9     | Beta                                |
+| 1.0     | Production Release                  |
 
-The Hybrid Administration Platform should become a complete administration framework capable of managing hybrid Microsoft environments through modular providers and plugins.
+---
 
-Future provider targets include:
+## Success Criteria
 
-Active Directory
-Entra ID
-Exchange Online
-Intune
-Azure
-VMware
-Hyper-V
-DNS
-DHCP
-SQL Server
-LAPS
-BitLocker
-Defender
-Azure Virtual Desktop
-SharePoint
-Teams
-ScreenConnect
-JAMIS
-Zammad
+Version 1.0 is ready when:
 
-The goal is to allow organizations to deploy the platform simply by creating a profile and enabling the providers and plugins relevant to their environment.
-
-Success Criteria
-
-The project will be considered Version 1.0 ready when:
-
-No dependency on the legacy application remains.
-All functionality is provider-driven.
-The UI consumes only application services.
-Every module is independently testable.
-The application supports multiple customer profiles.
-New functionality can be added through plugins without modifying the core framework.
-The platform can be deployed to a new organization by creating a profile rather than changing source code.
+* No dependency on the legacy application remains.
+* All functionality is provider-driven.
+* The UI consumes only application services.
+* Every module is independently testable.
+* The application supports multiple customer profiles.
+* New functionality can be added through plugins without modifying the core framework.
+* The platform can be deployed to a new organization by creating a profile rather than changing source code.
