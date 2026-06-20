@@ -1,28 +1,17 @@
-Current Milestone: 3 Complete
+# Project Status
 
-Completed
-- Core Framework
-- Configuration
-- Logging
-- Module Loader
-- Plugin Loader
-- Service Registry
-- Mock Provider
-- User Service
-- Search-HybridUser
-- Get-HybridUser
+## Current Status
 
-Milestone 3 - Domain Hydration
-- Added canonical hydration metadata to Hybrid.User
-- Added provider-agnostic Get-HybridUserOverview application API
-- Added Hybrid.UserOverview and Hybrid.UserOverviewCard models
-- Updated mock hydration to return hydrated copies without mutating stored mock user records
-- Added Test-Milestone3.ps1 coverage for full hydration and overview composition
+Milestone 1 and Milestone 2 are complete.
 
-Current Branch
-main
+Milestone 3 - Hybrid User Engine is in progress. The first hydration pass is complete and the current branch extends the canonical HybridUser model with manager hydration, direct report hydration, and cache-backed hydrated lookups.
 
-Next Work
-- Promote domain models to formal PowerShell classes where it does not reduce PowerShell 5.1 compatibility
-- Begin AD provider abstraction
-- Begin Graph provider abstraction
+## Latest Validation
+
+Run:
+
+```powershell
+Get-ChildItem -Path . -Recurse -File | Unblock-File
+Remove-Module Application.UserService,Infrastructure.Mock,Hybrid.Models -Force -ErrorAction SilentlyContinue
+.\tests\Test-Milestone3.ps1
+```

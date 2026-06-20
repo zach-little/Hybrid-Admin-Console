@@ -110,6 +110,8 @@ function New-HybridUser {
         [string]$Office = '',
         [string]$Manager = '',
         [string]$ManagerSamAccountName = '',
+        [object]$ManagerUser = $null,
+        [object[]]$DirectReports = @(),
         [bool]$Enabled = $true,
         [bool]$LockedOut = $false,
         [string]$Source = 'Unknown',
@@ -138,6 +140,8 @@ function New-HybridUser {
         Office                 = $Office
         Manager                = $Manager
         ManagerSamAccountName  = $ManagerSamAccountName
+        ManagerUser            = $ManagerUser
+        DirectReports          = @(ConvertTo-HybridArray $DirectReports)
         Enabled                = $Enabled
         LockedOut              = $LockedOut
         Source                 = $Source
@@ -317,12 +321,15 @@ function New-HybridUserOverview {
     $devices = @(ConvertTo-HybridArray $User.Devices)
     $licenses = @(ConvertTo-HybridArray $User.Licenses)
     $mailbox = $User.Mailbox
+    $directReports = @(ConvertTo-HybridArray $User.DirectReports)
 
     $enabledLicenses = @($licenses | Where-Object { $_.Enabled })
     $nonCompliantDevices = @($devices | Where-Object { $_.ComplianceState -and $_.ComplianceState -ne 'Compliant' -and $_.ComplianceState -ne 'Unknown' })
 
     $cards = @(
         [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Identity'; Title = $User.DisplayName; Subtitle = $User.UserPrincipalName; Value = $User.SamAccountName; Status = if ($User.Enabled) { 'Enabled' } else { 'Disabled' } }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Manager'; Title = 'Manager'; Subtitle = $User.ManagerSamAccountName; Value = if ($null -ne $User.ManagerUser) { $User.ManagerUser.DisplayName } else { $User.Manager }; Status = if ($null -ne $User.ManagerUser -or -not [string]::IsNullOrWhiteSpace($User.Manager)) { 'Ready' } else { 'Warning' } }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'DirectReports'; Title = 'Direct Reports'; Subtitle = 'Users managed by this account'; Value = $directReports.Count; Status = 'Ready' }
         [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Groups'; Title = 'Groups'; Subtitle = 'Security and distribution memberships'; Value = $groups.Count; Status = 'Ready' }
         [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Mailbox'; Title = 'Mailbox'; Subtitle = if ($null -ne $mailbox) { $mailbox.PrimarySmtpAddress } else { '' }; Value = if ($null -ne $mailbox -and $mailbox.Exists) { 'Present' } else { 'Missing' }; Status = if ($null -ne $mailbox -and $mailbox.Exists) { 'Ready' } else { 'Warning' } }
         [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Devices'; Title = 'Devices'; Subtitle = 'Associated managed devices'; Value = $devices.Count; Status = if ($nonCompliantDevices.Count -gt 0) { 'Warning' } else { 'Ready' } }
@@ -345,6 +352,8 @@ function New-HybridUserOverview {
         Department              = $User.Department
         Title                   = $User.Title
         Manager                 = $User.Manager
+        ManagerSamAccountName  = $User.ManagerSamAccountName
+        DirectReportCount      = $directReports.Count
         Enabled                 = $User.Enabled
         LockedOut               = $User.LockedOut
         GroupCount              = $groups.Count

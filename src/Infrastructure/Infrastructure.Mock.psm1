@@ -2,7 +2,7 @@
 # Name: Infrastructure.Mock
 # Purpose: Offline mock infrastructure provider for development and testing.
 # Dependencies: Core.ServiceRegistry, Hybrid.Models recommended.
-# Exports: Initialize-HybridMockProvider, Search-HybridMockUser, Get-HybridMockUser, Get-HybridMockUserGroups, Get-HybridMockUserMailbox, Get-HybridMockUserDevices, Get-HybridMockUserLicenses
+# Exports: Initialize-HybridMockProvider, Search-HybridMockUser, Get-HybridMockUser, Get-HybridMockUserGroups, Get-HybridMockUserMailbox, Get-HybridMockUserDevices, Get-HybridMockUserLicenses, Get-HybridMockUserManager, Get-HybridMockUserDirectReports
 #endregion
 
 Set-StrictMode -Version Latest
@@ -227,6 +227,8 @@ function Add-HybridMockUserHydration {
         -Office $hydrated.Office `
         -Manager $hydrated.Manager `
         -ManagerSamAccountName $hydrated.ManagerSamAccountName `
+        -ManagerUser (Get-HybridMockUserManager -Identity $hydrated.SamAccountName) `
+        -DirectReports @(Get-HybridMockUserDirectReports -Identity $hydrated.SamAccountName) `
         -Enabled $hydrated.Enabled `
         -LockedOut $hydrated.LockedOut `
         -Source $hydrated.Source `
@@ -239,6 +241,8 @@ function Add-HybridMockUserHydration {
             Mailbox  = ($null -ne $mailbox)
             Devices  = $true
             Licenses = $true
+            Manager = $true
+            DirectReports = $true
         } `
         -Attributes $hydrated.Attributes
 }
@@ -268,6 +272,8 @@ function Initialize-HybridMockProvider {
         GetUserMailbox   = { param([string]$Identity) Get-HybridMockUserMailbox -Identity $Identity }
         GetUserDevices   = { param([string]$Identity) Get-HybridMockUserDevices -Identity $Identity }
         GetUserLicenses  = { param([string]$Identity) Get-HybridMockUserLicenses -Identity $Identity }
+        GetUserManager   = { param([string]$Identity) Get-HybridMockUserManager -Identity $Identity }
+        GetUserDirectReports = { param([string]$Identity) Get-HybridMockUserDirectReports -Identity $Identity }
     }
 
     if (Get-Command Register-HybridService -ErrorAction SilentlyContinue) {
@@ -406,6 +412,40 @@ function Get-HybridMockUserLicenses {
 
     return @($script:State.Licenses[$sam])
 }
+
+function Get-HybridMockUserManager {
+    <#
+    .SYNOPSIS
+    Gets the mock manager for a user.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $sam = Resolve-HybridMockSamAccountName -Identity $Identity
+    if ([string]::IsNullOrWhiteSpace($sam)) { return $null }
+
+    $user = ($script:State.Users | Where-Object { $_.SamAccountName -eq $sam } | Select-Object -First 1)
+    if ($null -eq $user -or [string]::IsNullOrWhiteSpace($user.ManagerSamAccountName)) { return $null }
+
+    $manager = ($script:State.Users | Where-Object { $_.SamAccountName -eq $user.ManagerSamAccountName } | Select-Object -First 1)
+    if ($null -eq $manager) { return $null }
+
+    return Copy-HybridMockUser -User $manager
+}
+
+function Get-HybridMockUserDirectReports {
+    <#
+    .SYNOPSIS
+    Gets mock direct reports for a user.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $sam = Resolve-HybridMockSamAccountName -Identity $Identity
+    if ([string]::IsNullOrWhiteSpace($sam)) { return @() }
+
+    return @($script:State.Users | Where-Object { $_.ManagerSamAccountName -eq $sam } | ForEach-Object { Copy-HybridMockUser -User $_ })
+}
 #endregion
 
 #region Initialization
@@ -416,6 +456,8 @@ Export-ModuleMember -Function @(
     'Get-HybridMockUserGroups',
     'Get-HybridMockUserMailbox',
     'Get-HybridMockUserDevices',
-    'Get-HybridMockUserLicenses'
+    'Get-HybridMockUserLicenses',
+    'Get-HybridMockUserManager',
+    'Get-HybridMockUserDirectReports'
 )
 #endregion
