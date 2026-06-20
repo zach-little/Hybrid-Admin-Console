@@ -52,7 +52,43 @@ function New-MockHybridUserRecord {
         -LockedOut $LockedOut `
         -Company 'Atlas Tech' `
         -Office 'Hybrid Admin Lab' `
-        -Source 'Mock'
+        -Source 'Mock' `
+        -Hydration @{ Groups = $false; Mailbox = $false; Devices = $false; Licenses = $false }
+}
+
+function Copy-HybridMockUser {
+    param([Parameter(Mandatory=$true)][object]$User)
+
+    return New-HybridUser `
+        -Id $User.Id `
+        -DisplayName $User.DisplayName `
+        -GivenName $User.GivenName `
+        -Surname $User.Surname `
+        -SamAccountName $User.SamAccountName `
+        -UserPrincipalName $User.UserPrincipalName `
+        -Mail $User.Mail `
+        -EmployeeId $User.EmployeeId `
+        -BadgeId $User.BadgeId `
+        -Department $User.Department `
+        -Title $User.Title `
+        -Company $User.Company `
+        -Office $User.Office `
+        -Manager $User.Manager `
+        -ManagerSamAccountName $User.ManagerSamAccountName `
+        -Enabled $User.Enabled `
+        -LockedOut $User.LockedOut `
+        -Source $User.Source `
+        -Groups @($User.Groups) `
+        -Mailbox $User.Mailbox `
+        -Devices @($User.Devices) `
+        -Licenses @($User.Licenses) `
+        -Hydration @{
+            Groups   = [bool]$User.Hydration.Groups
+            Mailbox  = [bool]$User.Hydration.Mailbox
+            Devices  = [bool]$User.Hydration.Devices
+            Licenses = [bool]$User.Hydration.Licenses
+        } `
+        -Attributes $User.Attributes
 }
 
 function Get-DefaultHybridMockData {
@@ -92,8 +128,8 @@ function Get-DefaultHybridMockData {
 
     $mailboxes = @{
         amorgan = New-HybridMailbox -Identity 'amorgan' -PrimarySmtpAddress 'amorgan@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('alex.morgan@atlas-tech.com') -FullAccess @('IT Admins') -Source 'Mock'
-        jlee = New-HybridMailbox -Identity 'jlee' -PrimarySmtpAddress 'jlee@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('jordan.lee@atlas-tech.com') -Source 'Mock'
-        tsmith = New-HybridMailbox -Identity 'tsmith' -PrimarySmtpAddress 'tsmith@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('taylor.smith@atlas-tech.com') -Source 'Mock'
+        jlee    = New-HybridMailbox -Identity 'jlee' -PrimarySmtpAddress 'jlee@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('jordan.lee@atlas-tech.com') -Source 'Mock'
+        tsmith  = New-HybridMailbox -Identity 'tsmith' -PrimarySmtpAddress 'tsmith@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('taylor.smith@atlas-tech.com') -Source 'Mock'
         mrivera = New-HybridMailbox -Identity 'mrivera' -PrimarySmtpAddress 'mrivera@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('morgan.rivera@atlas-tech.com') -Source 'Mock'
         dsample = New-HybridMailbox -Identity 'dsample' -PrimarySmtpAddress 'dsample@atlas-tech.com' -RecipientType 'UserMailbox' -HiddenFromAddressLists:$true -Exists:$true -Source 'Mock'
     }
@@ -140,26 +176,80 @@ function Get-DefaultHybridMockData {
 function Resolve-HybridMockSamAccountName {
     param([Parameter(Mandatory=$true)][string]$Identity)
 
-    $user = Get-HybridMockUser -Identity $Identity
-    if ($null -eq $user) { return $null }
-    return $user.SamAccountName
+    $match = ($script:State.Users | Where-Object {
+        $_.SamAccountName -eq $Identity -or
+        $_.UserPrincipalName -eq $Identity -or
+        $_.Mail -eq $Identity -or
+        $_.DisplayName -eq $Identity -or
+        $_.EmployeeId -eq $Identity -or
+        $_.BadgeId -eq $Identity
+    } | Select-Object -First 1)
+
+    if ($null -eq $match) { return $null }
+
+    return $match.SamAccountName
 }
 
 function Add-HybridMockUserHydration {
     param([Parameter(Mandatory=$true)][object]$User)
 
-    $sam = $User.SamAccountName
-    $User.Groups = @(Get-HybridMockUserGroups -Identity $sam)
-    $User.Mailbox = Get-HybridMockUserMailbox -Identity $sam
-    $User.Devices = @(Get-HybridMockUserDevices -Identity $sam)
-    $User.Licenses = @(Get-HybridMockUserLicenses -Identity $sam)
-    return $User
+    $hydrated = Copy-HybridMockUser -User $User
+    $sam = $hydrated.SamAccountName
+
+    # Read hydration collections directly from provider state. This avoids a nested
+    # public user lookup while a user hydration operation is already in progress,
+    # and keeps mock hydration deterministic under module reloads.
+    $groups = @()
+    if ($script:State.Groups.ContainsKey($sam)) { $groups = @($script:State.Groups[$sam]) }
+
+    $mailbox = $null
+    if ($script:State.Mailboxes.ContainsKey($sam)) { $mailbox = $script:State.Mailboxes[$sam] }
+
+    $devices = @()
+    if ($script:State.Devices.ContainsKey($sam)) { $devices = @($script:State.Devices[$sam]) }
+
+    $licenses = @()
+    if ($script:State.Licenses.ContainsKey($sam)) { $licenses = @($script:State.Licenses[$sam]) }
+
+    return New-HybridUser `
+        -Id $hydrated.Id `
+        -DisplayName $hydrated.DisplayName `
+        -GivenName $hydrated.GivenName `
+        -Surname $hydrated.Surname `
+        -SamAccountName $hydrated.SamAccountName `
+        -UserPrincipalName $hydrated.UserPrincipalName `
+        -Mail $hydrated.Mail `
+        -EmployeeId $hydrated.EmployeeId `
+        -BadgeId $hydrated.BadgeId `
+        -Department $hydrated.Department `
+        -Title $hydrated.Title `
+        -Company $hydrated.Company `
+        -Office $hydrated.Office `
+        -Manager $hydrated.Manager `
+        -ManagerSamAccountName $hydrated.ManagerSamAccountName `
+        -Enabled $hydrated.Enabled `
+        -LockedOut $hydrated.LockedOut `
+        -Source $hydrated.Source `
+        -Groups $groups `
+        -Mailbox $mailbox `
+        -Devices $devices `
+        -Licenses $licenses `
+        -Hydration @{
+            Groups   = $true
+            Mailbox  = ($null -ne $mailbox)
+            Devices  = $true
+            Licenses = $true
+        } `
+        -Attributes $hydrated.Attributes
 }
 #endregion
 
 #region Public
 function Initialize-HybridMockProvider {
-    <#.SYNOPSIS Registers mock services for offline development.#>
+    <#
+    .SYNOPSIS
+    Registers mock services for offline development.
+    #>
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][object]$Context)
 
@@ -171,31 +261,13 @@ function Initialize-HybridMockProvider {
     $script:State.Licenses = $data.Licenses
 
     $directoryService = [pscustomobject]@{
-        PSTypeName = 'Hybrid.MockDirectoryService'
-        SearchUser = {
-            param([string]$Query, [switch]$IncludeRelated)
-            Search-HybridMockUser -Query $Query -IncludeRelated:$IncludeRelated
-        }
-        GetUser = {
-            param([string]$Identity, [switch]$IncludeRelated)
-            Get-HybridMockUser -Identity $Identity -IncludeRelated:$IncludeRelated
-        }
-        GetUserGroups = {
-            param([string]$Identity)
-            Get-HybridMockUserGroups -Identity $Identity
-        }
-        GetUserMailbox = {
-            param([string]$Identity)
-            Get-HybridMockUserMailbox -Identity $Identity
-        }
-        GetUserDevices = {
-            param([string]$Identity)
-            Get-HybridMockUserDevices -Identity $Identity
-        }
-        GetUserLicenses = {
-            param([string]$Identity)
-            Get-HybridMockUserLicenses -Identity $Identity
-        }
+        PSTypeName       = 'Hybrid.MockDirectoryService'
+        SearchUser       = { param([string]$Query, [switch]$IncludeRelated) Search-HybridMockUser -Query $Query -IncludeRelated:$IncludeRelated }
+        GetUser          = { param([string]$Identity, [switch]$IncludeRelated) Get-HybridMockUser -Identity $Identity -IncludeRelated:$IncludeRelated }
+        GetUserGroups    = { param([string]$Identity) Get-HybridMockUserGroups -Identity $Identity }
+        GetUserMailbox   = { param([string]$Identity) Get-HybridMockUserMailbox -Identity $Identity }
+        GetUserDevices   = { param([string]$Identity) Get-HybridMockUserDevices -Identity $Identity }
+        GetUserLicenses  = { param([string]$Identity) Get-HybridMockUserLicenses -Identity $Identity }
     }
 
     if (Get-Command Register-HybridService -ErrorAction SilentlyContinue) {
@@ -210,10 +282,13 @@ function Initialize-HybridMockProvider {
 }
 
 function Search-HybridMockUser {
-    <#.SYNOPSIS Searches mock users.#>
+    <#
+    .SYNOPSIS
+    Searches mock users.
+    #>
     [CmdletBinding()]
     param(
-        [string]$Query='',
+        [string]$Query = '',
         [switch]$IncludeRelated
     )
 
@@ -238,11 +313,14 @@ function Search-HybridMockUser {
         return @($results | ForEach-Object { Add-HybridMockUserHydration -User $_ })
     }
 
-    return @($results)
+    return @($results | ForEach-Object { Copy-HybridMockUser -User $_ })
 }
 
 function Get-HybridMockUser {
-    <#.SYNOPSIS Gets one mock user by identity.#>
+    <#
+    .SYNOPSIS
+    Gets one mock user by identity.
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)][string]$Identity,
@@ -262,50 +340,70 @@ function Get-HybridMockUser {
         return Add-HybridMockUserHydration -User $user
     }
 
-    return $user
+    if ($null -ne $user) {
+        return Copy-HybridMockUser -User $user
+    }
+
+    return $null
 }
 
 function Get-HybridMockUserGroups {
-    <#.SYNOPSIS Gets mock group memberships for a user.#>
+    <#
+    .SYNOPSIS
+    Gets mock group memberships for a user.
+    #>
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
     $sam = Resolve-HybridMockSamAccountName -Identity $Identity
     if ([string]::IsNullOrWhiteSpace($sam)) { return @() }
     if (-not $script:State.Groups.ContainsKey($sam)) { return @() }
+
     return @($script:State.Groups[$sam])
 }
 
 function Get-HybridMockUserMailbox {
-    <#.SYNOPSIS Gets a mock mailbox for a user.#>
+    <#
+    .SYNOPSIS
+    Gets a mock mailbox for a user.
+    #>
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
     $sam = Resolve-HybridMockSamAccountName -Identity $Identity
     if ([string]::IsNullOrWhiteSpace($sam)) { return $null }
     if (-not $script:State.Mailboxes.ContainsKey($sam)) { return $null }
+
     return $script:State.Mailboxes[$sam]
 }
 
 function Get-HybridMockUserDevices {
-    <#.SYNOPSIS Gets mock devices for a user.#>
+    <#
+    .SYNOPSIS
+    Gets mock devices for a user.
+    #>
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
     $sam = Resolve-HybridMockSamAccountName -Identity $Identity
     if ([string]::IsNullOrWhiteSpace($sam)) { return @() }
     if (-not $script:State.Devices.ContainsKey($sam)) { return @() }
+
     return @($script:State.Devices[$sam])
 }
 
 function Get-HybridMockUserLicenses {
-    <#.SYNOPSIS Gets mock license assignments for a user.#>
+    <#
+    .SYNOPSIS
+    Gets mock license assignments for a user.
+    #>
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
     $sam = Resolve-HybridMockSamAccountName -Identity $Identity
     if ([string]::IsNullOrWhiteSpace($sam)) { return @() }
     if (-not $script:State.Licenses.ContainsKey($sam)) { return @() }
+
     return @($script:State.Licenses[$sam])
 }
 #endregion
