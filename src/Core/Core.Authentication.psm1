@@ -5,7 +5,10 @@
 # Exports: New-HybridAuthenticationPolicy, Get-HybridAuthenticationPolicy,
 #          Set-HybridAuthenticationPolicy, Register-HybridAuthenticationMethod,
 #          Get-HybridAuthenticationMethod, Get-HybridAuthenticationMethodNames,
-#          New-HybridAuthenticationRequest, New-HybridAuthenticationSession,
+#          New-HybridAuthenticationRequest, New-HybridTokenDescriptor,
+#          Test-HybridTokenDescriptor, New-HybridAuthenticationResult,
+#          New-HybridAuthenticationSession, Get-HybridAuthenticationSessionState,
+#          New-HybridAuthenticationCacheKey, New-HybridAuthenticationCacheEntry,
 #          Test-HybridAuthenticationSession
 #endregion
 
@@ -211,6 +214,214 @@ function New-HybridAuthenticationRequest {
     }
 }
 
+
+function New-HybridTokenDescriptor {
+    [CmdletBinding()]
+    param(
+        [string]$AccessToken = '',
+        [string]$RefreshToken = '',
+        [string]$TokenType = 'Bearer',
+        [datetime]$ExpiresOn = ([datetime]::UtcNow),
+        [datetime]$NotBefore = ([datetime]::UtcNow),
+        [string[]]$Scopes = @(),
+        [hashtable]$Claims = @{},
+        [hashtable]$Attributes = @{}
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TokenType)) {
+        throw 'Token type cannot be empty.'
+    }
+
+    [pscustomobject]@{
+        PSTypeName   = 'Hybrid.TokenDescriptor'
+        AccessToken  = $AccessToken
+        RefreshToken = $RefreshToken
+        TokenType    = $TokenType
+        ExpiresOn    = $ExpiresOn
+        NotBefore    = $NotBefore
+        Scopes       = @($Scopes)
+        Claims       = $Claims
+        Attributes   = $Attributes
+    }
+}
+
+function Test-HybridTokenDescriptor {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$TokenDescriptor,
+        [switch]$Detailed
+    )
+
+    $errors = New-Object System.Collections.Generic.List[string]
+
+    foreach ($propertyName in @('AccessToken', 'TokenType', 'ExpiresOn', 'Scopes')) {
+        if ($TokenDescriptor.PSObject.Properties.Name -notcontains $propertyName) {
+            $errors.Add("Missing required property: $propertyName")
+        }
+    }
+
+    if ($TokenDescriptor.PSObject.Properties.Name -contains 'TokenType' -and [string]::IsNullOrWhiteSpace([string]$TokenDescriptor.TokenType)) {
+        $errors.Add('Token type cannot be empty.')
+    }
+
+    if ($TokenDescriptor.PSObject.Properties.Name -contains 'ExpiresOn' -and $TokenDescriptor.ExpiresOn -lt [datetime]::UtcNow) {
+        $errors.Add('Token descriptor is expired.')
+    }
+
+    $result = [pscustomobject]@{
+        PSTypeName = 'Hybrid.TokenDescriptorValidationResult'
+        IsValid    = ($errors.Count -eq 0)
+        Errors     = @($errors)
+    }
+
+    if ($Detailed) {
+        return $result
+    }
+
+    return [bool]$result.IsValid
+}
+
+function New-HybridAuthenticationResult {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$AuthenticationRequest,
+
+        [object]$TokenDescriptor,
+        [bool]$Succeeded = $false,
+        [string]$Status = '',
+        [string]$ErrorCode = '',
+        [string]$ErrorMessage = '',
+        [hashtable]$Attributes = @{}
+    )
+
+    foreach ($propertyName in @('TenantContext', 'CloudEnvironment', 'MethodName', 'Authority')) {
+        if ($AuthenticationRequest.PSObject.Properties.Name -notcontains $propertyName) {
+            throw "Invalid authentication request. Missing $propertyName property."
+        }
+    }
+
+    $resolvedStatus = if (-not [string]::IsNullOrWhiteSpace($Status)) { $Status } elseif ($Succeeded) { 'Succeeded' } else { 'Failed' }
+
+    [pscustomobject]@{
+        PSTypeName            = 'Hybrid.AuthenticationResult'
+        Succeeded             = $Succeeded
+        Status                = $resolvedStatus
+        AuthenticationRequest = $AuthenticationRequest
+        TenantContext         = $AuthenticationRequest.TenantContext
+        CloudEnvironment      = $AuthenticationRequest.CloudEnvironment
+        MethodName            = $AuthenticationRequest.MethodName
+        Authority             = $AuthenticationRequest.Authority
+        TokenDescriptor       = $TokenDescriptor
+        ErrorCode             = $ErrorCode
+        ErrorMessage          = $ErrorMessage
+        CreatedOn             = [datetime]::UtcNow
+        Attributes            = $Attributes
+    }
+}
+
+function Get-HybridAuthenticationSessionState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$Session,
+        [int]$RefreshWindowMinutes = 5
+    )
+
+    if ($Session.PSObject.Properties.Name -notcontains 'IsAuthenticated') {
+        return 'Invalid'
+    }
+
+    if ($Session.IsAuthenticated -ne $true) {
+        return 'Unauthenticated'
+    }
+
+    if ($Session.PSObject.Properties.Name -notcontains 'ExpiresOn') {
+        return 'Invalid'
+    }
+
+    $now = [datetime]::UtcNow
+
+    if ($Session.ExpiresOn -lt $now) {
+        return 'Expired'
+    }
+
+    if ($Session.ExpiresOn -le $now.AddMinutes($RefreshWindowMinutes)) {
+        return 'RefreshRequired'
+    }
+
+    return 'Valid'
+}
+
+function New-HybridAuthenticationCacheKey {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$AuthenticationRequest
+    )
+
+    foreach ($propertyName in @('TenantContext', 'CloudEnvironment', 'MethodName', 'ClientId', 'Scopes')) {
+        if ($AuthenticationRequest.PSObject.Properties.Name -notcontains $propertyName) {
+            throw "Invalid authentication request. Missing $propertyName property."
+        }
+    }
+
+    $scopeKey = (@($AuthenticationRequest.Scopes) | Sort-Object) -join ' '
+
+    [pscustomobject]@{
+        PSTypeName       = 'Hybrid.AuthenticationCacheKey'
+        TenantId         = $AuthenticationRequest.TenantContext.TenantId
+        CloudEnvironment = $AuthenticationRequest.CloudEnvironment.Name
+        MethodName       = $AuthenticationRequest.MethodName
+        ClientId         = $AuthenticationRequest.ClientId
+        ScopeKey         = $scopeKey
+        Key              = (($AuthenticationRequest.TenantContext.TenantId, $AuthenticationRequest.CloudEnvironment.Name, $AuthenticationRequest.MethodName, $AuthenticationRequest.ClientId, $scopeKey) -join '|')
+    }
+}
+
+function New-HybridAuthenticationCacheEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$CacheKey,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNull()]
+        [object]$Session,
+
+        [hashtable]$Attributes = @{}
+    )
+
+    foreach ($propertyName in @('Key', 'TenantId', 'CloudEnvironment', 'MethodName')) {
+        if ($CacheKey.PSObject.Properties.Name -notcontains $propertyName) {
+            throw "Invalid authentication cache key. Missing $propertyName property."
+        }
+    }
+
+    foreach ($propertyName in @('SessionId', 'TenantContext', 'CloudEnvironment', 'MethodName', 'ExpiresOn')) {
+        if ($Session.PSObject.Properties.Name -notcontains $propertyName) {
+            throw "Invalid authentication session. Missing $propertyName property."
+        }
+    }
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.AuthenticationCacheEntry'
+        Key        = $CacheKey.Key
+        CacheKey   = $CacheKey
+        Session    = $Session
+        State      = Get-HybridAuthenticationSessionState -Session $Session
+        CreatedOn  = [datetime]::UtcNow
+        ExpiresOn  = $Session.ExpiresOn
+        Attributes = $Attributes
+    }
+}
+
 function New-HybridAuthenticationSession {
     [CmdletBinding()]
     param(
@@ -221,6 +432,7 @@ function New-HybridAuthenticationSession {
         [string]$AccessToken = '',
         [string]$TokenType = 'Bearer',
         [datetime]$ExpiresOn = ([datetime]::UtcNow),
+        [object]$TokenDescriptor,
         [hashtable]$Attributes = @{}
     )
 
@@ -230,6 +442,16 @@ function New-HybridAuthenticationSession {
         }
     }
 
+    $resolvedTokenDescriptor = $TokenDescriptor
+
+    if ($null -eq $resolvedTokenDescriptor) {
+        $resolvedTokenDescriptor = New-HybridTokenDescriptor -AccessToken $AccessToken -TokenType $TokenType -ExpiresOn $ExpiresOn -Scopes @($AuthenticationRequest.Scopes) -Claims @{}
+    }
+
+    if ($resolvedTokenDescriptor.PSObject.Properties.Name -notcontains 'AccessToken') {
+        throw 'Invalid token descriptor. Missing AccessToken property.'
+    }
+
     [pscustomobject]@{
         PSTypeName             = 'Hybrid.AuthenticationSession'
         SessionId              = [guid]::NewGuid().ToString()
@@ -237,11 +459,13 @@ function New-HybridAuthenticationSession {
         CloudEnvironment       = $AuthenticationRequest.CloudEnvironment
         MethodName             = $AuthenticationRequest.MethodName
         Authority              = $AuthenticationRequest.Authority
-        AccessToken            = $AccessToken
-        TokenType              = $TokenType
-        ExpiresOn              = $ExpiresOn
-        Scopes                 = @($AuthenticationRequest.Scopes)
-        IsAuthenticated        = (-not [string]::IsNullOrWhiteSpace($AccessToken))
+        AccessToken            = $resolvedTokenDescriptor.AccessToken
+        TokenType              = $resolvedTokenDescriptor.TokenType
+        ExpiresOn              = $resolvedTokenDescriptor.ExpiresOn
+        Scopes                 = @($resolvedTokenDescriptor.Scopes)
+        TokenDescriptor        = $resolvedTokenDescriptor
+        State                  = if (-not [string]::IsNullOrWhiteSpace($resolvedTokenDescriptor.AccessToken)) { 'Valid' } else { 'Unauthenticated' }
+        IsAuthenticated        = (-not [string]::IsNullOrWhiteSpace($resolvedTokenDescriptor.AccessToken))
         CreatedOn              = [datetime]::UtcNow
         Attributes             = $Attributes
     }
@@ -303,6 +527,12 @@ Export-ModuleMember -Function @(
     'Get-HybridAuthenticationMethod',
     'Get-HybridAuthenticationMethodNames',
     'New-HybridAuthenticationRequest',
+    'New-HybridTokenDescriptor',
+    'Test-HybridTokenDescriptor',
+    'New-HybridAuthenticationResult',
     'New-HybridAuthenticationSession',
+    'Get-HybridAuthenticationSessionState',
+    'New-HybridAuthenticationCacheKey',
+    'New-HybridAuthenticationCacheEntry',
     'Test-HybridAuthenticationSession'
 )

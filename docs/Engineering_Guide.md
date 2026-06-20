@@ -94,3 +94,39 @@ Authentication sessions are shell session objects. They can represent a mock or 
 - Authentication requests derive authority from Tenant Context and Cloud Environment.
 - Device Code Flow is prohibited by the Project Charter.
 - Live MSAL, WAM, browser, managed identity, and client credential flows are deferred to later Milestone 5 phases.
+
+### Phase 4: Session and Token Contracts
+
+Phase 4 extends `Core.Authentication` with provider-facing token and session contracts. It still does not perform live authentication, call MSAL, or call Microsoft Graph.
+
+New contract objects include:
+
+- `Hybrid.TokenDescriptor`
+- `Hybrid.AuthenticationResult`
+- `Hybrid.AuthenticationCacheKey`
+- `Hybrid.AuthenticationCacheEntry`
+
+`Hybrid.TokenDescriptor` represents token metadata in a provider-neutral way. It can hold access token text, token type, expiration, scopes, claims, and optional attributes without exposing any Microsoft-specific authentication library object outside the authentication layer.
+
+`Hybrid.AuthenticationResult` represents the result of an authentication attempt. Future live authentication implementations will return this object whether authentication succeeds or fails.
+
+`Hybrid.AuthenticationSession` now accepts a token descriptor. Providers continue to consume the session object rather than token library output.
+
+Session state is resolved through `Get-HybridAuthenticationSessionState`, which currently reports:
+
+- `Valid`
+- `RefreshRequired`
+- `Expired`
+- `Unauthenticated`
+- `Invalid`
+
+Cache key and cache entry objects define the future token/session cache contract. Phase 4 defines the shape only; it does not implement persistent token caching.
+
+### Session Contract Design Rules
+
+- Providers consume `Hybrid.AuthenticationSession`.
+- Providers must not consume MSAL result objects directly.
+- Tokens are represented by `Hybrid.TokenDescriptor`.
+- Authentication success and failure are represented by `Hybrid.AuthenticationResult`.
+- Cache contracts are platform-owned and provider-neutral.
+- Persistent token cache implementation is deferred to a later phase.

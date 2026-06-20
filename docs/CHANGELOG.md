@@ -4,21 +4,15 @@
 
 ### Added
 
-- Added `Core.Authentication` framework shell.
-- Added authentication policy contracts.
-- Added authentication method registration and discovery.
-- Added authentication request contract with sovereign authority resolution.
-- Added authentication session contract and validation.
-- Added charter enforcement that rejects Device Code Flow.
-- Extended Milestone 5 tests through Phase 3.
-- Added `Core.TenantContext` for tenant identity metadata.
-- Added `Core.OrganizationContext` for organization-wide runtime state.
-- Added tenant default domain resolution.
-- Added organization provider registration helpers.
-- Added organization capability registration helpers.
+- Added `Hybrid.TokenDescriptor` contract for provider-neutral token metadata.
+- Added token descriptor validation.
+- Added `Hybrid.AuthenticationResult` contract for future authentication success and failure results.
+- Added session state resolution through `Get-HybridAuthenticationSessionState`.
+- Added authentication cache key and cache entry contracts.
+- Extended authentication sessions to accept token descriptors.
+- Extended Milestone 5 tests through Phase 4.
 
 ### Notes
 
-- Phase 3 intentionally does not authenticate, call MSAL, or call Microsoft Graph.
-- Phase 2 intentionally does not authenticate or call Microsoft Graph.
+- Phase 4 intentionally does not authenticate, call MSAL, call WAM, call Microsoft Graph, or persist tokens.
 - `Project_Status.md`, `ROADMAP.md`, and `VERSION.md` are updated during the final phase of the version.

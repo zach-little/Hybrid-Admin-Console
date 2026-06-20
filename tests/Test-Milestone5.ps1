@@ -80,6 +80,12 @@ Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticati
 Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticationMethodNames') -Message 'Get-HybridAuthenticationMethodNames exported'
 Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationRequest') -Message 'New-HybridAuthenticationRequest exported'
 Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationSession') -Message 'New-HybridAuthenticationSession exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridTokenDescriptor') -Message 'New-HybridTokenDescriptor exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Test-HybridTokenDescriptor') -Message 'Test-HybridTokenDescriptor exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationResult') -Message 'New-HybridAuthenticationResult exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticationSessionState') -Message 'Get-HybridAuthenticationSessionState exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationCacheKey') -Message 'New-HybridAuthenticationCacheKey exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationCacheEntry') -Message 'New-HybridAuthenticationCacheEntry exported'
 Assert-Pass -Condition ($authenticationExports -contains 'Test-HybridAuthenticationSession') -Message 'Test-HybridAuthenticationSession exported'
 
 
@@ -193,7 +199,53 @@ Assert-Pass -Condition (Test-HybridAuthenticationSession -Session $session) -Mes
 $expiredSession = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest -AccessToken 'expired-token' -ExpiresOn ([datetime]::UtcNow.AddMinutes(-5))
 Assert-Pass -Condition (-not (Test-HybridAuthenticationSession -Session $expiredSession)) -Message 'Expired authentication session fails validation'
 
+
+$tokenDescriptor = New-HybridTokenDescriptor -AccessToken 'descriptor-token' -ExpiresOn ([datetime]::UtcNow.AddHours(2)) -Scopes @('User.Read', 'Group.Read.All') -Claims @{ tid = $tenant.TenantId }
+Assert-Pass -Condition ($tokenDescriptor.PSTypeNames -contains 'Hybrid.TokenDescriptor') -Message 'Token descriptor has platform type name'
+Assert-Pass -Condition ($tokenDescriptor.TokenType -eq 'Bearer') -Message 'Token descriptor defaults to bearer token type'
+Assert-Pass -Condition ($tokenDescriptor.Scopes -contains 'User.Read') -Message 'Token descriptor stores scopes'
+Assert-Pass -Condition ($tokenDescriptor.Claims.tid -eq $tenant.TenantId) -Message 'Token descriptor stores claims'
+Assert-Pass -Condition (Test-HybridTokenDescriptor -TokenDescriptor $tokenDescriptor) -Message 'Token descriptor validates'
+
+$expiredTokenDescriptor = New-HybridTokenDescriptor -AccessToken 'expired-descriptor-token' -ExpiresOn ([datetime]::UtcNow.AddMinutes(-1))
+Assert-Pass -Condition (-not (Test-HybridTokenDescriptor -TokenDescriptor $expiredTokenDescriptor)) -Message 'Expired token descriptor fails validation'
+
+$authResult = New-HybridAuthenticationResult -AuthenticationRequest $explicitRequest -TokenDescriptor $tokenDescriptor -Succeeded $true
+Assert-Pass -Condition ($authResult.PSTypeNames -contains 'Hybrid.AuthenticationResult') -Message 'Authentication result has platform type name'
+Assert-Pass -Condition ($authResult.Succeeded -eq $true) -Message 'Authentication result records success state'
+Assert-Pass -Condition ($authResult.Status -eq 'Succeeded') -Message 'Authentication result defaults success status'
+Assert-Pass -Condition ($authResult.TokenDescriptor.AccessToken -eq 'descriptor-token') -Message 'Authentication result attaches token descriptor'
+Assert-Pass -Condition ($authResult.TenantContext.TenantId -eq $tenant.TenantId) -Message 'Authentication result preserves tenant context'
+
+$failedAuthResult = New-HybridAuthenticationResult -AuthenticationRequest $explicitRequest -Succeeded $false -ErrorCode 'MockFailure' -ErrorMessage 'Mock authentication failure'
+Assert-Pass -Condition ($failedAuthResult.Status -eq 'Failed') -Message 'Authentication result defaults failed status'
+Assert-Pass -Condition ($failedAuthResult.ErrorCode -eq 'MockFailure') -Message 'Authentication result stores failure code'
+
+$descriptorSession = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest -TokenDescriptor $tokenDescriptor
+Assert-Pass -Condition ($descriptorSession.TokenDescriptor.AccessToken -eq 'descriptor-token') -Message 'Authentication session accepts token descriptor'
+Assert-Pass -Condition ($descriptorSession.Scopes -contains 'Group.Read.All') -Message 'Authentication session inherits descriptor scopes'
+Assert-Pass -Condition ((Get-HybridAuthenticationSessionState -Session $descriptorSession) -eq 'Valid') -Message 'Authentication session state reports valid session'
+
+$refreshSession = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest -AccessToken 'refresh-token' -ExpiresOn ([datetime]::UtcNow.AddMinutes(2))
+Assert-Pass -Condition ((Get-HybridAuthenticationSessionState -Session $refreshSession -RefreshWindowMinutes 5) -eq 'RefreshRequired') -Message 'Authentication session state reports refresh required'
+
+$unauthenticatedSession = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest
+Assert-Pass -Condition ((Get-HybridAuthenticationSessionState -Session $unauthenticatedSession) -eq 'Unauthenticated') -Message 'Authentication session state reports unauthenticated session'
+
+$cacheKey = New-HybridAuthenticationCacheKey -AuthenticationRequest $explicitRequest
+Assert-Pass -Condition ($cacheKey.PSTypeNames -contains 'Hybrid.AuthenticationCacheKey') -Message 'Authentication cache key has platform type name'
+Assert-Pass -Condition ($cacheKey.TenantId -eq $tenant.TenantId) -Message 'Authentication cache key includes tenant id'
+Assert-Pass -Condition ($cacheKey.CloudEnvironment -eq 'GccHigh') -Message 'Authentication cache key includes cloud environment'
+Assert-Pass -Condition ($cacheKey.MethodName -eq 'InteractiveBrowser') -Message 'Authentication cache key includes method name'
+Assert-Pass -Condition ($cacheKey.ScopeKey -eq 'User.Read') -Message 'Authentication cache key normalizes scopes'
+
+$cacheEntry = New-HybridAuthenticationCacheEntry -CacheKey $cacheKey -Session $descriptorSession
+Assert-Pass -Condition ($cacheEntry.PSTypeNames -contains 'Hybrid.AuthenticationCacheEntry') -Message 'Authentication cache entry has platform type name'
+Assert-Pass -Condition ($cacheEntry.Key -eq $cacheKey.Key) -Message 'Authentication cache entry preserves key'
+Assert-Pass -Condition ($cacheEntry.Session.SessionId -eq $descriptorSession.SessionId) -Message 'Authentication cache entry attaches session'
+Assert-Pass -Condition ($cacheEntry.State -eq 'Valid') -Message 'Authentication cache entry records session state'
+
 Set-HybridAuthenticationPolicy -Policy (New-HybridAuthenticationPolicy) | Out-Null
 
 Write-Host ''
-Write-Host 'Milestone 5 Phase 3 authentication framework tests passed.' -ForegroundColor Cyan
+Write-Host 'Milestone 5 Phase 4 session and token contract tests passed.' -ForegroundColor Cyan
