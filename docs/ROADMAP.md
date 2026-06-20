@@ -1,329 +1,218 @@
-# Hybrid Administration Platform Roadmap
+# Hybrid Administration Platform (HAP)
 
-## Vision
+**Document**
+Roadmap
 
-Hybrid Administration Platform (HAP) is a modular PowerShell application designed to simplify administration of hybrid Microsoft environments.
+**Purpose**
+Defines the planned evolution of the Hybrid Administration Platform from its current state through the initial production release.
 
-The platform is:
-
-* Enterprise-first
-* Profile-driven
-* Provider-agnostic
-* Plugin-native
-* Offline developable
-* Commercially extensible
-
-Atlas Technologies serves as the initial deployment profile and reference implementation. Long-term, the platform will support multiple organizations through configuration profiles without requiring code changes.
+**Scope**
+This roadmap describes strategic platform milestones. Detailed implementation work is tracked independently.
 
 ---
 
-## Development Philosophy
+# Vision
 
-Every feature must satisfy the following principles:
+Hybrid Administration Platform is being developed as a modular, provider-driven enterprise administration platform.
 
-* Enterprise quality over rapid implementation
-* Separation of concerns
-* Strong typing where practical
-* Testability
-* Extensibility
-* Documentation-first
-* Provider abstraction
-* UI independence
-* Performance through caching
-* Safe by default
+Development is intentionally infrastructure-first.
+
+Each milestone establishes reusable platform capabilities before building features that depend upon them.
+
+The long-term objective is to support multiple organizations, multiple cloud environments, and multiple providers through reusable infrastructure rather than customer-specific implementations.
 
 ---
 
-## Current Progress
+# Version 0.5 — Cloud Platform Foundation
 
-### Version 0.4.0
+## Objective
 
-Status: Released
+Establish the shared cloud infrastructure required for all future Microsoft cloud providers.
 
-Completed:
+Microsoft Graph is the first implementation built upon this foundation.
 
-* Core framework
-* Domain foundation
-* Hybrid User Engine
-* Active Directory Provider
-* Shared provider base
-* Provider lifecycle
-* Provider health
-* Capability discovery
+## Deliverables
 
----
+### Platform Infrastructure
 
-## Milestone 1 - Core Framework
+* Authentication Framework
+* Authentication Manager
+* Authentication Policies
+* Token Cache
+* Cloud Environment Abstraction
+* Endpoint Resolution
+* Tenant Context
+* Organization Context
+* HTTP Request Pipeline
+* Retry Policies
+* Paging Infrastructure
+* Provider Telemetry
+* Provider Health
+* Capability Discovery
 
-Status: Complete
+### Microsoft Graph
 
-Completed:
+* Graph Infrastructure
+* Graph Client
+* Graph Provider
+* Graph User Services
+* Graph Group Services
+* Graph Device Services
+* Graph Organization Services
+* Graph Model Conversion
 
-* Bootstrap
-* Module Loader
-* Configuration Manager
-* Logging Framework
-* Service Registry
-* Plugin Loader
-* Mock Provider
-* Shell Host
-* Framework Test Harness
+### Engineering
 
----
+* Automated Tests
+* Documentation
+* Provider Contracts
+* Shared Infrastructure
 
-## Milestone 2 - Domain Foundation
+## Exit Criteria
 
-Status: Complete
-
-Completed:
-
-* Domain Models
-* User Service
-* Mock Directory Provider
-* Search-HybridUser
-* Get-HybridUser
-* Initial Unit Tests
-
----
-
-## Milestone 3 - Hybrid User Engine
-
-Status: Complete
-
-Objective:
-
-Create the canonical HybridUser object used throughout the platform.
-
-Completed:
-
-* Strong domain models
-* User hydration
-* Mailbox hydration
-* Group hydration
-* Device hydration
-* License hydration
-* Manager hydration
-* Direct Reports hydration
-* Cache integration
-* Unit tests
-
-Result:
-
-Every UI component consumes one HybridUser object.
+Cloud providers can be developed without implementing authentication, paging, retry logic, endpoint resolution, or common infrastructure.
 
 ---
 
-## Milestone 4 - Active Directory Provider
+# Version 0.6 — Microsoft Cloud Platform
 
-Status: Complete
+## Objective
 
-Objective:
+Complete the Microsoft identity and productivity platform.
 
-Extract Active Directory functionality from the legacy application into a provider-driven infrastructure module.
+## Deliverables
 
-Completed:
-
-* Search
-* User retrieval
-* Groups
-* Manager
-* Direct Reports
-* Password Reset
-* Enable / Disable
-* Unlock
-* OU operations
-* Group add / remove
-* Manager update
-* Provider registration
-* Shared provider base
-* Provider lifecycle
-* Provider health
-* Capability discovery
-* Command wrapper
-* Cache integration
-* Structured errors
-* NoNet support
-* Provider contract tests
-
-Result:
-
-Active Directory is now represented by a provider that follows the shared platform provider contract.
-
----
-
-## Milestone 5 - Microsoft Graph Provider
-
-Status: Next
-
-Objective:
-
-Create a Microsoft Graph provider for Entra ID and Graph-backed identity data.
-
-Deliverables:
-
-* Provider skeleton using shared provider base
-* GCC High endpoint support
-* App-only authentication
-* Delegated authentication
-* Delegated PIM-compatible role access
-* User properties
-* Authentication methods
-* Azure roles
-* Conditional Access information
-* Devices
-* Sign-in information
-* Risk information
-* Provider health
-* Capability discovery
-* Unit tests
-
----
-
-## Milestone 6 - Exchange Provider
-
-Deliverables:
-
-* Mailboxes
-* Delegation
-* Shared Mailboxes
+* Exchange Online Provider
+* Intune Provider
+* Entra Directory Services
+* Licensing
+* Administrative Units
+* Role Management
+* Organization Management
+* Device Management
+* Mailbox Management
 * Distribution Groups
-* Mail Contacts
-* Forwarders
-* Send As
-* Send on Behalf
-* Full Access
+
+## Exit Criteria
+
+Microsoft cloud identity and productivity services are available through provider abstraction.
 
 ---
 
-## Milestone 7 - Intune Provider
+# Version 0.7 — Azure Platform
 
-Deliverables:
+## Objective
 
-* Devices
-* Compliance
-* Primary User
-* BitLocker
-* Autopilot
-* Device Actions
+Expand HAP into Azure resource administration.
+
+## Deliverables
+
+* Azure Resource Manager
+* Virtual Machines
+* Bastion
+* Storage
+* Networking
+* Key Vault
+* Defender
+* Monitoring
+* Resource Groups
+
+## Exit Criteria
+
+Azure infrastructure is managed through reusable platform providers.
 
 ---
 
-## Milestone 8 - Workflow Engine
+# Version 0.8 — Workflow Engine
 
-Deliverables:
+## Objective
 
+Provide reusable orchestration for enterprise administration.
+
+## Deliverables
+
+* Workflow Framework
 * Create User
-* Disable User
-* Move User
-* Change Manager
-* Password Reset
-* Azure AD Sync
-* Sync All DCs
-* Employee Transfers
+* Employee Transfer
 * Offboarding
+* Password Reset
+* Azure Synchronization
+* Domain Controller Synchronization
+* Approval Workflows
+* Background Jobs
+* Audit History
+
+## Exit Criteria
+
+Administrative operations are implemented as reusable workflows rather than UI logic.
 
 ---
 
-## Milestone 9 - Modern UI
+# Version 0.9 — User Experience
 
-Deliverables:
+## Objective
+
+Build a modern administrative experience on top of the completed platform.
+
+## Deliverables
 
 * Dashboard
-* Navigation
+* Navigation Framework
 * Dynamic Cards
 * Search
 * Notifications
 * Theme Engine
+* Plugin Host
 * Command Palette
+* Background Operations
 * Debug Console
 
----
+## Exit Criteria
 
-## Milestone 10 - Atlas Feature Migration
-
-Goal:
-
-Retire the legacy application.
-
-Includes:
-
-* User Overview
-* Azure Cards
-* Exchange Cards
-* Group Management
-* Azure AD Roles
-* Mailbox Delegation
-* Utilities
-* Azure Sync
-* DC Sync
-* Search Experience
+The UI consumes application services without direct knowledge of provider implementations.
 
 ---
 
-## Milestone 11 - Plugin SDK
+# Version 1.0 — Enterprise Release
 
-Deliverables:
+## Objective
 
-* Plugin API
-* Dynamic Menu Registration
-* Command Registration
-* Dependency Injection
-* Plugin Discovery
-* Plugin Lifecycle
-* SDK Documentation
+Deliver the first production-ready release of HAP.
 
-Initial Plugins:
+## Deliverables
 
+* Legacy Migration Complete
+* Atlas Production Profile
+* Installer
+* Automatic Updates
+* Code Signing
+* Profile Manager
+* Branding Support
+* Plugin SDK
+* Documentation Complete
+* Release Pipeline
+
+## Exit Criteria
+
+The platform is capable of supporting multiple organizations through configuration while maintaining provider independence, enterprise security, and reusable platform infrastructure.
+
+---
+
+# Beyond Version 1.0
+
+Future development will focus on expanding provider support, workflow capabilities, and platform extensibility.
+
+Potential areas include:
+
+* VMware
 * ScreenConnect
 * JAMIS
 * Zammad
-* Bastion
-* Defender
-* VMware
 * DNS
 * DHCP
+* SQL
+* REST Providers
+* Community SDK
+* Additional Cloud Providers
 
----
-
-## Milestone 12 - Productization
-
-Deliverables:
-
-* Installer
-* Automatic Updates
-* Configuration Wizard
-* Profile Manager
-* Branding Engine
-* Documentation Generator
-* Code Signing
-* Release Pipeline
-
----
-
-## Version Targets
-
-| Version | Target                              |
-| ------- | ----------------------------------- |
-| 0.2     | Core Framework                      |
-| 0.3     | Hybrid User Engine                  |
-| 0.4     | Infrastructure Provider Foundation  |
-| 0.5     | Graph / Exchange / Intune Providers |
-| 0.6     | Workflow Engine                     |
-| 0.7     | Modern UI                           |
-| 0.8     | Plugin SDK                          |
-| 0.9     | Beta                                |
-| 1.0     | Production Release                  |
-
----
-
-## Success Criteria
-
-Version 1.0 is ready when:
-
-* No dependency on the legacy application remains.
-* All functionality is provider-driven.
-* The UI consumes only application services.
-* Every module is independently testable.
-* The application supports multiple customer profiles.
-* New functionality can be added through plugins without modifying the core framework.
-* The platform can be deployed to a new organization by creating a profile rather than changing source code.
+Future roadmap items should continue following the architectural principles established by HAP rather than introducing platform-specific implementations.

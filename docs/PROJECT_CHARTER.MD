@@ -1,123 +1,164 @@
-Hybrid Administration Platform (HAP)
-Mission
+# Hybrid Administration Platform (HAP)
 
-We are building a commercial-quality Hybrid Administration Platform in PowerShell.
+## 1. Mission
 
-The current customer profile is Atlas Technologies.
+Hybrid Administration Platform (HAP) is an enterprise administration platform built in PowerShell.
 
-The architecture must be designed so Atlas is simply a profile, not hardcoded into the application.
+The platform provides a unified administration experience across on-premises, cloud, and third-party systems through a modular, provider-driven architecture.
 
-The end goal is a product that can support multiple organizations through profiles and plugins.
+Atlas Technologies is the initial implementation profile. No customer-specific logic belongs in the platform itself.
 
-Development Rules
-Treat this as an enterprise software project.
-No quick hacks.
-Favor maintainability over short-term convenience.
-Every module must have a single responsibility.
-Every exported function must be documented.
-Every module should be testable independently.
-No UI code inside Infrastructure.
-No Infrastructure code inside UI.
-No module imports another module directly; only the bootstrap loads modules.
-All services are obtained through the Service Registry.
-All external systems (AD, Graph, Exchange, Intune, Azure, etc.) live in Infrastructure.
-Everything logs through the central logging framework.
-Use Set-StrictMode -Version Latest in all modules.
-Follow approved naming conventions (Get-HybridUser, Write-HybridLog, etc.).
-Architecture
-src/
-    Core/
-    Domain/
-    Application/
-    Infrastructure/
-    UI/
-    Plugins/
-    Workflows/
+The platform is designed to support multiple organizations, multiple environments, and multiple cloud tenants through configuration rather than source code changes.
 
-profiles/
-    Atlas/
-    Mock/
+---
 
-legacy/
+# 2. Vision
 
-tests/
+HAP is designed as a long-lived software platform rather than a collection of administration scripts.
 
-docs/
+The objective is to build reusable infrastructure that allows new providers, workflows, plugins, and customer profiles to be added with minimal changes to the core platform.
 
-assets/
-Milestone Progress
-✅ Milestone 1 Complete
-Bootstrap
-Module Loader
-Configuration
-Logging
-Service Registry
-Plugin Loader
-Mock Provider
-Shell
-Framework Tests
-✅ Milestone 2 Complete
-Domain Models
-Mock User Service
-Search-HybridUser
-Get-HybridUser
-Initial User Service Tests
+Every architectural decision should improve maintainability, extensibility, and consistency across the platform.
 
-Hydration of Mailbox, Groups, Devices, and Licenses is deferred to the next enhancement.
+---
 
-Development Workflow
-Git repository
-main is always stable.
-Work is done on feature branches.
-Treat every response as if it were a pull request.
-Prefer complete module replacements over partial snippets.
-Generate production-quality code.
-Long-Term Roadmap
+# 3. Core Principles
 
-Milestone 3:
+The following principles are non-negotiable.
 
-Real class-based domain models
-Full user hydration
-User Overview cards
-AD provider
-Graph provider abstraction
+## 3.1 Enterprise First
 
-Milestone 4:
+Enterprise architecture always takes precedence over short-term implementation convenience.
 
-Create User workflow
-Disable User
-Password Reset
-Move User
-Change Manager
+Quick fixes, duplicated logic, milestone-specific hacks, and customer-specific code are not acceptable.
 
-Milestone 5:
+---
 
-Exchange
-Intune
-Azure
-Devices
-Licensing
+## 3.2 Provider Independence
 
-Milestone 6:
+Business logic must never depend on a specific technology.
 
-WPF Shell
-Navigation
-Dashboard
-Plugin host
+Active Directory, Microsoft Graph, Exchange Online, Intune, Azure, VMware, JAMIS, ScreenConnect, and future integrations are all implementations of provider contracts.
 
-Milestone 7:
+Providers are replaceable.
 
-ScreenConnect
-JAMIS
-Zammad
-Bastion
-Defender
-VMware
-DNS/DHCP
-Current Status
+The remainder of the platform should not require modification when a provider changes.
 
-Repository initialized.
+---
 
-Milestones 1 and 2 committed.
+## 3.3 Infrastructure Before Features
 
-Next task is Milestone 3.
+Whenever multiple features require the same capability, shared infrastructure must be built before implementing those features.
+
+Examples include authentication, caching, retry policies, paging, telemetry, provider health, logging, configuration, and capability discovery.
+
+---
+
+## 3.4 Stable Domain Models
+
+Hybrid domain models are the canonical representation of platform data.
+
+Provider-specific objects must never leave the provider layer.
+
+All providers are responsible for translating native objects into Hybrid domain models.
+
+---
+
+## 3.5 Separation of Responsibilities
+
+Every module has a single responsibility.
+Dependencies flow downward through the architecture.
+
+UI components never communicate directly with infrastructure.
+
+Infrastructure never contains presentation logic.
+
+Business logic remains independent of both.
+
+---
+
+## 3.6 Testability
+
+Every architectural component must be independently testable.
+
+Every milestone must include automated tests covering new functionality, abstractions, and failure conditions.
+
+A milestone is not complete until all tests pass.
+
+---
+
+## 3.7 Documentation
+
+Documentation is part of the product.
+
+Architectural decisions, public interfaces, and platform behavior must be documented as the platform evolves.
+
+---
+
+# 4. Authentication Principles
+
+Authentication is a platform service.
+
+Providers must never implement authentication directly.
+
+Authentication services are responsible for:
+
+* Session acquisition
+* Token lifecycle
+* Token caching
+* Cloud endpoint selection
+* Tenant selection
+* Authentication policy
+* Delegated and application permissions
+
+Providers consume authenticated sessions.
+
+They do not acquire credentials.
+
+Device Code Flow is intentionally unsupported.
+
+Authentication methods must align with enterprise security practices including Conditional Access, MFA, PIM, Zero Trust, GCC High, DoD, and CMMC requirements.
+
+---
+
+# 5. Multi-Tenant Architecture
+
+Organizations and Microsoft tenants are separate concepts.
+
+An organization may contain one or more tenant profiles.
+
+Each tenant profile defines:
+
+* Cloud environment
+* Tenant identifier
+* Authentication configuration
+* Provider configuration
+* Service endpoints
+* Capabilities
+
+Providers operate against an explicit tenant context.
+
+The platform must never assume an organization maps to a single Microsoft tenant or cloud.
+
+---
+
+# 6. Definition of Done
+
+A milestone is complete only when:
+
+* Architecture is consistent with platform principles.
+* Shared infrastructure has been extracted where appropriate.
+* Provider abstraction is preserved.
+* Automated tests are complete.
+* Existing tests continue to pass.
+* Documentation has been updated.
+* Public interfaces remain stable.
+* Code quality meets production standards.
+
+---
+
+# 7. Long-Term Objective
+
+The long-term objective is to establish a reusable administration platform capable of supporting multiple organizations through profiles, providers, plugins, and workflows while sharing common platform infrastructure.
+
+Adding a new provider should primarily consist of implementing provider-specific operations while reusing authentication, configuration, caching, logging, telemetry, capability discovery, dependency injection, and other shared platform services already provided by HAP.

@@ -1,3 +1,5 @@
+New contributors and future development sessions should begin with ENGINEERING_GUIDE.md
+
 # Hybrid Administration Platform
 
 Hybrid Administration Platform is a modular PowerShell-based enterprise administration framework for hybrid Microsoft environments.
