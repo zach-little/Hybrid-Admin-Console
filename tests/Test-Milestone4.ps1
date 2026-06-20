@@ -10,8 +10,16 @@ $Root = Split-Path -Parent $PSScriptRoot
 $Source = Join-Path $Root 'src'
 
 function Assert-True {
-    param([bool]$Condition, [string]$Message)
-    if (-not $Condition) { throw "ASSERT FAILED: $Message" }
+    param($Condition, [string]$Message)
+
+    $value = $Condition
+    if ($null -ne $value -and $value -is [array]) {
+        if ($value.Count -eq 0) { $value = $false }
+        elseif ($value.Count -eq 1) { $value = [bool]$value[0] }
+        else { throw "ASSERT ERROR: $Message returned multiple values instead of one Boolean." }
+    }
+
+    if (-not [bool]$value) { throw "ASSERT FAILED: $Message" }
     Write-Host "PASS: $Message" -ForegroundColor Green
 }
 
@@ -86,9 +94,14 @@ function Get-ADUser {
         [pscredential]$Credential
     )
 
+    $global:HybridADTestOperations += [pscustomobject]@{ Name = 'Get-ADUser'; Identity = $(if ($PSBoundParameters.ContainsKey('Identity')) { $Identity } else { $Filter }); Detail = 'Read' }
+
     if ($PSBoundParameters.ContainsKey('Identity')) {
+        if ($Identity -eq 'denied') { throw 'Access is denied' }
         return Find-TestADUser -Identity $Identity
     }
+
+    if ($Filter -match 'denied') { throw 'Access is denied' }
 
     if ([string]::IsNullOrWhiteSpace($Filter) -or $Filter -eq '*') {
         return @($global:HybridADTestUsers | Select-Object -First $(if ($ResultSetSize -gt 0) { $ResultSetSize } else { 100 }))
@@ -111,6 +124,7 @@ function Get-ADPrincipalGroupMembership {
         [pscredential]$Credential
     )
 
+    $global:HybridADTestOperations += [pscustomobject]@{ Name = 'Get-ADPrincipalGroupMembership'; Identity = $Identity; Detail = 'Read' }
     return @($global:HybridADTestGroups[$Identity])
 }
 
@@ -181,6 +195,7 @@ function Get-ADOrganizationalUnit {
         [pscredential]$Credential
     )
 
+    $global:HybridADTestOperations += [pscustomobject]@{ Name = 'Get-ADOrganizationalUnit'; Identity = $Filter; Detail = 'Read' }
     if ([string]::IsNullOrWhiteSpace($Filter) -or $Filter -eq '*') { return @($global:HybridADTestOUs) }
     if ($Filter -match "'([^']+)'") {
         $term = $Matches[1].Trim('*')
@@ -211,7 +226,11 @@ Initialize-HybridConfiguration -Context $Context -ProfileName $Profile | Out-Nul
 Initialize-HybridTheme -Context $Context | Out-Null
 Initialize-HybridApplicationServices -Context $Context | Out-Null
 
+Assert-True (($loaded | Where-Object { $_.Name -eq 'Core.ProviderBase' } | Measure-Object).Count -eq 1) 'Provider base module loaded'
 Assert-True (($loaded | Where-Object { $_.Name -eq 'Infrastructure.ActiveDirectory' } | Measure-Object).Count -eq 1) 'Active Directory provider module loaded'
+Assert-True ($null -ne (Get-Command New-HybridProviderState -ErrorAction SilentlyContinue)) 'Provider state factory exported'
+Assert-True ($null -ne (Get-Command New-HybridProviderService -ErrorAction SilentlyContinue)) 'Provider service factory exported'
+Assert-True ($null -ne (Get-Command Get-HybridProviderHealth -ErrorAction SilentlyContinue)) 'Provider health helper exported'
 Assert-True ($null -ne (Get-Command Initialize-HybridActiveDirectoryProvider -ErrorAction SilentlyContinue)) 'Initialize-HybridActiveDirectoryProvider exported'
 Assert-True ($null -ne (Get-Command ConvertTo-HybridADUser -ErrorAction SilentlyContinue)) 'ConvertTo-HybridADUser exported'
 Assert-True ($null -ne (Get-Command Search-HybridADUser -ErrorAction SilentlyContinue)) 'Search-HybridADUser exported'
@@ -226,10 +245,21 @@ Assert-True ($null -ne (Get-Command Set-HybridADUserManager -ErrorAction Silentl
 Assert-True ($null -ne (Get-Command Add-HybridADUserGroupMembership -ErrorAction SilentlyContinue)) 'Group add command exported'
 Assert-True ($null -ne (Get-Command Remove-HybridADUserGroupMembership -ErrorAction SilentlyContinue)) 'Group remove command exported'
 Assert-True ($null -ne (Get-Command Search-HybridADOrganizationalUnit -ErrorAction SilentlyContinue)) 'OU search command exported'
+Assert-True ($null -ne (Get-Command Clear-HybridADProviderCache -ErrorAction SilentlyContinue)) 'AD provider cache clear command exported'
+Assert-True ($null -ne (Get-Command Get-HybridADProviderHealth -ErrorAction SilentlyContinue)) 'AD provider health command exported'
+Assert-True ($null -ne (Get-Command Test-HybridADProviderCapability -ErrorAction SilentlyContinue)) 'AD provider capability command exported'
+Assert-True ($null -ne (Get-Command Get-HybridADProviderCapabilities -ErrorAction SilentlyContinue)) 'AD provider capabilities command exported'
 
 $adService = Initialize-HybridActiveDirectoryProvider -Context $Context -NoNet
 Assert-True ($adService.PSObject.TypeNames -contains 'Hybrid.ActiveDirectoryService') 'NoNet initialization returns Active Directory service object'
+Assert-True ($adService.PSObject.TypeNames -contains 'Hybrid.ProviderService') 'AD service extends common provider service contract'
 Assert-True ($adService.ProviderAvailable -eq $false) 'NoNet initialization does not require RSAT or domain access'
+Assert-True ($adService.Supports.Invoke('ProviderHealth') -eq $true) 'AD service supports provider health capability'
+Assert-True ($adService.Supports.Invoke('CapabilityDiscovery') -eq $true) 'AD service supports capability discovery'
+$noNetHealth = @($adService.GetHealth.Invoke())[0]
+Assert-True ($noNetHealth.PSObject.TypeNames -contains 'Hybrid.ActiveDirectoryProviderHealth') 'AD health object has provider-specific type name'
+Assert-True ($noNetHealth.Name -eq 'ActiveDirectory') 'AD health reports provider name'
+Assert-True ($noNetHealth.Available -eq $false) 'NoNet AD health reports unavailable runtime provider'
 Assert-True (Test-HybridService -Name 'Directory') 'Existing mock Directory service remains registered during NoNet AD initialization'
 
 $rawAdUser = New-TestADUser `
@@ -287,6 +317,14 @@ Assert-True ($null -ne $adService.SetUserManager) 'Directory service exposes man
 Assert-True ($null -ne $adService.AddUserToGroup) 'Directory service exposes group add operation'
 Assert-True ($null -ne $adService.RemoveUserFromGroup) 'Directory service exposes group remove operation'
 Assert-True ($null -ne $adService.SearchOU) 'Directory service exposes OU search operation'
+Assert-True ($adService.Capabilities -contains 'CommandWrapper') 'Directory service declares command wrapper capability'
+Assert-True ($adService.Capabilities -contains 'StructuredErrors') 'Directory service declares structured error capability'
+Assert-True ($adService.Capabilities -contains 'Caching') 'Directory service declares caching capability'
+Assert-True ($adService.Capabilities -contains 'ProviderHealth') 'Directory service declares provider health capability'
+Assert-True ($adService.Capabilities -contains 'CapabilityDiscovery') 'Directory service declares capability discovery capability'
+Assert-True ($adService.Supports.Invoke('Unlock') -eq $true) 'Directory service Supports reports enabled capabilities'
+$unsupportedCapability = [bool](@($adService.Supports.Invoke('Autopilot'))[0])
+Assert-True (-not $unsupportedCapability) 'Directory service Supports rejects unsupported capabilities'
 
 $searchResults = @(Search-HybridADUser -Query 'Alex')
 Assert-True ($searchResults.Count -eq 1) 'AD search returns matching user'
@@ -301,6 +339,9 @@ Assert-True (@($hydrated.Attributes.DirectReports).Count -eq 1) 'AD user retriev
 $groups = @(Get-HybridADUserGroups -Identity 'amorgan')
 Assert-True (($groups | Where-Object { $_.Name -eq 'Domain Users' }).IsDefault -eq $true) 'Domain Users group is marked default'
 Assert-True (($groups | Where-Object { $_.Name -eq 'IT Admins' }).Source -eq 'ActiveDirectory') 'AD group source is ActiveDirectory'
+$groupsAgain = @(Get-HybridADUserGroups -Identity 'amorgan')
+Assert-True ($groupsAgain.Count -eq 2) 'Cached group lookup returns groups'
+Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Get-ADPrincipalGroupMembership' -and $_.Identity -eq 'amorgan' } | Measure-Object).Count -eq 1) 'Group lookup is served from provider cache on repeated reads'
 
 $manager = Get-HybridADUserManager -Identity 'amorgan'
 Assert-True ($manager.SamAccountName -eq 'mrivera') 'Manager lookup returns expected manager'
@@ -331,7 +372,26 @@ Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Unloc
 Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Set-ADUserManager' -and $_.Identity -eq 'amorgan' -and $_.Detail -eq 'mrivera' } | Measure-Object).Count -eq 1) 'Manager write calls AD set user cmdlet'
 Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Add-ADGroupMember' -and $_.Identity -eq 'amorgan' -and $_.Detail -eq 'IT Admins' } | Measure-Object).Count -eq 1) 'Group add calls AD group cmdlet'
 Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Remove-ADGroupMember' -and $_.Identity -eq 'amorgan' -and $_.Detail -eq 'IT Admins' } | Measure-Object).Count -eq 1) 'Group remove calls AD group cmdlet'
+Get-HybridADUserGroups -Identity 'amorgan' | Out-Null
+Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Get-ADPrincipalGroupMembership' -and $_.Identity -eq 'amorgan' } | Measure-Object).Count -eq 2) 'Write operations invalidate provider cache'
 Assert-True (($global:HybridADTestOperations | Where-Object { $_.Name -eq 'Move-ADObject' -and $_.Identity -eq 'CN=Alex Morgan,OU=Users,DC=atlas-tech,DC=com' -and $_.Detail -eq 'OU=Disabled Users,DC=atlas-tech,DC=com' } | Measure-Object).Count -eq 1) 'OU move calls AD object move cmdlet'
+
+$health = Get-HybridADProviderHealth
+Assert-True ($health.Available -eq $true) 'AD health reports runtime provider availability'
+Assert-True ($health.Connected -eq $true) 'AD health reports connected state when provider is available'
+Assert-True ($health.CommandCount -gt 0) 'AD health reports command history'
+Assert-True ($health.CacheEntries -ge 0) 'AD health reports cache entry count'
+Assert-True (@($health.Capabilities) -contains 'PasswordReset') 'AD health includes provider capabilities'
+
+$structuredErrorThrown = $false
+try {
+    Get-HybridADUser -Identity 'denied' | Out-Null
+}
+catch {
+    $structuredErrorThrown = $true
+    Assert-True ($_.Exception.Data['HybridErrorCode'] -eq 'AccessDenied') 'AD command wrapper maps access denied to structured error code'
+}
+Assert-True $structuredErrorThrown 'AD command wrapper throws structured provider exception'
 
 Write-Host ''
 Write-Host 'Milestone 4 Active Directory provider tests passed.' -ForegroundColor Cyan
