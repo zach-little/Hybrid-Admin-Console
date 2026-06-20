@@ -171,3 +171,34 @@ Providers should not call `Invoke-RestMethod` directly once they are implemented
 - Providers do not create HTTP error shapes directly.
 - Cloud provider HTTP behavior belongs in the shared pipeline.
 - Live transports are deferred until the Microsoft Graph foundation phase.
+
+### Phase 6: Microsoft Graph Foundation
+
+Phase 6 introduces the first cloud provider foundation built on the Version 0.5 platform services.
+
+The Graph provider is intentionally thin. It consumes:
+
+- `Core.CloudEnvironment` for sovereign Microsoft Graph endpoint resolution.
+- `Core.TenantContext` for tenant identity and selected cloud.
+- `Core.Authentication` for authentication session contracts.
+- `Core.HttpPipeline` for request execution, headers, retry behavior, diagnostics, and token injection.
+
+Graph modules introduced in this phase:
+
+- `Graph.Client` creates cloud-aware Graph clients and Graph requests.
+- `Graph.Provider` registers the Microsoft Graph provider and reports capabilities and health.
+- `Graph.Users` provides initial user request wrappers.
+- `Graph.Groups` provides initial group request wrappers.
+- `Graph.Organization` provides the initial organization request wrapper.
+- `Graph.Models` defines initial Graph-to-Hybrid conversion contracts.
+
+Phase 6 remains offline-testable. It does not acquire tokens, load MSAL, call Microsoft Graph, or require internet access. All tests use mock HTTP transports through the shared HTTP pipeline.
+
+#### Graph Provider Rules
+
+- Graph modules must not authenticate directly.
+- Graph modules must not call `Invoke-RestMethod` directly.
+- Graph modules must not hard-code Microsoft cloud endpoints.
+- Graph modules must consume the shared HTTP pipeline.
+- Graph modules must return Hybrid platform objects or pipeline responses.
+- Live Microsoft Graph behavior belongs in later phases and versions after the shared foundation is complete.

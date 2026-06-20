@@ -41,6 +41,12 @@ $authenticationModulePath = Join-Path $RepoRoot 'src\Core\Core.Authentication.ps
 $httpResponseModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpResponse.psm1'
 $httpRetryModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpRetry.psm1'
 $httpPipelineModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpPipeline.psm1'
+$graphProviderModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Provider.psm1'
+$graphClientModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Client.psm1'
+$graphModelsModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Models.psm1'
+$graphUsersModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Users.psm1'
+$graphGroupsModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Groups.psm1'
+$graphOrganizationModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Organization.psm1'
 
 Import-Module $cloudModulePath -Force
 Import-Module $tenantModulePath -Force
@@ -49,6 +55,12 @@ Import-Module $authenticationModulePath -Force
 Import-Module $httpResponseModulePath -Force
 Import-Module $httpRetryModulePath -Force
 Import-Module $httpPipelineModulePath -Force
+Import-Module $graphClientModulePath -Force
+Import-Module $graphModelsModulePath -Force
+Import-Module $graphUsersModulePath -Force
+Import-Module $graphGroupsModulePath -Force
+Import-Module $graphOrganizationModulePath -Force
+Import-Module $graphProviderModulePath -Force
 
 $cloudExports = Get-Command -Module Core.CloudEnvironment | Select-Object -ExpandProperty Name
 $tenantExports = Get-Command -Module Core.TenantContext | Select-Object -ExpandProperty Name
@@ -57,6 +69,12 @@ $authenticationExports = Get-Command -Module Core.Authentication | Select-Object
 $httpResponseExports = Get-Command -Module Core.HttpResponse | Select-Object -ExpandProperty Name
 $httpRetryExports = Get-Command -Module Core.HttpRetry | Select-Object -ExpandProperty Name
 $httpPipelineExports = Get-Command -Module Core.HttpPipeline | Select-Object -ExpandProperty Name
+$graphClientExports = Get-Command -Module Graph.Client | Select-Object -ExpandProperty Name
+$graphModelsExports = Get-Command -Module Graph.Models | Select-Object -ExpandProperty Name
+$graphUsersExports = Get-Command -Module Graph.Users | Select-Object -ExpandProperty Name
+$graphGroupsExports = Get-Command -Module Graph.Groups | Select-Object -ExpandProperty Name
+$graphOrganizationExports = Get-Command -Module Graph.Organization | Select-Object -ExpandProperty Name
+$graphProviderExports = Get-Command -Module Graph.Provider | Select-Object -ExpandProperty Name
 
 Assert-Pass -Condition ($cloudExports -contains 'New-HybridCloudEnvironment') -Message 'New-HybridCloudEnvironment exported'
 Assert-Pass -Condition ($cloudExports -contains 'Register-HybridCloudEnvironment') -Message 'Register-HybridCloudEnvironment exported'
@@ -109,6 +127,25 @@ Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPipeline')
 Assert-Pass -Condition ($httpPipelineExports -contains 'Invoke-HybridHttpPipeline') -Message 'Invoke-HybridHttpPipeline exported'
 Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPipelineDiagnostic') -Message 'New-HybridHttpPipelineDiagnostic exported'
 Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPaginationState') -Message 'New-HybridHttpPaginationState exported'
+
+Assert-Pass -Condition ($graphClientExports -contains 'New-HybridGraphClient') -Message 'New-HybridGraphClient exported'
+Assert-Pass -Condition ($graphClientExports -contains 'New-HybridGraphRequest') -Message 'New-HybridGraphRequest exported'
+Assert-Pass -Condition ($graphClientExports -contains 'Invoke-HybridGraphRequest') -Message 'Invoke-HybridGraphRequest exported'
+Assert-Pass -Condition ($graphClientExports -contains 'Resolve-HybridGraphUri') -Message 'Resolve-HybridGraphUri exported'
+Assert-Pass -Condition ($graphClientExports -contains 'Test-HybridGraphClient') -Message 'Test-HybridGraphClient exported'
+Assert-Pass -Condition ($graphModelsExports -contains 'ConvertFrom-HybridGraphUser') -Message 'ConvertFrom-HybridGraphUser exported'
+Assert-Pass -Condition ($graphModelsExports -contains 'ConvertFrom-HybridGraphGroup') -Message 'ConvertFrom-HybridGraphGroup exported'
+Assert-Pass -Condition ($graphModelsExports -contains 'ConvertFrom-HybridGraphOrganization') -Message 'ConvertFrom-HybridGraphOrganization exported'
+Assert-Pass -Condition ($graphUsersExports -contains 'Search-HybridGraphUser') -Message 'Search-HybridGraphUser exported'
+Assert-Pass -Condition ($graphUsersExports -contains 'Get-HybridGraphUser') -Message 'Get-HybridGraphUser exported'
+Assert-Pass -Condition ($graphGroupsExports -contains 'Search-HybridGraphGroup') -Message 'Search-HybridGraphGroup exported'
+Assert-Pass -Condition ($graphGroupsExports -contains 'Get-HybridGraphGroup') -Message 'Get-HybridGraphGroup exported'
+Assert-Pass -Condition ($graphOrganizationExports -contains 'Get-HybridGraphOrganization') -Message 'Get-HybridGraphOrganization exported'
+Assert-Pass -Condition ($graphProviderExports -contains 'Initialize-HybridGraphProvider') -Message 'Initialize-HybridGraphProvider exported'
+Assert-Pass -Condition ($graphProviderExports -contains 'Register-HybridGraphProvider') -Message 'Register-HybridGraphProvider exported'
+Assert-Pass -Condition ($graphProviderExports -contains 'Get-HybridGraphProviderHealth') -Message 'Get-HybridGraphProviderHealth exported'
+Assert-Pass -Condition ($graphProviderExports -contains 'Get-HybridGraphProviderCapability') -Message 'Get-HybridGraphProviderCapability exported'
+Assert-Pass -Condition ($graphProviderExports -contains 'Get-HybridGraphProviderCapabilities') -Message 'Get-HybridGraphProviderCapabilities exported'
 
 
 
@@ -360,5 +397,111 @@ $diagnostic = New-HybridHttpPipelineDiagnostic -CorrelationId $httpRequest.Corre
 Assert-Pass -Condition ($diagnostic.PSTypeNames -contains 'Hybrid.HttpPipelineDiagnostic') -Message 'HTTP pipeline diagnostic has platform type name'
 Assert-Pass -Condition ($diagnostic.State -eq 'Completed') -Message 'HTTP pipeline diagnostic records state'
 
+
+$graphCapturedRequests = New-Object System.Collections.Generic.List[object]
+$graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSession $descriptorSession -RetryPolicy (New-HybridHttpRetryPolicy -MaxAttempts 1 -DisableDelay) -Transport {
+    param($PreparedRequest, $Attempt)
+    $script:graphCapturedRequests.Add($PreparedRequest) | Out-Null
+
+    if ($PreparedRequest.Uri -like '*/users*' -and $PreparedRequest.Uri -notlike '*/users/*') {
+        return [pscustomobject]@{
+            StatusCode = 200
+            Headers = @{ 'request-id' = 'graph-users' }
+            Body = @{ value = @([pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@atlas-tech.com'; mail = 'amorgan@atlas-tech.com' }) }
+        }
+    }
+
+    if ($PreparedRequest.Uri -like '*/users/user-1') {
+        return [pscustomobject]@{
+            StatusCode = 200
+            Headers = @{ 'request-id' = 'graph-user' }
+            Body = [pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@atlas-tech.com'; mail = 'amorgan@atlas-tech.com' }
+        }
+    }
+
+    if ($PreparedRequest.Uri -like '*/groups*' -and $PreparedRequest.Uri -notlike '*/groups/*') {
+        return [pscustomobject]@{
+            StatusCode = 200
+            Headers = @{ 'request-id' = 'graph-groups' }
+            Body = @{ value = @([pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@atlas-tech.com' }) }
+        }
+    }
+
+    if ($PreparedRequest.Uri -like '*/groups/group-1') {
+        return [pscustomobject]@{
+            StatusCode = 200
+            Headers = @{ 'request-id' = 'graph-group' }
+            Body = [pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@atlas-tech.com' }
+        }
+    }
+
+    if ($PreparedRequest.Uri -like '*/organization') {
+        return [pscustomobject]@{
+            StatusCode = 200
+            Headers = @{ 'request-id' = 'graph-org' }
+            Body = @{ value = @([pscustomobject]@{ id = 'org-1'; displayName = 'Atlas Technologies'; verifiedDomains = @('atlas-tech.com') }) }
+        }
+    }
+
+    return [pscustomobject]@{ StatusCode = 404; Headers = @{}; Body = @{ error = 'not-found' } }
+}
+
+Assert-Pass -Condition ($graphClient.PSTypeNames -contains 'Hybrid.GraphClient') -Message 'Graph client has platform type name'
+Assert-Pass -Condition ($graphClient.BaseUri -eq 'https://graph.microsoft.us') -Message 'Graph client resolves GCC High endpoint'
+Assert-Pass -Condition (Test-HybridGraphClient -Client $graphClient) -Message 'Graph client validates'
+
+$dodTenant = New-HybridTenantContext -TenantId '22222222-2222-2222-2222-222222222222' -TenantName 'Atlas DoD' -CloudEnvironment $dod -VerifiedDomains @('atlas.mil')
+$dodRequest = New-HybridAuthenticationRequest -TenantContext $dodTenant -MethodName 'Interactive' -Scopes @('User.Read.All')
+$dodSession = New-HybridAuthenticationSession -AuthenticationRequest $dodRequest -AccessToken 'dod-token' -ExpiresOn ([datetime]::UtcNow.AddHours(1))
+$dodClient = New-HybridGraphClient -TenantContext $dodTenant -AuthenticationSession $dodSession -Transport { param($PreparedRequest, $Attempt) [pscustomobject]@{ StatusCode = 200; Headers = @{}; Body = @{} } }
+Assert-Pass -Condition ($dodClient.BaseUri -eq 'https://dod-graph.microsoft.us') -Message 'Graph client resolves DoD endpoint'
+
+$graphRequest = New-HybridGraphRequest -Client $graphClient -Path 'users' -Query @{ '$top' = 1 }
+Assert-Pass -Condition ($graphRequest.PSTypeNames -contains 'Hybrid.GraphRequest') -Message 'Graph request has platform type name'
+Assert-Pass -Condition ($graphRequest.Uri -like 'https://graph.microsoft.us/v1.0/users*') -Message 'Graph request builds versioned URI'
+
+$resolvedGraphUri = Resolve-HybridGraphUri -Client $graphClient -Path '/v1.0/groups'
+Assert-Pass -Condition ($resolvedGraphUri -eq 'https://graph.microsoft.us/v1.0/groups') -Message 'Graph URI resolver avoids duplicate API version'
+
+$graphResponse = Invoke-HybridGraphRequest -Client $graphClient -GraphRequest $graphRequest
+Assert-Pass -Condition ($graphResponse.Succeeded -eq $true) -Message 'Graph request uses shared HTTP pipeline'
+Assert-Pass -Condition ($script:graphCapturedRequests[0].Headers['Authorization'] -eq 'Bearer descriptor-token') -Message 'Graph request consumes authentication session'
+Assert-Pass -Condition ($script:graphCapturedRequests[0].Headers['Accept'] -eq 'application/json') -Message 'Graph client applies default headers'
+
+$graphUsers = @(Search-HybridGraphUser -Client $graphClient -Search 'Alex' -Top 1)
+Assert-Pass -Condition ($graphUsers.Count -eq 1) -Message 'Graph user search returns converted user'
+Assert-Pass -Condition ($graphUsers[0].PSTypeNames -contains 'Hybrid.User') -Message 'Graph user converts to Hybrid.User'
+Assert-Pass -Condition ($graphUsers[0].Source -eq 'MicrosoftGraph') -Message 'Graph user source is MicrosoftGraph'
+
+$graphUser = Get-HybridGraphUser -Client $graphClient -Id 'user-1'
+Assert-Pass -Condition ($graphUser.DisplayName -eq 'Alex Morgan') -Message 'Graph user get returns expected user'
+
+$graphGroups = @(Search-HybridGraphGroup -Client $graphClient -Search 'Service' -Top 1)
+Assert-Pass -Condition ($graphGroups.Count -eq 1) -Message 'Graph group search returns converted group'
+Assert-Pass -Condition ($graphGroups[0].PSTypeNames -contains 'Hybrid.Group') -Message 'Graph group converts to Hybrid.Group'
+Assert-Pass -Condition ($graphGroups[0].Source -eq 'MicrosoftGraph') -Message 'Graph group source is MicrosoftGraph'
+
+$graphGroup = Get-HybridGraphGroup -Client $graphClient -Id 'group-1'
+Assert-Pass -Condition ($graphGroup.DisplayName -eq 'Service Desk') -Message 'Graph group get returns expected group'
+
+$graphOrganization = Get-HybridGraphOrganization -Client $graphClient
+Assert-Pass -Condition ($graphOrganization.PSTypeNames -contains 'Hybrid.GraphOrganization') -Message 'Graph organization has platform type name'
+Assert-Pass -Condition ($graphOrganization.DisplayName -eq 'Atlas Technologies') -Message 'Graph organization returns expected organization'
+
+$graphProvider = Initialize-HybridGraphProvider -Client $graphClient
+Assert-Pass -Condition ($graphProvider.PSTypeNames -contains 'Hybrid.GraphProvider') -Message 'Graph provider has platform type name'
+Assert-Pass -Condition (($graphProvider.Capabilities | Where-Object { $_.Name -eq 'CloudAware' }).Enabled -eq $true) -Message 'Graph provider declares cloud-aware capability'
+Assert-Pass -Condition ((Get-HybridGraphProviderCapability -Name 'Users').Name -eq 'Users') -Message 'Graph provider capability lookup works'
+Assert-Pass -Condition ((Get-HybridGraphProviderCapabilities | Where-Object { $_.Name -eq 'HttpPipeline' }).Enabled -eq $true) -Message 'Graph provider declares HTTP pipeline capability'
+
+$registeredGraphProvider = Register-HybridGraphProvider -OrganizationContext $organization -Provider $graphProvider
+Assert-Pass -Condition ($registeredGraphProvider.Name -eq 'MicrosoftGraph') -Message 'Graph provider registers against organization context'
+Assert-Pass -Condition ((Get-HybridOrganizationProvider -OrganizationContext $organization -Name 'MicrosoftGraph').Name -eq 'MicrosoftGraph') -Message 'Organization context returns Graph provider'
+Assert-Pass -Condition ((Get-HybridOrganizationCapability -OrganizationContext $organization -Name 'MicrosoftGraph.Users').Name -eq 'Users') -Message 'Organization context returns Graph capability'
+
+$graphHealth = Get-HybridGraphProviderHealth -Provider $graphProvider
+Assert-Pass -Condition ($graphHealth.PSTypeNames -contains 'Hybrid.GraphProviderHealth') -Message 'Graph provider health has platform type name'
+Assert-Pass -Condition ($graphHealth.Status -eq 'Ready') -Message 'Graph provider health reports ready with valid client'
+
 Write-Host ''
-Write-Host 'Milestone 5 Phase 5 shared HTTP pipeline tests passed.' -ForegroundColor Cyan
+Write-Host 'Milestone 5 Phase 6 Microsoft Graph foundation tests passed.' -ForegroundColor Cyan
