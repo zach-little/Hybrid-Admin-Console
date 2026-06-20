@@ -2,7 +2,7 @@
 # Name: Application.UserService
 # Purpose: Provider-agnostic user service API for the Hybrid Administration Platform.
 # Dependencies: Core.ServiceRegistry, Hybrid.Models, a registered Directory service.
-# Exports: Initialize-HybridUserService, Search-HybridUser, Get-HybridUser, Get-HybridUserOverview, Get-HybridUserGroups, Get-HybridUserMailbox, Get-HybridUserDevices, Get-HybridUserLicenses
+# Exports: Initialize-HybridUserService, Search-HybridUser, Get-HybridUser, Get-HybridUserOverview, Get-HybridUserGroups, Get-HybridUserMailbox, Get-HybridUserDevices, Get-HybridUserLicenses, Get-HybridUserManager, Get-HybridUserDirectReports
 #endregion
 
 Set-StrictMode -Version Latest
@@ -73,6 +73,8 @@ function Initialize-HybridUserService {
         GetMailbox  = { param([string]$Identity) Get-HybridUserMailbox -Identity $Identity }
         GetDevices  = { param([string]$Identity) Get-HybridUserDevices -Identity $Identity }
         GetLicenses = { param([string]$Identity) Get-HybridUserLicenses -Identity $Identity }
+        GetManager  = { param([string]$Identity) Get-HybridUserManager -Identity $Identity }
+        GetDirectReports = { param([string]$Identity) Get-HybridUserDirectReports -Identity $Identity }
     }
 
     Register-HybridService -Name 'User' -Instance $userService -Description 'Provider-agnostic user application service.' -Provider 'Application' -Force | Out-Null
@@ -115,6 +117,20 @@ function Search-HybridUser {
     }
 }
 
+
+function Get-HybridUserCacheKey {
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$Scope
+    )
+
+    return ('User:{0}:{1}' -f $Scope, $Identity.ToLowerInvariant())
+}
+
+function Get-HybridCacheCommandAvailable {
+    return $null -ne (Get-Command Get-HybridCacheItem -ErrorAction SilentlyContinue) -and $null -ne (Get-Command Set-HybridCacheItem -ErrorAction SilentlyContinue)
+}
+
 function New-HybridHydratedUserCopy {
     param([Parameter(Mandatory=$true)][object]$User)
 
@@ -122,6 +138,8 @@ function New-HybridHydratedUserCopy {
     $mailbox = Get-HybridUserMailbox -Identity $User.SamAccountName
     $devices = @(Get-HybridUserDevices -Identity $User.SamAccountName)
     $licenses = @(Get-HybridUserLicenses -Identity $User.SamAccountName)
+    $managerUser = Get-HybridUserManager -Identity $User.SamAccountName
+    $directReports = @(Get-HybridUserDirectReports -Identity $User.SamAccountName)
 
     return New-HybridUser `
         -Id $User.Id `
@@ -139,6 +157,8 @@ function New-HybridHydratedUserCopy {
         -Office $User.Office `
         -Manager $User.Manager `
         -ManagerSamAccountName $User.ManagerSamAccountName `
+        -ManagerUser $managerUser `
+        -DirectReports $directReports `
         -Enabled $User.Enabled `
         -LockedOut $User.LockedOut `
         -Source $User.Source `
@@ -151,6 +171,9 @@ function New-HybridHydratedUserCopy {
             Mailbox  = ($null -ne $mailbox)
             Devices  = $true
             Licenses = $true
+            Manager = ($null -ne $managerUser -or [string]::IsNullOrWhiteSpace($User.ManagerSamAccountName))
+            DirectReports = $true
+            CacheSource = 'Miss'
         } `
         -Attributes $User.Attributes
 }
@@ -185,7 +208,22 @@ function Get-HybridUser {
         }
 
         if ($IncludeRelated) {
-            return New-HybridHydratedUserCopy -User $user
+            $cacheKey = Get-HybridUserCacheKey -Identity $Identity -Scope 'Hydrated'
+            if (Get-HybridCacheCommandAvailable) {
+                $cached = Get-HybridCacheItem -Key $cacheKey
+                if ($null -ne $cached) {
+                    if ($cached.PSObject.Properties.Name -contains 'Hydration') {
+                        $cached.Hydration.CacheSource = 'Hit'
+                    }
+                    return $cached
+                }
+            }
+
+            $hydrated = New-HybridHydratedUserCopy -User $user
+            if (Get-HybridCacheCommandAvailable) {
+                Set-HybridCacheItem -Key $cacheKey -Value $hydrated -TtlSeconds 300 | Out-Null
+            }
+            return $hydrated
         }
 
         return $user
@@ -284,6 +322,34 @@ function Get-HybridUserLicenses {
 
     return @(Invoke-HybridServiceScriptBlock -ScriptBlock $directory.GetUserLicenses -Arguments @($Identity))
 }
+
+function Get-HybridUserManager {
+    <#
+    .SYNOPSIS
+    Gets the manager for one user when the provider supports manager lookup.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $directory = Get-HybridDirectoryServiceOrThrow
+    if ($null -eq $directory.GetUserManager) { return $null }
+
+    return Invoke-HybridServiceScriptBlock -ScriptBlock $directory.GetUserManager -Arguments @($Identity)
+}
+
+function Get-HybridUserDirectReports {
+    <#
+    .SYNOPSIS
+    Gets direct reports for one user when the provider supports direct report lookup.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $directory = Get-HybridDirectoryServiceOrThrow
+    if ($null -eq $directory.GetUserDirectReports) { return @() }
+
+    return @(Invoke-HybridServiceScriptBlock -ScriptBlock $directory.GetUserDirectReports -Arguments @($Identity))
+}
 #endregion
 
 #region Initialization
@@ -295,6 +361,8 @@ Export-ModuleMember -Function @(
     'Get-HybridUserGroups',
     'Get-HybridUserMailbox',
     'Get-HybridUserDevices',
-    'Get-HybridUserLicenses'
+    'Get-HybridUserLicenses',
+    'Get-HybridUserManager',
+    'Get-HybridUserDirectReports'
 )
 #endregion
