@@ -2,7 +2,7 @@
 # Name: Hybrid.Models
 # Purpose: Canonical domain model factory functions for Hybrid Administration Platform.
 # Dependencies: None
-# Exports: New-HybridResult, New-HybridUser, New-HybridGroup, New-HybridMailbox, New-HybridDevice, New-HybridLicense, New-HybridWorkflow, ConvertTo-HybridResult
+# Exports: New-HybridResult, New-HybridUser, New-HybridGroup, New-HybridMailbox, New-HybridDevice, New-HybridLicense, New-HybridUserOverview, New-HybridWorkflow, ConvertTo-HybridResult
 #endregion
 
 Set-StrictMode -Version Latest
@@ -26,9 +26,6 @@ function Set-HybridTypeName {
         [Parameter(Mandatory=$true)][string]$TypeName
     )
 
-    # PowerShell 5.1 can be inconsistent when relying on a PSTypeName
-    # hashtable key during module-to-module returns. Insert the type name
-    # explicitly so tests, format views, and future UI bindings can rely on it.
     if ($InputObject.PSObject.TypeNames[0] -ne $TypeName) {
         $InputObject.PSObject.TypeNames.Insert(0, $TypeName)
     }
@@ -45,9 +42,7 @@ function New-HybridResult {
 
     .DESCRIPTION
     HybridResult is the standard return envelope for workflows and write actions.
-    Read operations may return domain models directly, but any action that can
-    partially fail should return this model so the UI has a consistent way to
-    display success, warnings, errors, and metadata.
+    Read operations may return domain models directly, but any action that can partially fail should return this model so the UI has a consistent way to display success, warnings, errors, and metadata.
     #>
     [CmdletBinding()]
     param(
@@ -61,15 +56,15 @@ function New-HybridResult {
     )
 
     $model = [pscustomobject]@{
-        PSTypeName     = 'Hybrid.Result'
-        Success        = $Success
-        Message        = $Message
-        Data           = $Data
-        Warnings       = @(ConvertTo-HybridArray $Warnings)
-        Errors         = @(ConvertTo-HybridArray $Errors)
-        Metadata       = $Metadata
-        CorrelationId  = $CorrelationId
-        CreatedUtc     = New-HybridTimestamp
+        PSTypeName    = 'Hybrid.Result'
+        Success       = $Success
+        Message       = $Message
+        Data          = $Data
+        Warnings      = @(ConvertTo-HybridArray $Warnings)
+        Errors        = @(ConvertTo-HybridArray $Errors)
+        Metadata      = $Metadata
+        CorrelationId = $CorrelationId
+        CreatedUtc    = New-HybridTimestamp
     }
 
     return Set-HybridTypeName -InputObject $model -TypeName 'Hybrid.Result'
@@ -122,35 +117,37 @@ function New-HybridUser {
         [object]$Mailbox = $null,
         [object[]]$Devices = @(),
         [object[]]$Licenses = @(),
-        [hashtable]$Attributes = @{}
+        [hashtable]$Attributes = @{},
+        [hashtable]$Hydration = @{}
     )
 
     $model = [pscustomobject]@{
-        PSTypeName            = 'Hybrid.User'
-        Id                    = $Id
-        DisplayName           = $DisplayName
-        GivenName             = $GivenName
-        Surname               = $Surname
-        SamAccountName        = $SamAccountName
-        UserPrincipalName     = $UserPrincipalName
-        Mail                  = $Mail
-        EmployeeId            = $EmployeeId
-        BadgeId               = $BadgeId
-        Department            = $Department
-        Title                 = $Title
-        Company               = $Company
-        Office                = $Office
-        Manager               = $Manager
-        ManagerSamAccountName = $ManagerSamAccountName
-        Enabled               = $Enabled
-        LockedOut             = $LockedOut
-        Source                = $Source
-        Groups                = @(ConvertTo-HybridArray $Groups)
-        Mailbox               = $Mailbox
-        Devices               = @(ConvertTo-HybridArray $Devices)
-        Licenses              = @(ConvertTo-HybridArray $Licenses)
-        Attributes            = $Attributes
-        CreatedUtc            = New-HybridTimestamp
+        PSTypeName             = 'Hybrid.User'
+        Id                     = $Id
+        DisplayName            = $DisplayName
+        GivenName              = $GivenName
+        Surname                = $Surname
+        SamAccountName         = $SamAccountName
+        UserPrincipalName      = $UserPrincipalName
+        Mail                   = $Mail
+        EmployeeId             = $EmployeeId
+        BadgeId                = $BadgeId
+        Department             = $Department
+        Title                  = $Title
+        Company                = $Company
+        Office                 = $Office
+        Manager                = $Manager
+        ManagerSamAccountName  = $ManagerSamAccountName
+        Enabled                = $Enabled
+        LockedOut              = $LockedOut
+        Source                 = $Source
+        Groups                 = @(ConvertTo-HybridArray $Groups)
+        Mailbox                = $Mailbox
+        Devices                = @(ConvertTo-HybridArray $Devices)
+        Licenses               = @(ConvertTo-HybridArray $Licenses)
+        Hydration              = $Hydration
+        Attributes             = $Attributes
+        CreatedUtc             = New-HybridTimestamp
     }
 
     return Set-HybridTypeName -InputObject $model -TypeName 'Hybrid.User'
@@ -254,16 +251,16 @@ function New-HybridDevice {
     )
 
     $model = [pscustomobject]@{
-        PSTypeName       = 'Hybrid.Device'
-        Id               = $Id
-        Name             = $Name
-        OperatingSystem  = $OperatingSystem
-        ComplianceState  = $ComplianceState
-        PrimaryUser      = $PrimaryUser
-        LastCheckInUtc   = $LastCheckInUtc
-        Source           = $Source
-        Attributes       = $Attributes
-        CreatedUtc       = New-HybridTimestamp
+        PSTypeName      = 'Hybrid.Device'
+        Id              = $Id
+        Name            = $Name
+        OperatingSystem = $OperatingSystem
+        ComplianceState = $ComplianceState
+        PrimaryUser     = $PrimaryUser
+        LastCheckInUtc  = $LastCheckInUtc
+        Source          = $Source
+        Attributes      = $Attributes
+        CreatedUtc      = New-HybridTimestamp
     }
 
     return Set-HybridTypeName -InputObject $model -TypeName 'Hybrid.Device'
@@ -300,6 +297,68 @@ function New-HybridLicense {
     }
 
     return Set-HybridTypeName -InputObject $model -TypeName 'Hybrid.License'
+}
+
+function New-HybridUserOverview {
+    <#
+    .SYNOPSIS
+    Creates a card-ready overview model for a fully hydrated HybridUser.
+
+    .DESCRIPTION
+    The overview model gives the UI and future workflow cards a stable, provider-agnostic summary without embedding UI logic in the application or infrastructure layers.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object]$User,
+        [hashtable]$Metadata = @{}
+    )
+
+    $groups = @(ConvertTo-HybridArray $User.Groups)
+    $devices = @(ConvertTo-HybridArray $User.Devices)
+    $licenses = @(ConvertTo-HybridArray $User.Licenses)
+    $mailbox = $User.Mailbox
+
+    $enabledLicenses = @($licenses | Where-Object { $_.Enabled })
+    $nonCompliantDevices = @($devices | Where-Object { $_.ComplianceState -and $_.ComplianceState -ne 'Compliant' -and $_.ComplianceState -ne 'Unknown' })
+
+    $cards = @(
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Identity'; Title = $User.DisplayName; Subtitle = $User.UserPrincipalName; Value = $User.SamAccountName; Status = if ($User.Enabled) { 'Enabled' } else { 'Disabled' } }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Groups'; Title = 'Groups'; Subtitle = 'Security and distribution memberships'; Value = $groups.Count; Status = 'Ready' }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Mailbox'; Title = 'Mailbox'; Subtitle = if ($null -ne $mailbox) { $mailbox.PrimarySmtpAddress } else { '' }; Value = if ($null -ne $mailbox -and $mailbox.Exists) { 'Present' } else { 'Missing' }; Status = if ($null -ne $mailbox -and $mailbox.Exists) { 'Ready' } else { 'Warning' } }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Devices'; Title = 'Devices'; Subtitle = 'Associated managed devices'; Value = $devices.Count; Status = if ($nonCompliantDevices.Count -gt 0) { 'Warning' } else { 'Ready' } }
+        [pscustomobject]@{ PSTypeName = 'Hybrid.UserOverviewCard'; Name = 'Licenses'; Title = 'Licenses'; Subtitle = 'Enabled assignments'; Value = $enabledLicenses.Count; Status = 'Ready' }
+    )
+
+    foreach ($card in $cards) {
+        if ($card.PSObject.TypeNames[0] -ne 'Hybrid.UserOverviewCard') {
+            $card.PSObject.TypeNames.Insert(0, 'Hybrid.UserOverviewCard')
+        }
+    }
+
+    $model = [pscustomobject]@{
+        PSTypeName              = 'Hybrid.UserOverview'
+        User                    = $User
+        DisplayName             = $User.DisplayName
+        SamAccountName          = $User.SamAccountName
+        UserPrincipalName       = $User.UserPrincipalName
+        Mail                    = $User.Mail
+        Department              = $User.Department
+        Title                   = $User.Title
+        Manager                 = $User.Manager
+        Enabled                 = $User.Enabled
+        LockedOut               = $User.LockedOut
+        GroupCount              = $groups.Count
+        DeviceCount             = $devices.Count
+        LicenseCount            = $licenses.Count
+        EnabledLicenseCount     = $enabledLicenses.Count
+        HasMailbox              = ($null -ne $mailbox -and $mailbox.Exists)
+        NonCompliantDeviceCount = $nonCompliantDevices.Count
+        Cards                   = @($cards)
+        Metadata                = $Metadata
+        CreatedUtc              = New-HybridTimestamp
+    }
+
+    return Set-HybridTypeName -InputObject $model -TypeName 'Hybrid.UserOverview'
 }
 
 function New-HybridWorkflow {
@@ -343,6 +402,7 @@ Export-ModuleMember -Function @(
     'New-HybridMailbox',
     'New-HybridDevice',
     'New-HybridLicense',
+    'New-HybridUserOverview',
     'New-HybridWorkflow'
 )
 #endregion
