@@ -1,132 +1,36 @@
 # Project Status
 
-## Current Version
+## Current Milestone
 
-**Version:** 0.3.1 (Development)
-
----
-
-# Milestone Status
-
-| Milestone | Status |
-|-----------|--------|
-| Milestone 1 - Core Framework | ✅ Complete |
-| Milestone 2 - Domain Foundation | ✅ Complete |
-| Milestone 3 - Hybrid User Engine | ✅ Complete |
-| Milestone 4 - Active Directory Provider | 🚧 In Progress |
-
----
-
-# Milestone 1 - Core Framework
-
-## Status
-
-Complete
-
-### Deliverables
-
-- Bootstrap
-- Module Loader
-- Configuration Manager
-- Logging Framework
-- Service Registry
-- Plugin Loader
-- Mock Provider
-- Shell Host
-- Framework Test Harness
-
----
-
-# Milestone 2 - Domain Foundation
-
-## Status
-
-Complete
-
-### Deliverables
-
-- Domain Models
-- User Service
-- Mock Directory Provider
-- Search-HybridUser
-- Get-HybridUser
-- Initial Unit Tests
-
----
-
-# Milestone 3 - Hybrid User Engine
-
-## Status
-
-Complete
-
-### Deliverables
-
-- Strong domain models
-- Canonical HybridUser object
-- User hydration
-- Mailbox hydration
-- Group hydration
-- Device hydration
-- License hydration
-- Manager hydration
-- Direct Reports hydration
-- Cache integration
-- Comprehensive unit tests
-
-### Result
-
-Every UI component now consumes a single canonical `HybridUser` object.
-
----
-
-# Milestone 4 - Active Directory Provider
+Milestone 4 - Active Directory Provider
 
 ## Status
 
 In Progress
 
-### Completed
+## Recently Completed
 
-- Active Directory provider framework
-- Provider registration
-- Provider abstraction
-- Search implementation
-- User retrieval
-- Initial provider unit tests
+- Milestone 1 - Core Framework
+- Milestone 2 - Domain Foundation
+- Milestone 3 - Hybrid User Engine
 
-### Remaining
+## Milestone 4 Scope
 
-- Group operations
-- Manager operations
-- Direct Reports
-- Password Reset
-- Enable / Disable
-- Unlock Account
-- OU operations
+Objective: Extract Active Directory functionality from the legacy application into a provider-driven infrastructure module.
 
----
+Initial implementation started:
 
-## Current Architecture
+- Active Directory provider module scaffold
+- Offline-safe provider initialization
+- RSAT/ActiveDirectory module availability detection
+- AD user to Hybrid.User mapper
+- Provider contract for search, user retrieval, groups, manager, direct reports, password reset, enable/disable, unlock, and OU move
+- Milestone 4 foundation tests
 
-The project now follows a layered architecture:
+## Next Milestone 4 Work
 
-
-UI
-↓
-Application Services
-↓
-Domain Models
-↓
-Provider Interfaces
-↓
-Infrastructure Providers
-
-
-The application layer remains completely provider-driven with no UI or customer-specific logic.
-
----
-
-## Next Objective
-
-Continue Milestone 4 by completing the remaining Active Directory provider capabilities before beginning the Microsoft Graph provider.
+- Validate live AD search on a domain-joined workstation
+- Expand group mapping accuracy once live AD data is available
+- Add application-service wrappers for write actions
+- Add workflow-safe result handling for AD writes
+- Add guarded tests for live-provider scenarios

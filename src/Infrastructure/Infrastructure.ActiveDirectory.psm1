@@ -165,6 +165,10 @@ function Initialize-HybridActiveDirectoryProvider {
         SetEnabled           = { param([string]$Identity, [bool]$Enabled) Set-HybridADUserEnabled -Identity $Identity -Enabled $Enabled }
         UnlockUser           = { param([string]$Identity) Unlock-HybridADUser -Identity $Identity }
         MoveUserOU           = { param([string]$Identity, [string]$TargetPath) Move-HybridADUserOU -Identity $Identity -TargetPath $TargetPath }
+        SetUserManager       = { param([string]$Identity, [string]$ManagerIdentity) Set-HybridADUserManager -Identity $Identity -ManagerIdentity $ManagerIdentity }
+        AddUserToGroup       = { param([string]$Identity, [string]$GroupIdentity) Add-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
+        RemoveUserFromGroup  = { param([string]$Identity, [string]$GroupIdentity) Remove-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
+        SearchOU             = { param([string]$Query) Search-HybridADOrganizationalUnit -Query $Query }
     }
 
     if ($RegisterAsDirectory) {
@@ -442,6 +446,94 @@ function Unlock-HybridADUser {
     return New-HybridResult -Success $true -Message "Account unlocked for '$Identity'."
 }
 
+
+function Set-HybridADUserManager {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$ManagerIdentity
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    if ($PSCmdlet.ShouldProcess($Identity, "Set AD manager to $ManagerIdentity")) {
+        Set-ADUser @adParams -Identity $Identity -Manager $ManagerIdentity
+    }
+
+    return New-HybridResult -Success $true -Message "Manager for '$Identity' set to '$ManagerIdentity'."
+}
+
+function Add-HybridADUserGroupMembership {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$GroupIdentity
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    if ($PSCmdlet.ShouldProcess($Identity, "Add to AD group $GroupIdentity")) {
+        Add-ADGroupMember @adParams -Identity $GroupIdentity -Members $Identity
+    }
+
+    return New-HybridResult -Success $true -Message "User '$Identity' added to group '$GroupIdentity'."
+}
+
+function Remove-HybridADUserGroupMembership {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$GroupIdentity
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    if ($PSCmdlet.ShouldProcess($Identity, "Remove from AD group $GroupIdentity")) {
+        Remove-ADGroupMember @adParams -Identity $GroupIdentity -Members $Identity -Confirm:$false
+    }
+
+    return New-HybridResult -Success $true -Message "User '$Identity' removed from group '$GroupIdentity'."
+}
+
+function Search-HybridADOrganizationalUnit {
+    [CmdletBinding()]
+    param(
+        [string]$Query = '',
+        [int]$ResultSetSize = 100
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    $adParams.ResultSetSize = $ResultSetSize
+    $adParams.Properties = @('description')
+
+    if (-not [string]::IsNullOrWhiteSpace($script:State.SearchBase)) {
+        $adParams.SearchBase = $script:State.SearchBase
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Query)) {
+        $adParams.Filter = '*'
+    }
+    else {
+        $escaped = $Query.Replace("'", "''")
+        $adParams.Filter = "Name -like '*$escaped*' -or DistinguishedName -like '*$escaped*'"
+    }
+
+    return @(Get-ADOrganizationalUnit @adParams | ForEach-Object {
+        [pscustomobject]@{
+            PSTypeName         = 'Hybrid.ActiveDirectoryOrganizationalUnit'
+            Name               = [string]$_.Name
+            DistinguishedName  = [string]$_.DistinguishedName
+            Description        = [string]$_.Description
+            Source             = 'ActiveDirectory'
+        }
+    })
+}
+
 function Move-HybridADUserOU {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
@@ -475,5 +567,9 @@ Export-ModuleMember -Function @(
     'Set-HybridADUserEnabled',
     'Unlock-HybridADUser',
     'Move-HybridADUserOU',
+    'Set-HybridADUserManager',
+    'Add-HybridADUserGroupMembership',
+    'Remove-HybridADUserGroupMembership',
+    'Search-HybridADOrganizationalUnit',
     'ConvertTo-HybridADUser'
 )
