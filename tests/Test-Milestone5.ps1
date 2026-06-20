@@ -38,16 +38,25 @@ $cloudModulePath = Join-Path $RepoRoot 'src\Core\Core.CloudEnvironment.psm1'
 $tenantModulePath = Join-Path $RepoRoot 'src\Core\Core.TenantContext.psm1'
 $organizationModulePath = Join-Path $RepoRoot 'src\Core\Core.OrganizationContext.psm1'
 $authenticationModulePath = Join-Path $RepoRoot 'src\Core\Core.Authentication.psm1'
+$httpResponseModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpResponse.psm1'
+$httpRetryModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpRetry.psm1'
+$httpPipelineModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpPipeline.psm1'
 
 Import-Module $cloudModulePath -Force
 Import-Module $tenantModulePath -Force
 Import-Module $organizationModulePath -Force
 Import-Module $authenticationModulePath -Force
+Import-Module $httpResponseModulePath -Force
+Import-Module $httpRetryModulePath -Force
+Import-Module $httpPipelineModulePath -Force
 
 $cloudExports = Get-Command -Module Core.CloudEnvironment | Select-Object -ExpandProperty Name
 $tenantExports = Get-Command -Module Core.TenantContext | Select-Object -ExpandProperty Name
 $organizationExports = Get-Command -Module Core.OrganizationContext | Select-Object -ExpandProperty Name
 $authenticationExports = Get-Command -Module Core.Authentication | Select-Object -ExpandProperty Name
+$httpResponseExports = Get-Command -Module Core.HttpResponse | Select-Object -ExpandProperty Name
+$httpRetryExports = Get-Command -Module Core.HttpRetry | Select-Object -ExpandProperty Name
+$httpPipelineExports = Get-Command -Module Core.HttpPipeline | Select-Object -ExpandProperty Name
 
 Assert-Pass -Condition ($cloudExports -contains 'New-HybridCloudEnvironment') -Message 'New-HybridCloudEnvironment exported'
 Assert-Pass -Condition ($cloudExports -contains 'Register-HybridCloudEnvironment') -Message 'Register-HybridCloudEnvironment exported'
@@ -87,6 +96,20 @@ Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticati
 Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationCacheKey') -Message 'New-HybridAuthenticationCacheKey exported'
 Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationCacheEntry') -Message 'New-HybridAuthenticationCacheEntry exported'
 Assert-Pass -Condition ($authenticationExports -contains 'Test-HybridAuthenticationSession') -Message 'Test-HybridAuthenticationSession exported'
+
+Assert-Pass -Condition ($httpResponseExports -contains 'New-HybridHttpResponse') -Message 'New-HybridHttpResponse exported'
+Assert-Pass -Condition ($httpResponseExports -contains 'New-HybridHttpError') -Message 'New-HybridHttpError exported'
+Assert-Pass -Condition ($httpResponseExports -contains 'Test-HybridHttpResponse') -Message 'Test-HybridHttpResponse exported'
+Assert-Pass -Condition ($httpRetryExports -contains 'New-HybridHttpRetryPolicy') -Message 'New-HybridHttpRetryPolicy exported'
+Assert-Pass -Condition ($httpRetryExports -contains 'Test-HybridHttpRetryPolicy') -Message 'Test-HybridHttpRetryPolicy exported'
+Assert-Pass -Condition ($httpRetryExports -contains 'Get-HybridHttpRetryDelay') -Message 'Get-HybridHttpRetryDelay exported'
+Assert-Pass -Condition ($httpRetryExports -contains 'Invoke-HybridHttpRetry') -Message 'Invoke-HybridHttpRetry exported'
+Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpRequest') -Message 'New-HybridHttpRequest exported'
+Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPipeline') -Message 'New-HybridHttpPipeline exported'
+Assert-Pass -Condition ($httpPipelineExports -contains 'Invoke-HybridHttpPipeline') -Message 'Invoke-HybridHttpPipeline exported'
+Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPipelineDiagnostic') -Message 'New-HybridHttpPipelineDiagnostic exported'
+Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPaginationState') -Message 'New-HybridHttpPaginationState exported'
+
 
 
 $commercial = Get-HybridCloudEnvironment -Name 'Commercial'
@@ -247,5 +270,95 @@ Assert-Pass -Condition ($cacheEntry.State -eq 'Valid') -Message 'Authentication 
 
 Set-HybridAuthenticationPolicy -Policy (New-HybridAuthenticationPolicy) | Out-Null
 
+
+$httpResponse = New-HybridHttpResponse -StatusCode 200 -Headers @{ 'request-id' = 'mock-request' } -Body @{ value = 'ok' } -CorrelationId 'corr-001' -AttemptCount 1 -RequestUri 'https://graph.microsoft.us/v1.0/me'
+Assert-Pass -Condition ($httpResponse.PSTypeNames -contains 'Hybrid.HttpResponse') -Message 'HTTP response has platform type name'
+Assert-Pass -Condition ($httpResponse.Succeeded -eq $true) -Message 'HTTP response reports success for 2xx status'
+Assert-Pass -Condition ($httpResponse.Headers['request-id'] -eq 'mock-request') -Message 'HTTP response stores headers'
+Assert-Pass -Condition (Test-HybridHttpResponse -Response $httpResponse) -Message 'HTTP response validates'
+
+$httpError = New-HybridHttpError -Code 'MockError' -Message 'Mock failure' -StatusCode 500
+Assert-Pass -Condition ($httpError.PSTypeNames -contains 'Hybrid.HttpError') -Message 'HTTP error has platform type name'
+Assert-Pass -Condition ($httpError.Code -eq 'MockError') -Message 'HTTP error stores code'
+
+$failedHttpResponse = New-HybridHttpResponse -StatusCode 500 -Error $httpError -CorrelationId 'corr-002'
+Assert-Pass -Condition ($failedHttpResponse.Succeeded -eq $false) -Message 'HTTP response reports failure for error state'
+
+$retryPolicy = New-HybridHttpRetryPolicy -MaxAttempts 3 -BaseDelayMilliseconds 10 -ExponentialBackoff -DisableDelay
+Assert-Pass -Condition ($retryPolicy.PSTypeNames -contains 'Hybrid.HttpRetryPolicy') -Message 'HTTP retry policy has platform type name'
+Assert-Pass -Condition ($retryPolicy.RetryStatusCodes -contains 429) -Message 'HTTP retry policy includes throttling status'
+Assert-Pass -Condition (Test-HybridHttpRetryPolicy -Policy $retryPolicy) -Message 'HTTP retry policy validates'
+Assert-Pass -Condition ((Get-HybridHttpRetryDelay -Policy $retryPolicy -Attempt 2) -eq 0) -Message 'HTTP retry delay honors disabled delay'
+
+$retryAttemptCount = 0
+$retryResult = Invoke-HybridHttpRetry -Policy $retryPolicy -Operation {
+    param($Attempt)
+    $script:retryAttemptCount = $Attempt
+    if ($Attempt -lt 3) {
+        return [pscustomobject]@{ StatusCode = 429; Body = @{ retry = $Attempt } }
+    }
+    return [pscustomobject]@{ StatusCode = 200; Body = @{ ok = $true } }
+}
+Assert-Pass -Condition ($retryResult.StatusCode -eq 200) -Message 'HTTP retry returns successful final response'
+Assert-Pass -Condition ($retryAttemptCount -eq 3) -Message 'HTTP retry attempts until success'
+
+$httpRequest = New-HybridHttpRequest -Uri 'https://graph.microsoft.us/v1.0/users' -Method GET -Headers @{ ConsistencyLevel = 'eventual' } -AuthenticationSession $descriptorSession
+Assert-Pass -Condition ($httpRequest.PSTypeNames -contains 'Hybrid.HttpRequest') -Message 'HTTP request has platform type name'
+Assert-Pass -Condition ($httpRequest.Method -eq 'GET') -Message 'HTTP request normalizes method'
+Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($httpRequest.CorrelationId)) -Message 'HTTP request generates correlation id'
+
+$capturedPreparedRequest = $null
+$pipeline = New-HybridHttpPipeline -AuthenticationSession $descriptorSession -RetryPolicy $retryPolicy -DefaultHeaders @{ 'Accept' = 'application/json' } -Transport {
+    param($PreparedRequest, $Attempt)
+    $script:capturedPreparedRequest = $PreparedRequest
+    return [pscustomobject]@{
+        StatusCode = 200
+        Headers = @{ 'request-id' = 'pipeline-request' }
+        Body = @{ value = @('one', 'two') }
+    }
+}
+Assert-Pass -Condition ($pipeline.PSTypeNames -contains 'Hybrid.HttpPipeline') -Message 'HTTP pipeline has platform type name'
+
+$pipelineResponse = Invoke-HybridHttpPipeline -Pipeline $pipeline -Request $httpRequest
+Assert-Pass -Condition ($pipelineResponse.PSTypeNames -contains 'Hybrid.HttpResponse') -Message 'HTTP pipeline returns platform response'
+Assert-Pass -Condition ($pipelineResponse.Succeeded -eq $true) -Message 'HTTP pipeline reports successful response'
+Assert-Pass -Condition ($pipelineResponse.Body.value.Count -eq 2) -Message 'HTTP pipeline preserves response body'
+Assert-Pass -Condition ($pipelineResponse.AttemptCount -eq 1) -Message 'HTTP pipeline records attempt count'
+Assert-Pass -Condition ($capturedPreparedRequest.Headers['Authorization'] -eq 'Bearer descriptor-token') -Message 'HTTP pipeline injects bearer token'
+Assert-Pass -Condition ($capturedPreparedRequest.Headers['Accept'] -eq 'application/json') -Message 'HTTP pipeline applies default headers'
+Assert-Pass -Condition ($capturedPreparedRequest.Headers['ConsistencyLevel'] -eq 'eventual') -Message 'HTTP pipeline applies request headers'
+Assert-Pass -Condition ($capturedPreparedRequest.Headers.ContainsKey('x-ms-client-request-id')) -Message 'HTTP pipeline injects correlation header'
+Assert-Pass -Condition ($capturedPreparedRequest.Headers.ContainsKey('User-Agent')) -Message 'HTTP pipeline injects user agent'
+
+$retryingPipelineAttempts = 0
+$retryingPipeline = New-HybridHttpPipeline -AuthenticationSession $descriptorSession -RetryPolicy $retryPolicy -Transport {
+    param($PreparedRequest, $Attempt)
+    $script:retryingPipelineAttempts = $Attempt
+    if ($Attempt -lt 2) {
+        return [pscustomobject]@{ StatusCode = 503; Headers = @{}; Body = @{ transient = $true } }
+    }
+    return [pscustomobject]@{ StatusCode = 200; Headers = @{}; Body = @{ recovered = $true } }
+}
+$retryingPipelineResponse = Invoke-HybridHttpPipeline -Pipeline $retryingPipeline -Request $httpRequest
+Assert-Pass -Condition ($retryingPipelineResponse.StatusCode -eq 200) -Message 'HTTP pipeline retries transient response'
+Assert-Pass -Condition ($retryingPipelineResponse.AttemptCount -eq 2) -Message 'HTTP pipeline records retry attempt count'
+Assert-Pass -Condition ($retryingPipelineAttempts -eq 2) -Message 'HTTP pipeline mock transport sees retry attempt'
+
+$errorPipeline = New-HybridHttpPipeline -AuthenticationSession $descriptorSession -RetryPolicy (New-HybridHttpRetryPolicy -MaxAttempts 1 -DisableDelay) -Transport {
+    param($PreparedRequest, $Attempt)
+    return [pscustomobject]@{ StatusCode = 500; Headers = @{}; Body = @{ error = 'bad' } }
+}
+$errorPipelineResponse = Invoke-HybridHttpPipeline -Pipeline $errorPipeline -Request $httpRequest
+Assert-Pass -Condition ($errorPipelineResponse.Succeeded -eq $false) -Message 'HTTP pipeline reports failed status response'
+Assert-Pass -Condition ($errorPipelineResponse.Error.Code -eq 'HTTP500') -Message 'HTTP pipeline creates standardized HTTP error'
+
+$paginationState = New-HybridHttpPaginationState -NextLink 'https://graph.microsoft.us/v1.0/users?$skiptoken=abc' -HasMore $true -PageNumber 2
+Assert-Pass -Condition ($paginationState.PSTypeNames -contains 'Hybrid.HttpPaginationState') -Message 'HTTP pagination state has platform type name'
+Assert-Pass -Condition ($paginationState.HasMore -eq $true) -Message 'HTTP pagination state records additional pages'
+
+$diagnostic = New-HybridHttpPipelineDiagnostic -CorrelationId $httpRequest.CorrelationId -RequestUri $httpRequest.Uri -Method $httpRequest.Method -AttemptCount $pipelineResponse.AttemptCount -Duration $pipelineResponse.Duration -State 'Completed'
+Assert-Pass -Condition ($diagnostic.PSTypeNames -contains 'Hybrid.HttpPipelineDiagnostic') -Message 'HTTP pipeline diagnostic has platform type name'
+Assert-Pass -Condition ($diagnostic.State -eq 'Completed') -Message 'HTTP pipeline diagnostic records state'
+
 Write-Host ''
-Write-Host 'Milestone 5 Phase 4 session and token contract tests passed.' -ForegroundColor Cyan
+Write-Host 'Milestone 5 Phase 5 shared HTTP pipeline tests passed.' -ForegroundColor Cyan

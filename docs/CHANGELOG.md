@@ -4,15 +4,16 @@
 
 ### Added
 
-- Added `Hybrid.TokenDescriptor` contract for provider-neutral token metadata.
-- Added token descriptor validation.
-- Added `Hybrid.AuthenticationResult` contract for future authentication success and failure results.
-- Added session state resolution through `Get-HybridAuthenticationSessionState`.
-- Added authentication cache key and cache entry contracts.
-- Extended authentication sessions to accept token descriptors.
-- Extended Milestone 5 tests through Phase 4.
+- Added `Core.HttpResponse` for standardized HTTP response and error contracts.
+- Added `Core.HttpRetry` for retry policy contracts and retry execution.
+- Added `Core.HttpPipeline` for shared HTTP request construction and mock transport execution.
+- Added bearer token injection from `Hybrid.AuthenticationSession`.
+- Added correlation ID and User-Agent header injection.
+- Added HTTP pipeline diagnostics and pagination state contracts.
+- Extended Milestone 5 tests through Phase 5.
 
 ### Notes
 
-- Phase 4 intentionally does not authenticate, call MSAL, call WAM, call Microsoft Graph, or persist tokens.
+- Phase 5 intentionally uses mock transports only.
+- Phase 5 does not call Microsoft Graph, acquire tokens, or require network access.
 - `Project_Status.md`, `ROADMAP.md`, and `VERSION.md` are updated during the final phase of the version.

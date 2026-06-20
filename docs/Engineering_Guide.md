@@ -130,3 +130,44 @@ Cache key and cache entry objects define the future token/session cache contract
 - Authentication success and failure are represented by `Hybrid.AuthenticationResult`.
 - Cache contracts are platform-owned and provider-neutral.
 - Persistent token cache implementation is deferred to a later phase.
+
+### Phase 5: Shared HTTP Pipeline
+
+Phase 5 introduces the reusable HTTP infrastructure that future Microsoft Graph, Exchange Online, Intune, Azure, and other cloud providers will consume.
+
+The HTTP pipeline is intentionally provider-agnostic. It does not know about Graph resources, Exchange cmdlets, Intune devices, or Azure subscriptions. Providers construct requests and consume standardized responses while the platform handles shared request behavior.
+
+New platform contracts include:
+
+- `Hybrid.HttpRequest`
+- `Hybrid.PreparedHttpRequest`
+- `Hybrid.HttpResponse`
+- `Hybrid.HttpError`
+- `Hybrid.HttpRetryPolicy`
+- `Hybrid.HttpPaginationState`
+- `Hybrid.HttpPipeline`
+- `Hybrid.HttpPipelineDiagnostic`
+
+The pipeline owns:
+
+- Header merging
+- Bearer token injection
+- Correlation ID generation
+- User-Agent injection
+- Retry policy execution
+- Request timing
+- Standardized error wrapping
+- Mock transport execution for offline tests
+
+Phase 5 still does not perform live Microsoft Graph calls and does not acquire tokens. It uses mock transports so the pipeline can be tested without network access, MSAL, Graph permissions, or tenant connectivity.
+
+Providers should not call `Invoke-RestMethod` directly once they are implemented on the cloud foundation. Providers should create `Hybrid.HttpRequest` objects and execute them through `Invoke-HybridHttpPipeline`.
+
+### Phase 5 Design Rules
+
+- Providers do not inject authorization headers themselves.
+- Providers do not implement retry logic.
+- Providers do not implement paging contracts independently.
+- Providers do not create HTTP error shapes directly.
+- Cloud provider HTTP behavior belongs in the shared pipeline.
+- Live transports are deferred until the Microsoft Graph foundation phase.
