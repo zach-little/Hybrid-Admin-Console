@@ -31,6 +31,7 @@ function Get-HybridModuleLoadOrder {
         'Core.PluginLoader.psm1',
         'Hybrid.Models.psm1',
         'Infrastructure.Mock.psm1',
+        'Application.UserService.psm1',
         'Application.ServiceLocator.psm1',
         'UI.Shell.psm1'
     )

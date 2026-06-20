@@ -1,28 +1,40 @@
 #region Module Information
 # Name: Application.ServiceLocator
 # Purpose: Application-level service initialization and access helpers.
-# Dependencies: Core.ServiceRegistry, Infrastructure.Mock optional.
+# Dependencies: Core.ServiceRegistry, Infrastructure.Mock optional, Application.UserService.
 # Exports: Initialize-HybridApplicationServices, Invoke-HybridDirectorySearch
 #endregion
 
 Set-StrictMode -Version Latest
 
 #region Private
-#endregion
-
-#region Public
-function Initialize-HybridApplicationServices {
-    <#.SYNOPSIS Initializes application service bindings for the active profile.#>
-    [CmdletBinding()] param([Parameter(Mandatory=$true)][object]$Context)
+function Get-HybridProviderMode {
+    param([Parameter(Mandatory=$true)][object]$Context)
 
     $providerMode = 'Mock'
     if ($Context.Configuration -and $Context.Configuration.Settings -and $Context.Configuration.Settings.ProviderMode) {
         $providerMode = $Context.Configuration.Settings.ProviderMode
     }
+    return $providerMode
+}
+#endregion
+
+#region Public
+function Initialize-HybridApplicationServices {
+    <#.SYNOPSIS Initializes application service bindings for the active profile.#>
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][object]$Context)
+
+    $providerMode = Get-HybridProviderMode -Context $Context
 
     if ($providerMode -eq 'Mock') {
         Initialize-HybridMockProvider -Context $Context | Out-Null
     }
+    else {
+        throw "Provider mode '$providerMode' is not implemented yet. Use ProviderMode 'Mock' for Milestone 2."
+    }
+
+    Initialize-HybridUserService -Context $Context | Out-Null
 
     if (Get-Command Write-HybridLog -ErrorAction SilentlyContinue) {
         Write-HybridLog -Level Information -Module 'Application.ServiceLocator' -Message "Application services initialized using provider mode '$providerMode'." | Out-Null
