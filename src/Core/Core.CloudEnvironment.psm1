@@ -165,6 +165,7 @@ function Get-HybridCloudEnvironmentEndpoint {
     param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
+        [Alias('Name')]
         [string]$EnvironmentName,
 
         [Parameter(Mandatory = $true)]
@@ -186,6 +187,7 @@ function Resolve-HybridCloudEndpoint {
     param(
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
+        [Alias('Name')]
         [string]$EnvironmentName,
 
         [Parameter(Mandatory = $true)]
@@ -217,7 +219,9 @@ function Test-HybridCloudEnvironment {
         [ValidateNotNull()]
         [object]$Environment,
 
-        [string[]]$RequiredEndpoints = @('Graph', 'Login')
+        [string[]]$RequiredEndpoints = @('Graph', 'Login'),
+
+        [switch]$Detailed
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
@@ -236,11 +240,17 @@ function Test-HybridCloudEnvironment {
         }
     }
 
-    [pscustomobject]@{
-        PSTypeName = 'Hybrid.CloudEnvironmentValidationResult'
-        IsValid    = ($errors.Count -eq 0)
-        Errors     = @($errors)
+    $isValid = ($errors.Count -eq 0)
+
+    if ($Detailed) {
+        return [pscustomobject]@{
+            PSTypeName = 'Hybrid.CloudEnvironmentValidationResult'
+            IsValid    = $isValid
+            Errors     = @($errors)
+        }
     }
+
+    return [bool]$isValid
 }
 
 function Initialize-HybridBuiltInCloudEnvironments {

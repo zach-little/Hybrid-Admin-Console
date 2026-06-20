@@ -1,20 +1,15 @@
 # Contributing
 
-## Rules
-
-1. `main` should remain runnable.
-2. Prefer small, reviewable commits.
-3. Keep Atlas-specific logic in `profiles/Atlas` or Atlas plugins.
-4. UI code must not call Active Directory, Graph, Exchange, or Azure directly.
-5. Infrastructure providers must not know about WPF.
-6. Public functions require comment-based help.
-7. Use `Verb-HybridNoun` naming for exported functions.
-8. Destructive actions must be explicit workflow operations.
-
-## Test
-
-Run:
+1. Read Engineering_Guide.md
+2. Create feature branch.
+3. Complete one phase.
+4. Update tests.
+5. Update Engineering_Guide.md and CHANGELOG.md.
+6. Produce drop-in ZIP (changed files only).
+7. Run:
 
 ```powershell
-.	ests\Test-Milestone1.ps1
+Get-ChildItem -Path . -Recurse -File | Unblock-File
+Remove-Module Infrastructure.ActiveDirectory,Core.ProviderBase,ActiveDirectory,Hybrid.Models -Force -ErrorAction SilentlyContinue
+.\tests\Test-MilestoneX.ps1
 ```
