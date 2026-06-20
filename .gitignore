@@ -1,4 +1,18 @@
-aes.key
+# Local secrets
+profiles/*/config.json
+profiles/*/aes.key
 config.json
+aes.key
+
+# Logs and build output
+logs/
+build/
 *.log
-Logs/
+
+# PowerShell artifacts
+*.ps1xml
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

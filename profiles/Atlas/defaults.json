@@ -1,3 +1,9 @@
-﻿{
-    "Placeholder": true
+{
+  "ProductName": "Hybrid Administration Platform",
+  "DeploymentName": "Atlas Hybrid Admin Console",
+  "ProviderMode": "Mock",
+  "TenantCloud": "USGov",
+  "GraphBaseUri": "https://graph.microsoft.us",
+  "DefaultDomain": "atlas-tech.com",
+  "SafeMode": true
 }

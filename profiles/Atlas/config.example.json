@@ -1,0 +1,6 @@
+{
+  "TenantId": "CHANGE_ME",
+  "ClientId": "CHANGE_ME",
+  "DelegatedClientId": "CHANGE_ME",
+  "ProviderMode": "Mock"
+}

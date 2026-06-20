@@ -1,3 +1,6 @@
-﻿{
-    "Placeholder": true
+{
+  "Departments": [],
+  "Locations": [],
+  "DefaultGroups": [],
+  "SkippedDomainControllers": ["eider", "aldan"]
 }

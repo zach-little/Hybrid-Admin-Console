@@ -1,0 +1,7 @@
+{
+  "ProductName": "Hybrid Administration Platform",
+  "DeploymentName": "Mock Development Profile",
+  "ProviderMode": "Mock",
+  "DefaultDomain": "example.test",
+  "SafeMode": true
+}

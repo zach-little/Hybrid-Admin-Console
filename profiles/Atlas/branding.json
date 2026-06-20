@@ -1,3 +1,7 @@
-﻿{
-    "Placeholder": true
+{
+  "ThemeName": "Atlas Dark",
+  "AccentColor": "#20D5FF",
+  "BackgroundColor": "#0B1220",
+  "ForegroundColor": "#F4F7FB",
+  "LogoPath": null
 }

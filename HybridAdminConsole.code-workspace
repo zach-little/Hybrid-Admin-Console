@@ -1,0 +1,8 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "files.defaultLanguage": "powershell"
+  }
+}
