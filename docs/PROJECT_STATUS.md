@@ -2,9 +2,7 @@
 
 ## Current Status
 
-Milestone 1 and Milestone 2 are complete.
-
-Milestone 3 - Hybrid User Engine is in progress. The first hydration pass is complete and the current branch extends the canonical HybridUser model with manager hydration, direct report hydration, and cache-backed hydrated lookups.
+Milestone 1 2 and Milestone 3 are complete.
 
 ## Latest Validation
 
