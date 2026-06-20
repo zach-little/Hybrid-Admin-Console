@@ -37,14 +37,17 @@ function Assert-Throws {
 $cloudModulePath = Join-Path $RepoRoot 'src\Core\Core.CloudEnvironment.psm1'
 $tenantModulePath = Join-Path $RepoRoot 'src\Core\Core.TenantContext.psm1'
 $organizationModulePath = Join-Path $RepoRoot 'src\Core\Core.OrganizationContext.psm1'
+$authenticationModulePath = Join-Path $RepoRoot 'src\Core\Core.Authentication.psm1'
 
 Import-Module $cloudModulePath -Force
 Import-Module $tenantModulePath -Force
 Import-Module $organizationModulePath -Force
+Import-Module $authenticationModulePath -Force
 
 $cloudExports = Get-Command -Module Core.CloudEnvironment | Select-Object -ExpandProperty Name
 $tenantExports = Get-Command -Module Core.TenantContext | Select-Object -ExpandProperty Name
 $organizationExports = Get-Command -Module Core.OrganizationContext | Select-Object -ExpandProperty Name
+$authenticationExports = Get-Command -Module Core.Authentication | Select-Object -ExpandProperty Name
 
 Assert-Pass -Condition ($cloudExports -contains 'New-HybridCloudEnvironment') -Message 'New-HybridCloudEnvironment exported'
 Assert-Pass -Condition ($cloudExports -contains 'Register-HybridCloudEnvironment') -Message 'Register-HybridCloudEnvironment exported'
@@ -68,6 +71,17 @@ Assert-Pass -Condition ($organizationExports -contains 'Register-HybridOrganizat
 Assert-Pass -Condition ($organizationExports -contains 'Get-HybridOrganizationProvider') -Message 'Get-HybridOrganizationProvider exported'
 Assert-Pass -Condition ($organizationExports -contains 'Get-HybridOrganizationCapability') -Message 'Get-HybridOrganizationCapability exported'
 Assert-Pass -Condition ($organizationExports -contains 'Test-HybridOrganizationContext') -Message 'Test-HybridOrganizationContext exported'
+
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationPolicy') -Message 'New-HybridAuthenticationPolicy exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticationPolicy') -Message 'Get-HybridAuthenticationPolicy exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Set-HybridAuthenticationPolicy') -Message 'Set-HybridAuthenticationPolicy exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Register-HybridAuthenticationMethod') -Message 'Register-HybridAuthenticationMethod exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticationMethod') -Message 'Get-HybridAuthenticationMethod exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Get-HybridAuthenticationMethodNames') -Message 'Get-HybridAuthenticationMethodNames exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationRequest') -Message 'New-HybridAuthenticationRequest exported'
+Assert-Pass -Condition ($authenticationExports -contains 'New-HybridAuthenticationSession') -Message 'New-HybridAuthenticationSession exported'
+Assert-Pass -Condition ($authenticationExports -contains 'Test-HybridAuthenticationSession') -Message 'Test-HybridAuthenticationSession exported'
+
 
 $commercial = Get-HybridCloudEnvironment -Name 'Commercial'
 $gccHigh = Get-HybridCloudEnvironment -Name 'GccHigh'
@@ -126,5 +140,60 @@ Assert-Pass -Condition ((Get-HybridOrganizationCapability -Name 'CloudEndpointRe
 Assert-Pass -Condition ($null -eq (Get-HybridOrganizationProvider -Name 'MissingProvider')) -Message 'Organization provider lookup returns null for missing provider'
 Assert-Pass -Condition ($null -eq (Get-HybridOrganizationCapability -Name 'MissingCapability')) -Message 'Organization capability lookup returns null for missing capability'
 
+
+$authPolicy = Get-HybridAuthenticationPolicy
+Assert-Pass -Condition ($authPolicy.PSTypeNames -contains 'Hybrid.AuthenticationPolicy') -Message 'Authentication policy has platform type name'
+Assert-Pass -Condition ($authPolicy.AllowDeviceCode -eq $false) -Message 'Authentication policy disables Device Code Flow'
+Assert-Pass -Condition ($authPolicy.AllowedMethods -contains 'Interactive') -Message 'Authentication policy allows interactive method'
+Assert-Pass -Condition ($authPolicy.AllowedMethods -contains 'AppOnlyClientCredentials') -Message 'Authentication policy allows app-only method'
+Assert-Pass -Condition ($authPolicy.DefaultMethod -eq 'Interactive') -Message 'Authentication policy defaults to interactive method'
+
+$authMethods = Get-HybridAuthenticationMethodNames
+Assert-Pass -Condition ($authMethods -contains 'Interactive') -Message 'Interactive authentication method registered'
+Assert-Pass -Condition ($authMethods -contains 'InteractiveBrowser') -Message 'Interactive browser authentication method registered'
+Assert-Pass -Condition ($authMethods -contains 'AppOnlyClientCredentials') -Message 'App-only authentication method registered'
+Assert-Pass -Condition ($authMethods -contains 'ManagedIdentity') -Message 'Managed identity authentication method registered'
+Assert-Pass -Condition (-not ($authMethods -contains 'DeviceCode')) -Message 'Device Code authentication method not registered'
+
+$interactiveMethod = Get-HybridAuthenticationMethod -Name 'Interactive'
+Assert-Pass -Condition ($interactiveMethod.Mode -eq 'Delegated') -Message 'Interactive method reports delegated mode'
+Assert-Pass -Condition ($interactiveMethod.RequiresUserInteraction -eq $true) -Message 'Interactive method requires user interaction'
+
+$appOnlyMethod = Get-HybridAuthenticationMethod -Name 'AppOnlyClientCredentials'
+Assert-Pass -Condition ($appOnlyMethod.Mode -eq 'Application') -Message 'App-only method reports application mode'
+Assert-Pass -Condition ($appOnlyMethod.RequiresClientSecret -eq $true) -Message 'App-only method records client secret requirement'
+
+Assert-Throws -ScriptBlock { Register-HybridAuthenticationMethod -Name 'DeviceCode' -Mode Delegated | Out-Null } -Message 'Device Code method registration is rejected'
+Assert-Throws -ScriptBlock { New-HybridAuthenticationPolicy -AllowedMethods @('Interactive', 'DeviceCode') -DefaultMethod 'Interactive' | Out-Null } -Message 'Authentication policy rejects Device Code Flow'
+
+$customPolicy = New-HybridAuthenticationPolicy -AllowedMethods @('InteractiveBrowser') -DefaultMethod 'InteractiveBrowser' -RequiredScopes @('https://graph.microsoft.us/.default')
+Set-HybridAuthenticationPolicy -Policy $customPolicy | Out-Null
+Assert-Pass -Condition ((Get-HybridAuthenticationPolicy).DefaultMethod -eq 'InteractiveBrowser') -Message 'Authentication policy can be replaced'
+Assert-Pass -Condition ((Get-HybridAuthenticationPolicy).RequiredScopes -contains 'https://graph.microsoft.us/.default') -Message 'Authentication policy stores required scopes'
+
+$authRequest = New-HybridAuthenticationRequest -TenantContext $tenant -ClientId '00000000-0000-0000-0000-000000000000'
+Assert-Pass -Condition ($authRequest.PSTypeNames -contains 'Hybrid.AuthenticationRequest') -Message 'Authentication request has platform type name'
+Assert-Pass -Condition ($authRequest.MethodName -eq 'InteractiveBrowser') -Message 'Authentication request uses policy default method'
+Assert-Pass -Condition ($authRequest.TenantContext.TenantId -eq $tenant.TenantId) -Message 'Authentication request attaches tenant context'
+Assert-Pass -Condition ($authRequest.CloudEnvironment.Name -eq 'GccHigh') -Message 'Authentication request attaches cloud environment'
+Assert-Pass -Condition ($authRequest.Authority -eq 'https://login.microsoftonline.us/11111111-1111-1111-1111-111111111111') -Message 'Authentication request resolves sovereign authority'
+Assert-Pass -Condition ($authRequest.Scopes -contains 'https://graph.microsoft.us/.default') -Message 'Authentication request inherits policy scopes'
+
+$explicitRequest = New-HybridAuthenticationRequest -TenantContext $tenant -MethodName 'InteractiveBrowser' -Scopes @('User.Read')
+Assert-Pass -Condition ($explicitRequest.Scopes -contains 'User.Read') -Message 'Authentication request accepts explicit scopes'
+
+$session = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest -AccessToken 'mock-token' -ExpiresOn ([datetime]::UtcNow.AddHours(1))
+Assert-Pass -Condition ($session.PSTypeNames -contains 'Hybrid.AuthenticationSession') -Message 'Authentication session has platform type name'
+Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($session.SessionId)) -Message 'Authentication session receives session id'
+Assert-Pass -Condition ($session.IsAuthenticated -eq $true) -Message 'Authentication session reports authenticated when token exists'
+Assert-Pass -Condition ($session.TokenType -eq 'Bearer') -Message 'Authentication session defaults to bearer token type'
+Assert-Pass -Condition ($session.CloudEnvironment.Name -eq 'GccHigh') -Message 'Authentication session preserves cloud environment'
+Assert-Pass -Condition (Test-HybridAuthenticationSession -Session $session) -Message 'Authentication session validates'
+
+$expiredSession = New-HybridAuthenticationSession -AuthenticationRequest $explicitRequest -AccessToken 'expired-token' -ExpiresOn ([datetime]::UtcNow.AddMinutes(-5))
+Assert-Pass -Condition (-not (Test-HybridAuthenticationSession -Session $expiredSession)) -Message 'Expired authentication session fails validation'
+
+Set-HybridAuthenticationPolicy -Policy (New-HybridAuthenticationPolicy) | Out-Null
+
 Write-Host ''
-Write-Host 'Milestone 5 Phase 2 tenant and organization context tests passed.' -ForegroundColor Cyan
+Write-Host 'Milestone 5 Phase 3 authentication framework tests passed.' -ForegroundColor Cyan
