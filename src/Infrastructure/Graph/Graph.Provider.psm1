@@ -16,6 +16,10 @@ $script:HybridGraphCapabilities = @{
     Organization = @{ Name = 'Organization'; Description = 'Microsoft Graph organization read operations'; Enabled = $true }
     HttpPipeline = @{ Name = 'HttpPipeline'; Description = 'Uses shared HAP HTTP pipeline';               Enabled = $true }
     CloudAware   = @{ Name = 'CloudAware';   Description = 'Resolves sovereign Microsoft Graph endpoints'; Enabled = $true }
+    EndpointBuilder = @{ Name = 'EndpointBuilder'; Description = 'Uses shared Graph endpoint builders'; Enabled = $true }
+    QueryBuilder    = @{ Name = 'QueryBuilder';    Description = 'Uses shared OData query builders'; Enabled = $true }
+    Diagnostics     = @{ Name = 'Diagnostics';     Description = 'Reports Graph runtime diagnostics'; Enabled = $true }
+    BatchContract   = @{ Name = 'BatchContract';   Description = 'Defines Graph batch request contracts'; Enabled = $true }
 }
 
 function Get-HybridGraphProviderCapabilities {
@@ -49,6 +53,7 @@ function Initialize-HybridGraphProvider {
         Client       = $Client
         Capabilities = @(Get-HybridGraphProviderCapabilities)
         Health       = 'Unknown'
+        State        = if ($null -ne $Client -and $Client.PSObject.Properties.Name -contains 'State') { $Client.State } else { $null }
         Attributes   = $Attributes
         CreatedOn    = [datetime]::UtcNow
     }
@@ -93,11 +98,24 @@ function Get-HybridGraphProviderHealth {
         }
     }
 
+    $state = $null
+    if ($null -ne $resolvedProvider -and $resolvedProvider.PSObject.Properties.Name -contains 'Client' -and $null -ne $resolvedProvider.Client -and $resolvedProvider.Client.PSObject.Properties.Name -contains 'State') {
+        $state = $resolvedProvider.Client.State
+    }
+
     [pscustomobject]@{
         PSTypeName    = 'Hybrid.GraphProviderHealth'
         ProviderName  = 'MicrosoftGraph'
         Status        = if ($clientValid) { 'Ready' } else { 'NotConfigured' }
         ClientValid   = $clientValid
+        Cloud         = if ($null -ne $state) { $state.Cloud } else { '' }
+        TenantId      = if ($null -ne $state) { $state.TenantId } else { '' }
+        Authenticated = if ($null -ne $state) { $state.Authenticated } else { $false }
+        ApiVersion    = if ($null -ne $state) { $state.ApiVersion } else { '' }
+        Scopes        = if ($null -ne $state) { @($state.Scopes) } else { @() }
+        Transport     = if ($null -ne $state) { $state.Transport } else { '' }
+        LastRequest   = if ($null -ne $state) { $state.LastRequest } else { $null }
+        LastDiagnostic = if ($null -ne $state) { $state.LastDiagnostic } else { $null }
         Capabilities  = @(Get-HybridGraphProviderCapabilities)
         CheckedOn     = [datetime]::UtcNow
     }

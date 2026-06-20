@@ -202,3 +202,30 @@ Phase 6 remains offline-testable. It does not acquire tokens, load MSAL, call Mi
 - Graph modules must consume the shared HTTP pipeline.
 - Graph modules must return Hybrid platform objects or pipeline responses.
 - Live Microsoft Graph behavior belongs in later phases and versions after the shared foundation is complete.
+
+### Phase 5.6.1: Graph Infrastructure Completion
+
+Phase 5.6.1 completes the reusable Microsoft Graph infrastructure before Version 0.5 finalization.
+
+This phase expands the Graph foundation with reusable platform contracts instead of feature-specific Graph code.
+
+Added infrastructure includes:
+
+- `Graph.EndpointBuilder` for sovereign-aware Graph endpoint and resource URI construction.
+- `Graph.Query` for OData query string generation.
+- `Graph.Error` for translating Graph error payloads into platform error objects.
+- `Graph.RequestBuilders` for reusable users, groups, and organization request builders.
+- `Graph.Diagnostics` for request diagnostics and provider runtime state.
+- `Graph.Batch` for future batch request and response contracts.
+- Graph mapper infrastructure for consistent Graph-to-Hybrid model conversion.
+
+Design rules:
+
+- Graph modules should not concatenate URLs directly.
+- OData query construction belongs in `Graph.Query`.
+- Graph errors should be translated through `Graph.Error` before surfacing to higher layers.
+- Provider health should expose runtime state including cloud, tenant, authentication state, API version, scopes, transport, last request, and diagnostics.
+- Batch support is contract-only in Version 0.5; live batch execution belongs in a later version.
+- Graph feature modules should prefer request builders over ad-hoc request construction.
+
+Phase 5.6.1 remains offline-testable and does not introduce live Graph calls, MSAL usage, or token acquisition.

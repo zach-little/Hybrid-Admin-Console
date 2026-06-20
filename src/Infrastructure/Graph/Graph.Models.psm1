@@ -2,10 +2,46 @@
 # Name: Graph.Models
 # Purpose: Microsoft Graph to Hybrid model conversion contracts.
 # Dependencies: None
-# Exports: ConvertFrom-HybridGraphUser, ConvertFrom-HybridGraphGroup, ConvertFrom-HybridGraphOrganization
+# Exports: ConvertFrom-HybridGraphUser, ConvertFrom-HybridGraphGroup, ConvertFrom-HybridGraphOrganization,
+#          New-HybridGraphMapper, Invoke-HybridGraphMapper
 #endregion
 
 Set-StrictMode -Version Latest
+
+
+function New-HybridGraphMapper {
+    [CmdletBinding()]
+    param(
+        [hashtable]$Mappings = @{}
+    )
+
+    $resolved = @{}
+    $resolved['User'] = { param($Object) ConvertFrom-HybridGraphUser -GraphUser $Object }
+    $resolved['Group'] = { param($Object) ConvertFrom-HybridGraphGroup -GraphGroup $Object }
+    $resolved['Organization'] = { param($Object) ConvertFrom-HybridGraphOrganization -GraphOrganization $Object }
+
+    foreach ($key in $Mappings.Keys) { $resolved[$key] = $Mappings[$key] }
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.GraphMapper'
+        Mappings   = $resolved
+        CreatedOn  = [datetime]::UtcNow
+    }
+}
+
+function Invoke-HybridGraphMapper {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][ValidateNotNull()][object]$Mapper,
+        [Parameter(Mandatory=$true)][string]$TypeName,
+        [Parameter(Mandatory=$true)][ValidateNotNull()][object]$InputObject
+    )
+
+    if ($Mapper.PSObject.Properties.Name -notcontains 'Mappings') { throw 'Invalid Graph mapper. Missing Mappings property.' }
+    if (-not $Mapper.Mappings.ContainsKey($TypeName)) { throw "Graph mapper does not contain mapping '$TypeName'." }
+
+    return & $Mapper.Mappings[$TypeName] $InputObject
+}
 
 function ConvertFrom-HybridGraphUser {
     [CmdletBinding()]
@@ -59,5 +95,7 @@ function ConvertFrom-HybridGraphOrganization {
 Export-ModuleMember -Function @(
     'ConvertFrom-HybridGraphUser',
     'ConvertFrom-HybridGraphGroup',
-    'ConvertFrom-HybridGraphOrganization'
+    'ConvertFrom-HybridGraphOrganization',
+    'New-HybridGraphMapper',
+    'Invoke-HybridGraphMapper'
 )

@@ -9,21 +9,25 @@
 - Added tenant default domain resolution.
 - Added organization provider registration helpers.
 - Added organization capability registration helpers.
-- Added authentication framework shell with enterprise authentication policy support.
-- Added authentication method registration while explicitly rejecting Device Code Flow.
-- Added authentication request construction with sovereign authority resolution.
-- Added authentication session and token descriptor contracts.
-- Added authentication result, cache key, cache entry, and session validation helpers.
-- Added shared HTTP response, retry, and pipeline infrastructure.
-- Added mock-transport HTTP pipeline support for offline provider testing.
+- Added `Core.Authentication` framework shell.
+- Added authentication policies, methods, and request contracts.
+- Added authentication session, token descriptor, authentication result, cache key, and cache entry contracts.
+- Added shared HTTP response, retry, request, pipeline, pagination, and diagnostic contracts.
 - Added Microsoft Graph provider foundation.
-- Added cloud-aware Graph client built on the shared HTTP pipeline.
-- Added initial Graph user, group, and organization wrappers.
-- Added initial Graph-to-Hybrid model conversion contracts.
-- Extended Milestone 5 tests through Phase 6.
+- Added Microsoft Graph client built on the shared HTTP pipeline.
+- Added Microsoft Graph user, group, and organization wrapper modules.
+- Added Microsoft Graph model conversion contracts.
+- Added Microsoft Graph endpoint builder infrastructure.
+- Added Microsoft Graph OData query builder infrastructure.
+- Added Microsoft Graph error translator contracts.
+- Added Microsoft Graph request builders for users, groups, and organization resources.
+- Added Microsoft Graph diagnostics and provider runtime state contracts.
+- Added Microsoft Graph batch request and response contracts.
+- Added Microsoft Graph mapper infrastructure.
+- Extended Milestone 5 tests through Phase 5.6.1.
 
 ### Notes
 
-- Phase 6 intentionally does not authenticate, load MSAL, call Microsoft Graph, or require internet access.
-- Microsoft Graph consumes the shared authentication session and HTTP pipeline contracts created earlier in Version 0.5.
+- Phase 5.6.1 intentionally does not authenticate, call Microsoft Graph live, or implement MSAL.
+- Batch support is contract-only in Version 0.5.
 - `Project_Status.md`, `ROADMAP.md`, and `VERSION.md` are updated during the final phase of the version.

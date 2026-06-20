@@ -42,8 +42,14 @@ $httpResponseModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpResponse.psm1'
 $httpRetryModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpRetry.psm1'
 $httpPipelineModulePath = Join-Path $RepoRoot 'src\Core\Core.HttpPipeline.psm1'
 $graphProviderModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Provider.psm1'
+$graphEndpointBuilderModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.EndpointBuilder.psm1'
+$graphQueryModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Query.psm1'
+$graphErrorModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Error.psm1'
+$graphDiagnosticsModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Diagnostics.psm1'
+$graphBatchModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Batch.psm1'
 $graphClientModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Client.psm1'
 $graphModelsModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Models.psm1'
+$graphRequestBuildersModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.RequestBuilders.psm1'
 $graphUsersModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Users.psm1'
 $graphGroupsModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Groups.psm1'
 $graphOrganizationModulePath = Join-Path $RepoRoot 'src\Infrastructure\Graph\Graph.Organization.psm1'
@@ -55,8 +61,14 @@ Import-Module $authenticationModulePath -Force
 Import-Module $httpResponseModulePath -Force
 Import-Module $httpRetryModulePath -Force
 Import-Module $httpPipelineModulePath -Force
+Import-Module $graphEndpointBuilderModulePath -Force
+Import-Module $graphQueryModulePath -Force
+Import-Module $graphErrorModulePath -Force
+Import-Module $graphDiagnosticsModulePath -Force
+Import-Module $graphBatchModulePath -Force
 Import-Module $graphClientModulePath -Force
 Import-Module $graphModelsModulePath -Force
+Import-Module $graphRequestBuildersModulePath -Force
 Import-Module $graphUsersModulePath -Force
 Import-Module $graphGroupsModulePath -Force
 Import-Module $graphOrganizationModulePath -Force
@@ -69,8 +81,14 @@ $authenticationExports = Get-Command -Module Core.Authentication | Select-Object
 $httpResponseExports = Get-Command -Module Core.HttpResponse | Select-Object -ExpandProperty Name
 $httpRetryExports = Get-Command -Module Core.HttpRetry | Select-Object -ExpandProperty Name
 $httpPipelineExports = Get-Command -Module Core.HttpPipeline | Select-Object -ExpandProperty Name
+$graphEndpointBuilderExports = Get-Command -Module Graph.EndpointBuilder | Select-Object -ExpandProperty Name
+$graphQueryExports = Get-Command -Module Graph.Query | Select-Object -ExpandProperty Name
+$graphErrorExports = Get-Command -Module Graph.Error | Select-Object -ExpandProperty Name
+$graphDiagnosticsExports = Get-Command -Module Graph.Diagnostics | Select-Object -ExpandProperty Name
+$graphBatchExports = Get-Command -Module Graph.Batch | Select-Object -ExpandProperty Name
 $graphClientExports = Get-Command -Module Graph.Client | Select-Object -ExpandProperty Name
 $graphModelsExports = Get-Command -Module Graph.Models | Select-Object -ExpandProperty Name
+$graphRequestBuildersExports = Get-Command -Module Graph.RequestBuilders | Select-Object -ExpandProperty Name
 $graphUsersExports = Get-Command -Module Graph.Users | Select-Object -ExpandProperty Name
 $graphGroupsExports = Get-Command -Module Graph.Groups | Select-Object -ExpandProperty Name
 $graphOrganizationExports = Get-Command -Module Graph.Organization | Select-Object -ExpandProperty Name
@@ -128,6 +146,17 @@ Assert-Pass -Condition ($httpPipelineExports -contains 'Invoke-HybridHttpPipelin
 Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPipelineDiagnostic') -Message 'New-HybridHttpPipelineDiagnostic exported'
 Assert-Pass -Condition ($httpPipelineExports -contains 'New-HybridHttpPaginationState') -Message 'New-HybridHttpPaginationState exported'
 
+Assert-Pass -Condition ($graphEndpointBuilderExports -contains 'Resolve-HybridGraphEndpoint') -Message 'Resolve-HybridGraphEndpoint exported'
+Assert-Pass -Condition ($graphEndpointBuilderExports -contains 'New-HybridGraphResourceUri') -Message 'New-HybridGraphResourceUri exported'
+Assert-Pass -Condition ($graphQueryExports -contains 'New-HybridGraphQuery') -Message 'New-HybridGraphQuery exported'
+Assert-Pass -Condition ($graphQueryExports -contains 'ConvertTo-HybridGraphQueryString') -Message 'ConvertTo-HybridGraphQueryString exported'
+Assert-Pass -Condition ($graphErrorExports -contains 'New-HybridGraphError') -Message 'New-HybridGraphError exported'
+Assert-Pass -Condition ($graphErrorExports -contains 'ConvertFrom-HybridGraphError') -Message 'ConvertFrom-HybridGraphError exported'
+Assert-Pass -Condition ($graphDiagnosticsExports -contains 'New-HybridGraphDiagnostic') -Message 'New-HybridGraphDiagnostic exported'
+Assert-Pass -Condition ($graphDiagnosticsExports -contains 'New-HybridGraphProviderState') -Message 'New-HybridGraphProviderState exported'
+Assert-Pass -Condition ($graphBatchExports -contains 'New-HybridGraphBatchRequest') -Message 'New-HybridGraphBatchRequest exported'
+Assert-Pass -Condition ($graphBatchExports -contains 'Add-HybridGraphBatchStep') -Message 'Add-HybridGraphBatchStep exported'
+Assert-Pass -Condition ($graphBatchExports -contains 'New-HybridGraphBatchResponse') -Message 'New-HybridGraphBatchResponse exported'
 Assert-Pass -Condition ($graphClientExports -contains 'New-HybridGraphClient') -Message 'New-HybridGraphClient exported'
 Assert-Pass -Condition ($graphClientExports -contains 'New-HybridGraphRequest') -Message 'New-HybridGraphRequest exported'
 Assert-Pass -Condition ($graphClientExports -contains 'Invoke-HybridGraphRequest') -Message 'Invoke-HybridGraphRequest exported'
@@ -140,6 +169,11 @@ Assert-Pass -Condition ($graphUsersExports -contains 'Search-HybridGraphUser') -
 Assert-Pass -Condition ($graphUsersExports -contains 'Get-HybridGraphUser') -Message 'Get-HybridGraphUser exported'
 Assert-Pass -Condition ($graphGroupsExports -contains 'Search-HybridGraphGroup') -Message 'Search-HybridGraphGroup exported'
 Assert-Pass -Condition ($graphGroupsExports -contains 'Get-HybridGraphGroup') -Message 'Get-HybridGraphGroup exported'
+Assert-Pass -Condition ($graphModelsExports -contains 'New-HybridGraphMapper') -Message 'New-HybridGraphMapper exported'
+Assert-Pass -Condition ($graphModelsExports -contains 'Invoke-HybridGraphMapper') -Message 'Invoke-HybridGraphMapper exported'
+Assert-Pass -Condition ($graphRequestBuildersExports -contains 'New-HybridGraphUsersRequest') -Message 'New-HybridGraphUsersRequest exported'
+Assert-Pass -Condition ($graphRequestBuildersExports -contains 'New-HybridGraphGroupsRequest') -Message 'New-HybridGraphGroupsRequest exported'
+Assert-Pass -Condition ($graphRequestBuildersExports -contains 'New-HybridGraphOrganizationRequest') -Message 'New-HybridGraphOrganizationRequest exported'
 Assert-Pass -Condition ($graphOrganizationExports -contains 'Get-HybridGraphOrganization') -Message 'Get-HybridGraphOrganization exported'
 Assert-Pass -Condition ($graphProviderExports -contains 'Initialize-HybridGraphProvider') -Message 'Initialize-HybridGraphProvider exported'
 Assert-Pass -Condition ($graphProviderExports -contains 'Register-HybridGraphProvider') -Message 'Register-HybridGraphProvider exported'
@@ -503,5 +537,70 @@ $graphHealth = Get-HybridGraphProviderHealth -Provider $graphProvider
 Assert-Pass -Condition ($graphHealth.PSTypeNames -contains 'Hybrid.GraphProviderHealth') -Message 'Graph provider health has platform type name'
 Assert-Pass -Condition ($graphHealth.Status -eq 'Ready') -Message 'Graph provider health reports ready with valid client'
 
+
+$resolvedGraphEndpoint = Resolve-HybridGraphEndpoint -Client $graphClient
+Assert-Pass -Condition ($resolvedGraphEndpoint -eq 'https://graph.microsoft.us') -Message 'Graph endpoint builder resolves client endpoint'
+
+$betaGraphUri = New-HybridGraphResourceUri -Client $graphClient -Path 'users' -ApiVersion 'beta'
+Assert-Pass -Condition ($betaGraphUri -eq 'https://graph.microsoft.us/beta/users') -Message 'Graph resource URI supports beta API version'
+
+$graphQuery = New-HybridGraphQuery -Select @('displayName','mail') -Filter "accountEnabled eq true" -Expand @('manager') -OrderBy @('displayName') -Top 50
+Assert-Pass -Condition ($graphQuery.PSTypeNames -contains 'Hybrid.GraphQuery') -Message 'Graph query has platform type name'
+Assert-Pass -Condition ($graphQuery.QueryString -like '*$select=*') -Message 'Graph query includes select clause'
+Assert-Pass -Condition ($graphQuery.QueryString -like '*$filter=*') -Message 'Graph query includes filter clause'
+Assert-Pass -Condition ($graphQuery.QueryString -like '*$top=50*') -Message 'Graph query includes top clause'
+
+$userRequestBuilder = New-HybridGraphUsersRequest -Client $graphClient -Select @('displayName','mail') -Top 5
+Assert-Pass -Condition ($userRequestBuilder.PSTypeNames -contains 'Hybrid.GraphRequest') -Message 'Graph users request builder returns request'
+Assert-Pass -Condition ($userRequestBuilder.Uri -like '*/users?*') -Message 'Graph users request builder applies query string'
+Assert-Pass -Condition ($userRequestBuilder.Metadata.Resource -eq 'Users') -Message 'Graph users request builder records resource metadata'
+
+$groupRequestBuilder = New-HybridGraphGroupsRequest -Client $graphClient -Id 'group-1'
+Assert-Pass -Condition ($groupRequestBuilder.Path -eq 'groups/group-1') -Message 'Graph groups request builder supports id path'
+
+$organizationRequestBuilder = New-HybridGraphOrganizationRequest -Client $graphClient -Select @('displayName')
+Assert-Pass -Condition ($organizationRequestBuilder.Path -eq 'organization') -Message 'Graph organization request builder targets organization'
+
+$graphErrorResponse = New-HybridHttpResponse -StatusCode 429 -Headers @{ 'request-id' = 'rid-1'; 'Retry-After' = '10' } -Body @{ error = @{ code = 'TooManyRequests'; message = 'Slow down'; innerError = @{ 'client-request-id' = 'cid-1' } } }
+$graphError = ConvertFrom-HybridGraphError -HttpResponse $graphErrorResponse
+Assert-Pass -Condition ($graphError.PSTypeNames -contains 'Hybrid.GraphError') -Message 'Graph error translator returns platform error'
+Assert-Pass -Condition ($graphError.Code -eq 'TooManyRequests') -Message 'Graph error translator preserves code'
+Assert-Pass -Condition ($graphError.RequestId -eq 'rid-1') -Message 'Graph error translator preserves request id'
+Assert-Pass -Condition ($graphError.RetryAfter -eq '10') -Message 'Graph error translator preserves retry after'
+
+$graphDiagnostic = New-HybridGraphDiagnostic -RequestId 'rid-2' -CorrelationId 'cid-2' -ServiceRoot $graphClient.BaseUri -ApiVersion $graphClient.ApiVersion -RetryCount 1 -State 'Completed'
+Assert-Pass -Condition ($graphDiagnostic.PSTypeNames -contains 'Hybrid.GraphDiagnostic') -Message 'Graph diagnostic has platform type name'
+Assert-Pass -Condition ($graphDiagnostic.RetryCount -eq 1) -Message 'Graph diagnostic records retry count'
+
+$graphProviderState = New-HybridGraphProviderState -Cloud 'GccHigh' -TenantId $tenant.TenantId -Authenticated $true -ApiVersion 'v1.0' -Scopes @('User.Read.All') -Transport 'Mock'
+Assert-Pass -Condition ($graphProviderState.PSTypeNames -contains 'Hybrid.GraphProviderState') -Message 'Graph provider state has platform type name'
+Assert-Pass -Condition ($graphProviderState.Authenticated -eq $true) -Message 'Graph provider state records authentication state'
+
+$mapper = New-HybridGraphMapper
+Assert-Pass -Condition ($mapper.PSTypeNames -contains 'Hybrid.GraphMapper') -Message 'Graph mapper has platform type name'
+$mappedUser = Invoke-HybridGraphMapper -Mapper $mapper -TypeName 'User' -InputObject ([pscustomobject]@{ id = 'user-2'; displayName = 'Jordan Lee'; userPrincipalName = 'jlee@atlas-tech.com'; mail = 'jlee@atlas-tech.com' })
+Assert-Pass -Condition ($mappedUser.PSTypeNames -contains 'Hybrid.User') -Message 'Graph mapper converts users'
+
+$batchRequest = New-HybridGraphBatchRequest -BatchId 'batch-1'
+$batchRequest = Add-HybridGraphBatchStep -BatchRequest $batchRequest -Id '1' -Method GET -Url '/users/user-1'
+Assert-Pass -Condition ($batchRequest.PSTypeNames -contains 'Hybrid.GraphBatchRequest') -Message 'Graph batch request has platform type name'
+Assert-Pass -Condition ($batchRequest.Steps.Count -eq 1) -Message 'Graph batch request stores steps'
+Assert-Pass -Condition ($batchRequest.Steps[0].PSTypeNames -contains 'Hybrid.GraphBatchStep') -Message 'Graph batch step has platform type name'
+
+$batchResponse = New-HybridGraphBatchResponse -BatchId 'batch-1' -Responses @([pscustomobject]@{ id = '1'; status = 200 })
+Assert-Pass -Condition ($batchResponse.PSTypeNames -contains 'Hybrid.GraphBatchResponse') -Message 'Graph batch response has platform type name'
+Assert-Pass -Condition ($batchResponse.Succeeded -eq $true) -Message 'Graph batch response records success state'
+
+$stateGraphResponse = Invoke-HybridGraphRequest -Client $graphClient -GraphRequest (New-HybridGraphUsersRequest -Client $graphClient -Top 1)
+Assert-Pass -Condition ($graphClient.State.LastRequest.Path -eq 'users') -Message 'Graph client records last request state'
+Assert-Pass -Condition ($graphClient.State.LastDiagnostic.PSTypeNames -contains 'Hybrid.GraphDiagnostic') -Message 'Graph client records last diagnostic state'
+
+$graphHealthWithState = Get-HybridGraphProviderHealth -Provider $graphProvider
+Assert-Pass -Condition ($graphHealthWithState.Cloud -eq 'GccHigh') -Message 'Graph provider health reports cloud state'
+Assert-Pass -Condition ($graphHealthWithState.Authenticated -eq $true) -Message 'Graph provider health reports authentication state'
+Assert-Pass -Condition (($graphHealthWithState.Capabilities | Where-Object { $_.Name -eq 'EndpointBuilder' }).Enabled -eq $true) -Message 'Graph provider declares endpoint builder capability'
+Assert-Pass -Condition (($graphHealthWithState.Capabilities | Where-Object { $_.Name -eq 'QueryBuilder' }).Enabled -eq $true) -Message 'Graph provider declares query builder capability'
+
+
 Write-Host ''
-Write-Host 'Milestone 5 Phase 6 Microsoft Graph foundation tests passed.' -ForegroundColor Cyan
+Write-Host 'Milestone 5 Phase 6.1 Graph infrastructure completion tests passed.' -ForegroundColor Cyan
