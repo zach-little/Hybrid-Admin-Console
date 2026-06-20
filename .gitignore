@@ -1,0 +1,4 @@
+aes.key
+config.json
+*.log
+Logs/
