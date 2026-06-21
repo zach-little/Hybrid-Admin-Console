@@ -46,6 +46,7 @@ Remove-Module Application.HybridUserService,Infrastructure.DirectorySimulator,In
 .\tests\Test-Milestone7Phase3UIInteraction.ps1
 .\tests\Test-Milestone7Phase4.ps1
 .\tests\Test-Milestone7Phase4UIInteraction.ps1
+.\tests\Test-Milestone7Phase4VisibleExchangeUI.ps1
 ```
 
 ## UI Smoke Test
@@ -56,7 +57,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\src\UI\Start-Hybr
 
 ## Status
 
-In progress pending validation.
+Complete after visible Exchange UI acceptance validation.
 
 
 ## Consolidation fix
@@ -67,3 +68,17 @@ This phase preserves the cumulative Phase 2 and Phase 3 UI/service validation ma
 ## Consolidated Stability Fix
 
 This patch restores cumulative Phase 2/Phase 3 expectations while preserving the Phase 4 Exchange vertical. The Directory Simulator now resolves seeded users deterministically, avoids impossible self-manager/self-report relationships, and the UI launches cleanly in mock mode.
+
+
+## Visible Exchange UI completion
+
+This completion patch makes the Exchange mailbox card immediately visible in the right-side dashboard column instead of leaving the mailbox section below the initial manager/groups/direct-reports view. Manual and initial searches now update the visible Exchange summary text after `Get-HybridUserMailboxDetails` returns mailbox details.
+
+Acceptance criteria for Phase 4 now include visible mailbox data after search:
+
+- Primary SMTP address.
+- Recipient type.
+- Mailbox status.
+- Forwarding state.
+- Delegation list or explicit empty state.
+- Distribution group list or explicit empty state.

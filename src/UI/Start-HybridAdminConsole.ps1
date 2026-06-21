@@ -132,29 +132,32 @@ $xaml = @"
                 </StackPanel>
             </ScrollViewer>
 
-            <StackPanel Grid.Column="1">
-                <Border x:Name="ManagerCard" Style="{StaticResource Card}">
-                    <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}">
-                    <StackPanel><TextBlock Text="Groups" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}">
-                    <StackPanel><TextBlock Text="Direct Reports" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="DirectReportsList" MinHeight="120"/></StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                        <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
-                        <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
-                        <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
-                        <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                        <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
-                        <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
-                        <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border x:Name="ExchangeMailboxCard" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="ExchangeSummaryText" Text="Exchange vertical slice waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                            <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
+                            <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
+                            <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="ManagerCard" Style="{StaticResource Card}">
+                        <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel><TextBlock Text="Groups" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel><TextBlock Text="Direct Reports" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="DirectReportsList" MinHeight="120"/></StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
         <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,12,0,0">
@@ -169,7 +172,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -196,8 +199,9 @@ function Get-DisplayValue {
 
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
-    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText')) { $controls[$name].Text = '—' }
+    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '—' }
     $controls.AccountStateText.Text = 'Account state: loading'
+    $controls.ExchangeSummaryText.Text = 'Exchange vertical slice loading mailbox details...'
     $controls.GroupsList.Items.Clear()
     $controls.DirectReportsList.Items.Clear()
     $controls.MailboxDelegationList.Items.Clear()
@@ -256,6 +260,7 @@ function Update-ExchangePanels {
     $controls.RecipientTypeText.Text = 'Loading Exchange...'
     $controls.MailboxStatusText.Text = 'Loading Exchange...'
     $controls.ForwardingText.Text = 'Loading Exchange...'
+    $controls.ExchangeSummaryText.Text = 'Loading Exchange mailbox details...'
     $controls.MailboxDelegationList.Items.Clear()
     $controls.DistributionGroupsList.Items.Clear()
 
@@ -270,8 +275,10 @@ function Update-ExchangePanels {
     if ($exchangeUser.PSObject.Properties.Name -contains 'MailboxDetails') { $mailboxDetails = $exchangeUser.MailboxDetails }
     $mailbox = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Mailbox') { $mailboxDetails.Mailbox } else { $exchangeUser.Mailbox }
 
-    $controls.MailboxText.Text = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('PrimarySmtpAddress') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('PrimarySmtpAddress','Mail') } else { 'Not found' }
-    $controls.RecipientTypeText.Text = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('RecipientTypeDetails') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('RecipientTypeDetails','RecipientType') } else { 'Not found' }
+    $primarySmtp = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('PrimarySmtpAddress') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('PrimarySmtpAddress','Mail') } else { 'Not found' }
+    $controls.MailboxText.Text = $primarySmtp
+    $recipientType = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('RecipientTypeDetails') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('RecipientTypeDetails','RecipientType') } else { 'Not found' }
+    $controls.RecipientTypeText.Text = $recipientType
 
     $hidden = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('HiddenFromAddressListsEnabled') -Default 'Unknown' } else { 'Unknown' }
     $hold = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('LitigationHoldEnabled') -Default 'Unknown' } else { 'Unknown' }
@@ -280,6 +287,7 @@ function Update-ExchangePanels {
     $forwardTo = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('ForwardingSmtpAddress') -Default '' } else { '' }
     $deliverAndForward = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('DeliverToMailboxAndForward') -Default 'Unknown' } else { 'Unknown' }
     $controls.ForwardingText.Text = if ([string]::IsNullOrWhiteSpace($forwardTo)) { "No forwarding configured" } else { "Forwarding to $forwardTo | DeliverToMailboxAndForward=$deliverAndForward" }
+    $controls.ExchangeSummaryText.Text = "Exchange loaded: $recipientType | $primarySmtp"
 
     $delegations = @()
     if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Delegations') { $delegations = @($mailboxDetails.Delegations) }
