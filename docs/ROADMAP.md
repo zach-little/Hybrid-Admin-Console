@@ -4,25 +4,64 @@
 
 v0.8.0
 
-## Completed
+---
 
-- Milestones 1-7 complete
-- Milestone 8 - Runtime Platform complete
+# Completed
 
-## Milestone 8 Runtime Platform
+- ✅ Milestone 1 — Foundation
+- ✅ Milestone 2 — Domain Model
+- ✅ Milestone 3 — Provider Architecture
+- ✅ Milestone 4 — Active Directory Provider
+- ✅ Milestone 5 — Microsoft 365 Cloud Foundation
+- ✅ Milestone 6 — Authentication Infrastructure
+- ✅ Milestone 7 — Service Layer & Vertical Integration
+- ✅ Milestone 8 — Runtime Platform
 
-- Phase 1 Runtime Profile Foundation - complete
-- Phase 2 Runtime Bootstrap Engine - complete
-- Phase 3 Runtime Provider Modes - complete
-- Phase 4 Startup Diagnostics - complete
-- Phase 5 Startup Shell - complete
-- Phase 5.5 Dashboard Layout Foundation - complete
-- Phase 6 Runtime Profile Wizard - complete
-- Phase 6.1 Wizard UX - complete
-- Phase 7 Deployment and Packaging - complete
-- Phase 8 Runtime Profile Manager - complete
-- Final Integration Release - complete
+---
 
-## Next
+# Milestone 9 — Background Runtime Services
 
-Milestone 9 - Background Refresh and runtime-aware operational updates.
+Focus:
+
+- Background refresh engine
+- Runtime event bus
+- Provider refresh scheduling
+- Automatic cache invalidation
+- Live provider reconnection
+- Runtime notifications
+- Status synchronization
+- Long-running task framework
+
+---
+
+# Milestone 10 — Enterprise Features
+
+- Device Management
+- Licensing
+- Teams
+- SharePoint
+- Security
+- Compliance
+- Exchange Enhancements
+- Azure Resource Management
+
+---
+
+# Milestone 11 — Extensibility
+
+- Plugin SDK
+- Third-party providers
+- Extension discovery
+- Provider marketplace
+- Runtime extension loading
+
+---
+
+# Milestone 12 — Production Release
+
+- Installer
+- Auto-update
+- Telemetry (optional)
+- Enterprise deployment
+- Code signing
+- Documentation completion
