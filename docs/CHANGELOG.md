@@ -1,22 +1,59 @@
 # Changelog
 
-## 0.6.0-dev
+## Version 0.6.0 – Microsoft 365 Platform Foundation
 
 ### Added
-- Added `Core.Authentication.Manager` for authentication adapter registration and session routing.
-- Added authentication session cache helpers.
-- Added refresh-window detection for authentication sessions.
-- Added `Get-HybridAuthenticationSession` as the provider-facing session entry point.
-- Added mock authentication adapters for offline tests.
-- Added `Core.Authentication.MSAL` contract adapter scaffolding.
-- Added Milestone 6 Phase 1 authentication manager tests.
-- Added live-capable MSAL token request construction through `New-HybridMsalTokenRequest`.
-- Added MSAL runtime availability reporting through `Test-HybridMsalRuntimeAvailable`.
-- Added injectable MSAL token acquisition boundary for live authentication without coupling tests to MFA, WAM, or external modules.
-- Added MSAL token result normalization into the shared `Hybrid.TokenDescriptor` and `Hybrid.AuthenticationSession` contracts.
-- Added Milestone 6 Phase 2 live-capable MSAL adapter tests.
 
-### Notes
-- Phase 6.1 does not perform live Microsoft authentication yet.
-- Phase 6.2 introduces the live-capable MSAL adapter boundary while keeping automated tests offline and deterministic.
-- Device Code Flow remains unsupported.
+#### Authentication Platform
+
+* Added platform authentication manager.
+* Added authentication session abstraction.
+* Added authentication request model.
+* Added authentication cache with session refresh support.
+* Added authentication adapter registration framework.
+* Added Interactive MSAL authentication adapter.
+* Added App-only MSAL authentication adapter.
+* Established provider-independent authentication contract.
+
+#### Microsoft Graph Provider
+
+* Added Microsoft Graph provider foundation.
+* Added Microsoft Graph provider context.
+* Added Microsoft Graph provider service abstraction.
+* Added provider health reporting.
+* Added Graph user search operation.
+* Added Graph user retrieval operation.
+* Added canonical `Hybrid.User` conversion pipeline.
+
+#### Exchange Online Provider
+
+* Added Exchange Online provider foundation.
+* Added Exchange Online provider context.
+* Added Exchange Online provider service abstraction.
+* Added mailbox search operation.
+* Added mailbox retrieval operation.
+* Added provider health reporting.
+* Integrated Exchange provider with the platform authentication manager.
+
+### Changed
+
+* Authentication is now fully centralized through the Authentication Manager.
+* Providers no longer perform authentication directly.
+* Microsoft 365 providers now consume platform authentication sessions.
+* Standardized provider contracts across Active Directory, Microsoft Graph, and Exchange Online.
+* Improved provider health reporting consistency.
+* Standardized platform object type names.
+* Improved session lifecycle management and cache behavior.
+
+### Testing
+
+Milestone 6 completed successfully.
+
+Completed validation:
+
+* Phase 1 – Authentication Manager
+* Phase 2 – Live-capable MSAL Adapters
+* Phase 3 – Microsoft Graph Provider Foundation
+* Phase 4 – Exchange Online Provider Foundation
+
+All milestone validation tests passed.
