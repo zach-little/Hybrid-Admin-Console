@@ -89,24 +89,18 @@ if ($null -eq $script:HybridRuntime) {
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName System.Windows.Forms
 
 $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hybrid Admin Console" Height="900" Width="1280" MinHeight="820" MinWidth="1120" WindowStartupLocation="CenterScreen" Background="#101826">
+        Title="Hybrid Admin Console" Height="800" Width="1280" MinHeight="720" MinWidth="1120" WindowStartupLocation="CenterScreen" Background="#101826">
     <Window.Resources>
         <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#172337"/><Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
         <Style x:Key="LabelText" TargetType="TextBlock"><Setter Property="Foreground" Value="#94A3B8"/><Setter Property="FontSize" Value="12"/></Style>
         <Style x:Key="ValueText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="FontSize" Value="15"/><Setter Property="Margin" Value="0,2,0,10"/></Style>
         <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="Foreground" Value="#F8FAFC"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
         <Style x:Key="ProfileCardText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
-        <!-- Phase 8.2 Hotfix 1: styled scrollbar for runtime profile cards -->
-        <Style TargetType="{x:Type ScrollBar}">
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="Background" Value="#0B1220"/>
-            <Setter Property="Foreground" Value="#38BDF8"/>
-            <Setter Property="BorderBrush" Value="#1E293B"/>
-        </Style>
     </Window.Resources>
     <Grid x:Name="ShellRoot">
         <Grid.RowDefinitions>
@@ -115,9 +109,9 @@ $xaml = @"
         </Grid.RowDefinitions>
 
         <Grid x:Name="StartupRegion" Grid.Row="0">
-            <Grid x:Name="StartupView" Margin="26">
-                <Grid.RowDefinitions><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <Border Grid.Row="0" Style="{StaticResource Card}" MaxWidth="1160" HorizontalAlignment="Center" VerticalAlignment="Stretch">
+            <Grid x:Name="StartupView" Margin="34">
+                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Border Grid.Row="1" Style="{StaticResource Card}" MaxWidth="1120" HorizontalAlignment="Center">
                     <Grid>
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <StackPanel Grid.Row="0" Margin="0,0,0,20">
@@ -133,11 +127,11 @@ $xaml = @"
                                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                     <TextBlock Text="Runtime Profiles" Style="{StaticResource SectionTitle}"/>
                                     <!-- Phase 8.2 RuntimeProfileCardView: profile cards with Default/Last Used/Ready badges -->
-                                    <ListBox x:Name="RuntimeProfileListBox" Grid.Row="1" MinHeight="360" Background="Transparent" Foreground="#E5E7EB" BorderBrush="#334155" BorderThickness="0" Padding="0,0,6,0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox x:Name="RuntimeProfileListBox" Grid.Row="1" MinHeight="270" Background="Transparent" Foreground="#E5E7EB" BorderBrush="#334155" BorderThickness="0" Padding="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                         <ListBox.ItemTemplate>
                                             <DataTemplate>
                                                 <Border x:Name="RuntimeProfileCard" Background="#111827" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                                                    <StackPanel MinHeight="92">
+                                                    <StackPanel>
                                                         <DockPanel LastChildFill="True">
                                                             <TextBlock Text="{Binding BadgeText}" Foreground="#38BDF8" FontSize="11" FontWeight="SemiBold" DockPanel.Dock="Right" Margin="10,0,0,0"/>
                                                             <TextBlock Text="{Binding ProfileName}" Style="{StaticResource ProfileCardText}" FontSize="16" FontWeight="SemiBold"/>
@@ -151,29 +145,41 @@ $xaml = @"
                                             </DataTemplate>
                                         </ListBox.ItemTemplate>
                                     </ListBox>
-                                    <!-- Phase 8.2 Hotfix 1: fixed startup action footer outside profile-card scroll area -->
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-                                        <Button x:Name="RefreshRuntimeProfilesButton" Content="Refresh" Height="32" MinWidth="82" Margin="0,0,8,0"/>
-                                        <Button x:Name="NewRuntimeProfileButton" Content="New" Height="32" MinWidth="70" Margin="0,0,8,0"/>
-                                        <Button x:Name="EditRuntimeProfileButton" Content="Edit" Height="32" MinWidth="70" IsEnabled="True"/>
-                                    </StackPanel>
+                                    <WrapPanel Grid.Row="2" HorizontalAlignment="Right" Margin="0,12,0,0">
+                                        <Button x:Name="RefreshRuntimeProfilesButton" Content="Refresh" Height="32" MinWidth="82" Margin="0,0,8,8"/>
+                                        <Button x:Name="NewRuntimeProfileButton" Content="New" Height="32" MinWidth="70" Margin="0,0,8,8"/>
+                                        <Button x:Name="EditRuntimeProfileButton" Content="Edit" Height="32" MinWidth="70" Margin="0,0,8,8" IsEnabled="True"/>
+                                        <Button x:Name="DuplicateRuntimeProfileButton" Content="Duplicate" Height="32" MinWidth="86" Margin="0,0,8,8"/>
+                                        <Button x:Name="DeleteRuntimeProfileButton" Content="Delete" Height="32" MinWidth="74" Margin="0,0,8,8"/>
+                                        <Button x:Name="ImportRuntimeProfileButton" Content="Import" Height="32" MinWidth="74" Margin="0,0,8,8"/>
+                                        <Button x:Name="ExportRuntimeProfileButton" Content="Export" Height="32" MinWidth="74" Margin="0,0,8,8"/>
+                                        <Button x:Name="SetDefaultRuntimeProfileButton" Content="Set Default" Height="32" MinWidth="104" Margin="0,0,0,8"/>
+                                    </WrapPanel>
                                 </Grid>
                             </Border>
 
                             <StackPanel Grid.Column="2">
+                                <!-- Phase 8.3 RuntimeSummaryPanel: pre-flight profile/runtime summary -->
                                 <Grid Margin="0,0,0,12">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,18,0">
-                                        <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="-" Style="{StaticResource ValueText}"/>
-                                        <TextBlock Text="Selected Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="-" Style="{StaticResource ValueText}"/>
-                                        <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Style="{StaticResource ValueText}"/>
-                                        <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Style="{StaticResource ValueText}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                        <TextBlock Text="Profile Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                        <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                    </StackPanel>
+                                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,12">
+                                        <StackPanel>
+                                            <TextBlock Text="Profile" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="-" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Selected Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="-" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Style="{StaticResource ValueText}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,0,12">
+                                        <StackPanel>
+                                            <TextBlock Text="Runtime Health" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Profile Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Authentication Posture" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeAuthenticationText" Text="Device Code disabled. Live providers authenticate on launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                        </StackPanel>
+                                    </Border>
                                 </Grid>
                             </StackPanel>
                         </Grid>
@@ -335,6 +341,15 @@ $xaml = @"
 
         <Grid x:Name="OverlayRegion" Grid.RowSpan="2" Background="#990B1220" Visibility="Collapsed">
             <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="920" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid>
+                <Grid x:Name="LaunchProgressView" Width="620" MinHeight="360" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="Launching Runtime" Foreground="#F8FAFC" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="LaunchProgressText" Text="Preparing selected runtime profile..." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                        <ProgressBar x:Name="LaunchProgressBar" Height="10" Minimum="0" Maximum="100" Value="0" Margin="0,0,0,18"/>
+                        <TextBlock Text="The dashboard will open after validation and runtime initialization complete." Foreground="#94A3B8" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
                 <Grid x:Name="RuntimeProfileWizardView" Width="860" MinHeight="560">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -469,6 +484,7 @@ $xaml = @"
                         <Button x:Name="WizardNextButton" Grid.Column="3" Content="Next" Height="38" MinWidth="90"/>
                     </Grid>
                 </Grid>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
@@ -479,7 +495,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -521,6 +537,7 @@ function Set-HybridSelectedRuntimeProfile {
     }
 
     Update-HybridStartupView
+    Update-HybridPersistentRuntimeStatus
 }
 
 function Initialize-HybridRuntimeProfileList {
@@ -595,6 +612,7 @@ function Update-HybridStartupView {
         if ($selectedProfile.IsLastUsed) { $profileBadges += 'Last Used' }
         $badgeSuffix = if ($profileBadges.Count -gt 0) { ' Badges: ' + ($profileBadges -join ', ') + '.' } else { '' }
         $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid) { 'Selected profile is ready for runtime bootstrap.' + $badgeSuffix } else { 'Selected profile cannot be launched until corrected.' + $badgeSuffix }
+        if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = if ($selectedProfile.RuntimeMode -eq 'Simulation') { 'Authentication: not required. Device Code disabled.' } else { 'Authentication: interactive/app-only deferred until launch. Device Code disabled.' } }
         $controls.LaunchConsoleButton.IsEnabled = [bool]$selectedProfile.IsValid
         return
     }
@@ -634,6 +652,110 @@ function Update-HybridStartupView {
     }
     $controls.RuntimeDiagnosticsText.Text = $diagSummary
     $controls.RuntimeStatusText.Text = 'Runtime initialized. Launch the console when ready.'
+}
+
+
+# Phase 8.4 ProfileOperations / Phase 8.5 LaunchWorkflow / Phase 8.6 PersistentRuntimeStatus
+function Update-HybridPersistentRuntimeStatus {
+    $profile = $script:SelectedRuntimeProfileSummary
+    if ($null -eq $profile) { $controls.ShellStatusText.Text = 'No runtime profile selected'; return }
+    $auth = if ($profile.RuntimeMode -eq 'Simulation') { 'None' } else { 'Interactive/App-only on launch' }
+    $controls.ShellStatusText.Text = ('Profile: {0}   Cloud: {1}   Mode: {2}   Auth: {3}   Health: {4}' -f $profile.ProfileName, $profile.CloudEnvironment, $profile.RuntimeMode, $auth, $profile.HealthLabel)
+}
+
+function Show-HybridHomeView {
+    $controls.ConsoleView.Visibility = 'Collapsed'
+    $controls.StartupRegion.Visibility = 'Visible'
+    $controls.StartupView.Visibility = 'Visible'
+    $controls.StatusText.Text = 'Home view opened.'
+    Update-HybridStartupView
+}
+
+function Invoke-HybridRuntimeProfileLaunch {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { $controls.StatusText.Text = 'Select a runtime profile before launch.'; return }
+    if (-not [bool]$script:SelectedRuntimeProfileSummary.IsValid) { $controls.StatusText.Text = 'Selected runtime profile is not valid.'; return }
+    try {
+        $controls.OverlayRegion.Visibility = 'Visible'
+        $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'
+        $controls.LaunchProgressView.Visibility = 'Visible'
+        $steps = @('Loading runtime profile...', 'Validating configuration...', 'Building runtime context...', 'Initializing services...', 'Opening dashboard...')
+        for ($i = 0; $i -lt $steps.Count; $i++) {
+            $controls.LaunchProgressText.Text = $steps[$i]
+            $controls.LaunchProgressBar.Value = [int](($i + 1) * (100 / $steps.Count))
+            [System.Windows.Forms.Application]::DoEvents()
+            Start-Sleep -Milliseconds 90
+        }
+        if (Get-Command Set-HybridRuntimeProfileSelection -ErrorAction SilentlyContinue) {
+            Set-HybridRuntimeProfileSelection -RepositoryRoot $repoRoot -ProfilePath $script:SelectedRuntimeProfileSummary.Path | Out-Null
+        }
+        if (Get-Command Initialize-HybridRuntime -ErrorAction SilentlyContinue) {
+            $script:HybridRuntime = Initialize-HybridRuntime -ProfilePath $script:SelectedRuntimeProfileSummary.Path -RootPath $repoRoot -Force
+        }
+        $controls.LaunchProgressView.Visibility = 'Collapsed'
+        $controls.RuntimeProfileWizardView.Visibility = 'Visible'
+        $controls.OverlayRegion.Visibility = 'Collapsed'
+        Show-HybridConsoleView
+        Update-HybridPersistentRuntimeStatus
+    }
+    catch {
+        $controls.LaunchProgressText.Text = "Launch failed: $($_.Exception.Message)"
+        $controls.StatusText.Text = 'Runtime launch failed.'
+    }
+}
+
+function Copy-HybridSelectedRuntimeProfile {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
+    try {
+        $source = $script:SelectedRuntimeProfileSummary.Path
+        $root = Join-Path $repoRoot 'profiles\Runtime'
+        $base = ([IO.Path]::GetFileNameWithoutExtension($source) + '-Copy')
+        $target = Join-Path $root ($base + '.json')
+        $i = 2
+        while (Test-Path -LiteralPath $target) { $target = Join-Path $root ("{0}-{1}.json" -f $base, $i); $i++ }
+        Copy-Item -LiteralPath $source -Destination $target -Force
+        $json = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
+        if ($json.PSObject.Properties.Name -contains 'ProfileName') { $json.ProfileName = ([IO.Path]::GetFileNameWithoutExtension($target)) }
+        $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $target -Encoding UTF8
+        Initialize-HybridRuntimeProfileList
+        $controls.StatusText.Text = 'Runtime profile duplicated.'
+    } catch { $controls.StatusText.Text = "Duplicate failed: $($_.Exception.Message)" }
+}
+
+function Remove-HybridSelectedRuntimeProfile {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
+    $answer = [System.Windows.MessageBox]::Show(('Delete runtime profile {0}?' -f $script:SelectedRuntimeProfileSummary.ProfileName), 'Confirm Delete', 'YesNo', 'Warning')
+    if ($answer -ne 'Yes') { return }
+    try { Remove-Item -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Force; Initialize-HybridRuntimeProfileList; $controls.StatusText.Text = 'Runtime profile deleted.' } catch { $controls.StatusText.Text = "Delete failed: $($_.Exception.Message)" }
+}
+
+function Export-HybridSelectedRuntimeProfile {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
+    try {
+        $exportRoot = Join-Path $repoRoot 'build\RuntimeProfiles'
+        if (-not (Test-Path $exportRoot)) { New-Item -Path $exportRoot -ItemType Directory -Force | Out-Null }
+        $target = Join-Path $exportRoot $script:SelectedRuntimeProfileSummary.FileName
+        Copy-Item -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Destination $target -Force
+        $controls.StatusText.Text = "Runtime profile exported: $target"
+    } catch { $controls.StatusText.Text = "Export failed: $($_.Exception.Message)" }
+}
+
+function Import-HybridRuntimeProfile {
+    $controls.StatusText.Text = 'Import profile is ready for Phase 9 file-picker integration. Copy JSON into profiles\\Runtime and select Refresh.'
+}
+
+function Set-HybridSelectedRuntimeProfileDefault {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
+    try {
+        $profilesRoot = Join-Path $repoRoot 'profiles\Runtime'
+        Get-ChildItem -LiteralPath $profilesRoot -Filter '*.json' -File | ForEach-Object {
+            $json = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            if ($json.PSObject.Properties.Name -contains 'IsDefault') { $json.IsDefault = $false } else { $json | Add-Member -NotePropertyName IsDefault -NotePropertyValue $false -Force }
+            if ([string]::Equals($_.FullName, $script:SelectedRuntimeProfileSummary.Path, [System.StringComparison]::OrdinalIgnoreCase)) { $json.IsDefault = $true }
+            $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $_.FullName -Encoding UTF8
+        }
+        Initialize-HybridRuntimeProfileList
+        $controls.StatusText.Text = 'Default runtime profile updated.'
+    } catch { $controls.StatusText.Text = "Set default failed: $($_.Exception.Message)" }
 }
 
 function Show-HybridConsoleView {
@@ -1309,10 +1431,15 @@ function Invoke-UserSearch {
 $controls.SearchBox.Text = $InitialQuery
 $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.Text })
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
-$controls.LaunchConsoleButton.Add_Click({ Show-HybridConsoleView })
+$controls.LaunchConsoleButton.Add_Click({ Invoke-HybridRuntimeProfileLaunch })
 $controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForSelectedProfile })
 $controls.NewRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForNew })
 $controls.RefreshRuntimeProfilesButton.Add_Click({ Initialize-HybridRuntimeProfileList })
+if ($controls.DuplicateRuntimeProfileButton) { $controls.DuplicateRuntimeProfileButton.Add_Click({ Copy-HybridSelectedRuntimeProfile }) }
+if ($controls.DeleteRuntimeProfileButton) { $controls.DeleteRuntimeProfileButton.Add_Click({ Remove-HybridSelectedRuntimeProfile }) }
+if ($controls.ExportRuntimeProfileButton) { $controls.ExportRuntimeProfileButton.Add_Click({ Export-HybridSelectedRuntimeProfile }) }
+if ($controls.ImportRuntimeProfileButton) { $controls.ImportRuntimeProfileButton.Add_Click({ Import-HybridRuntimeProfile }) }
+if ($controls.SetDefaultRuntimeProfileButton) { $controls.SetDefaultRuntimeProfileButton.Add_Click({ Set-HybridSelectedRuntimeProfileDefault }) }
 $controls.RuntimeProfileListBox.Add_SelectionChanged({ Select-HybridRuntimeProfileFromList })
 $controls.WizardCancelButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
 $controls.WizardCloseButton.Add_Click({ Hide-HybridRuntimeProfileWizard })

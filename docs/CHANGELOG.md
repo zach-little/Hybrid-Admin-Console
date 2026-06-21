@@ -1,12 +1,14 @@
 # Changelog
 
-## v0.8.0-dev — Milestone 8 Phase 2 Hotfix 1
+## v0.8.0
 
-- Fixed `Core.Runtime` diagnostics collection assignment during runtime bootstrap.
-- Hardened runtime member replacement to avoid note-property type mismatches.
-- Improved Phase 2 test guardrails around runtime context creation.
-
-## v0.8.0-dev — Milestone 8 Phase 2 Hotfix 2
-
-- Fixed runtime-imported application service commands not being visible to validation sessions.
-- Runtime module imports dependency modules with `-Global` so existing public service commands remain available after bootstrap.
+- Completed Milestone 8 Runtime Platform.
+- Added Runtime Profile Foundation.
+- Added Runtime Bootstrap Engine.
+- Added Runtime Provider Modes.
+- Added Startup Diagnostics Engine.
+- Added Startup Shell and dashboard layout foundation.
+- Added Runtime Profile Wizard and improved multi-step UX.
+- Added Deployment and Packaging support.
+- Added Runtime Profile Manager with discovery, cards, profile operations, launch workflow, and persistent status.
+- Maintained no Device Code authentication policy.

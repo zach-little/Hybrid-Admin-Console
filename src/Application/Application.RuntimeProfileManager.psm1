@@ -283,9 +283,74 @@ function Update-HybridRuntimeProfileManager {
     return (Add-HybridRuntimeProfileManagerTypeMetadata -InputObject $result -TypeName 'Hybrid.RuntimeProfileManagerState')
 }
 
+
+function Copy-HybridRuntimeProfile {
+    [CmdletBinding()]
+    param(
+        [string]$RepositoryRoot,
+        [Parameter(Mandatory)][string]$ProfilePath,
+        [string]$NewProfileName
+    )
+    $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
+    $folder = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
+    if (-not (Test-Path -LiteralPath $ProfilePath -PathType Leaf)) { throw "Runtime profile not found: $ProfilePath" }
+    if ([string]::IsNullOrWhiteSpace($NewProfileName)) { $NewProfileName = ([IO.Path]::GetFileNameWithoutExtension($ProfilePath) + '-Copy') }
+    $safeName = ($NewProfileName -replace '[^a-zA-Z0-9._-]', '-')
+    $target = Join-Path $folder ("$safeName.json")
+    $i = 2
+    while (Test-Path -LiteralPath $target) { $target = Join-Path $folder ("{0}-{1}.json" -f $safeName,$i); $i++ }
+    Copy-Item -LiteralPath $ProfilePath -Destination $target -Force
+    try {
+        $json = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
+        if ($json.PSObject.Properties.Name -contains 'ProfileName') { $json.ProfileName = [IO.Path]::GetFileNameWithoutExtension($target) }
+        elseif ($json.PSObject.Properties.Name -contains 'Name') { $json.Name = [IO.Path]::GetFileNameWithoutExtension($target) }
+        $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $target -Encoding UTF8
+    } catch { }
+    return Get-HybridRuntimeProfileSummary -RepositoryRoot $root | Where-Object { [string]::Equals($_.Path,$target,[System.StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
+}
+
+function Remove-HybridRuntimeProfile {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([string]$RepositoryRoot,[Parameter(Mandatory)][string]$ProfilePath)
+    if (-not (Test-Path -LiteralPath $ProfilePath -PathType Leaf)) { return $false }
+    if ($PSCmdlet.ShouldProcess($ProfilePath,'Delete runtime profile')) { Remove-Item -LiteralPath $ProfilePath -Force }
+    return $true
+}
+
+function Set-HybridRuntimeProfileDefault {
+    [CmdletBinding()]
+    param([string]$RepositoryRoot,[Parameter(Mandatory)][string]$ProfilePath)
+    $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
+    $folder = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
+    Get-ChildItem -LiteralPath $folder -Filter '*.json' -File -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $json = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            if ($json.PSObject.Properties.Name -contains 'IsDefault') { $json.IsDefault = $false } else { $json | Add-Member -NotePropertyName IsDefault -NotePropertyValue $false -Force }
+            if ([string]::Equals($_.FullName,$ProfilePath,[System.StringComparison]::OrdinalIgnoreCase)) { $json.IsDefault = $true }
+            $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $_.FullName -Encoding UTF8
+        } catch { }
+    }
+    return Get-HybridRuntimeProfileSelection -RepositoryRoot $root
+}
+
+function Export-HybridRuntimeProfile {
+    [CmdletBinding()]
+    param([string]$RepositoryRoot,[Parameter(Mandatory)][string]$ProfilePath,[string]$DestinationFolder)
+    $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
+    if ([string]::IsNullOrWhiteSpace($DestinationFolder)) { $DestinationFolder = Join-Path $root 'build\RuntimeProfiles' }
+    if (-not (Test-Path -LiteralPath $DestinationFolder -PathType Container)) { New-Item -Path $DestinationFolder -ItemType Directory -Force | Out-Null }
+    $target = Join-Path $DestinationFolder ([IO.Path]::GetFileName($ProfilePath))
+    Copy-Item -LiteralPath $ProfilePath -Destination $target -Force
+    return $target
+}
+
 Export-ModuleMember -Function @(
     'Get-HybridRuntimeProfileSummary',
     'Get-HybridRuntimeProfileSelection',
     'Set-HybridRuntimeProfileSelection',
-    'Update-HybridRuntimeProfileManager'
+    'Update-HybridRuntimeProfileManager',
+    'Copy-HybridRuntimeProfile',
+    'Remove-HybridRuntimeProfile',
+    'Set-HybridRuntimeProfileDefault',
+    'Export-HybridRuntimeProfile'
 )
