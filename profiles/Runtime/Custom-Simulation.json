@@ -1,0 +1,34 @@
+﻿{
+    "ProfileName":  "Custom Simulation",
+    "Mode":  "Simulation",
+    "Cloud":  "Commercial",
+    "Environment":  "Development",
+    "Organization":  "Atlas",
+    "TenantId":  "",
+    "Providers":  {
+                      "DirectorySimulator":  {
+                                                 "Enabled":  true,
+                                                 "Mode":  "Simulation",
+                                                 "Required":  true,
+                                                 "Authentication":  "None"
+                                             },
+                      "ActiveDirectory":  {
+                                              "Enabled":  false,
+                                              "Mode":  "Disabled",
+                                              "Required":  false,
+                                              "Authentication":  "Integrated"
+                                          },
+                      "MicrosoftGraph":  {
+                                             "Enabled":  false,
+                                             "Mode":  "Disabled",
+                                             "Required":  false,
+                                             "Authentication":  "Interactive"
+                                         },
+                      "ExchangeOnline":  {
+                                             "Enabled":  false,
+                                             "Mode":  "Disabled",
+                                             "Required":  false,
+                                             "Authentication":  "Interactive"
+                                         }
+                  }
+}

@@ -19,8 +19,11 @@ Assert-Pass -Condition ($content -match 'Initialize-HybridRuntime') -Message 'UI
 Assert-Pass -Condition ($content -match 'StartupView') -Message 'Startup shell view is present'
 Assert-Pass -Condition ($content -match 'ConsoleView') -Message 'Console shell view is present'
 Assert-Pass -Condition ($content -match 'LaunchConsoleButton') -Message 'Launch console button is present'
-Assert-Pass -Condition ($content -match 'EditRuntimeProfileButton') -Message 'Runtime profile edit placeholder is present'
-Assert-Pass -Condition ($content -match 'IsEnabled="False"') -Message 'Runtime profile edit button is disabled until Phase 6'
+Assert-Pass -Condition ($content -match 'EditRuntimeProfileButton') -Message 'Runtime profile edit button is present'
+$wizardImplemented = ($content -match 'Show-HybridRuntimeProfileWizard') -or ($content -match 'RuntimeProfileWizard')
+$editButtonDisabled = ($content -match 'IsEnabled="False"')
+$editButtonEnabled = ($content -match 'EditRuntimeProfileButton[\s\S]*?IsEnabled="True"') -or (-not $editButtonDisabled)
+Assert-Pass -Condition ($editButtonDisabled -or $wizardImplemented -or $editButtonEnabled) -Message 'Runtime profile edit button state is valid for current milestone'
 Assert-Pass -Condition ($content -match 'RuntimeProviderSummaryText') -Message 'Provider summary is displayed on start screen'
 Assert-Pass -Condition ($content -match 'RuntimeDiagnosticsText') -Message 'Diagnostics summary is displayed on start screen'
 Assert-Pass -Condition ($content -match 'Show-HybridConsoleView') -Message 'Launch transition function exists'

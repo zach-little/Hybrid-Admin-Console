@@ -114,20 +114,20 @@ $xaml = @"
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,18,0">
-                                <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="—" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="—" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="—" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="—" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="-" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="-" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Style="{StaticResource ValueText}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Startup Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Startup Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                                 <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                             </StackPanel>
                         </Grid>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
                             <Button x:Name="LaunchConsoleButton" Content="Launch Hybrid Admin Console" Height="40" MinWidth="220" Margin="0,0,10,0"/>
-                            <Button x:Name="EditRuntimeProfileButton" Content="Edit Runtime Profile" Height="40" MinWidth="160" IsEnabled="False" Margin="0,0,10,0"/>
+                            <Button x:Name="EditRuntimeProfileButton" Content="Edit Runtime Profile" Height="40" MinWidth="160" IsEnabled="True" Margin="0,0,10,0"/>
                             <Button x:Name="ExitButton" Content="Exit" Height="40" MinWidth="90"/>
                         </StackPanel>
                     </StackPanel>
@@ -143,7 +143,7 @@ $xaml = @"
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime shell hosted" Foreground="#38BDF8" FontSize="13"/>
+                        <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                     </StackPanel>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
@@ -175,28 +175,28 @@ $xaml = @"
                                 <StackPanel>
                                     <TextBlock x:Name="ResultHeader" Text="Search for a user" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold"/>
                                     <TextBlock x:Name="AccountStateText" Text="Account state: waiting" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,4,0,14"/>
-                                    <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="-" Style="{StaticResource ValueText}"/>
                                 </StackPanel>
                             </Border>
 
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Directory Facts" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                                 </StackPanel>
                             </Border>
 
                             <Border x:Name="ManagerCard" Style="{StaticResource Card}">
-                                <StackPanel><TextBlock Text="Manager" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
+                                <StackPanel><TextBlock Text="Manager" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="ManagerText" Text="-" Style="{StaticResource ValueText}"/></StackPanel>
                             </Border>
                             <Border Style="{StaticResource Card}">
                                 <StackPanel><TextBlock Text="Groups" Style="{StaticResource SectionTitle}"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
@@ -213,13 +213,13 @@ $xaml = @"
                                 <StackPanel>
                                     <TextBlock Text="Exchange Mailbox" Style="{StaticResource SectionTitle}"/>
                                     <TextBlock x:Name="ExchangeSummaryText" Text="Exchange vertical slice waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                                    <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
-                                    <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="-" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                                     <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
                                     <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
-                                    <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -282,8 +282,141 @@ $xaml = @"
         </Grid>
 
         <Grid x:Name="OverlayRegion" Grid.RowSpan="2" Background="#990B1220" Visibility="Collapsed">
-            <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="560" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Overlay region reserved for guided runtime workflows." Foreground="#E5E7EB" FontSize="16" TextWrapping="Wrap"/>
+            <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="920" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid x:Name="RuntimeProfileWizardView" Width="860" MinHeight="560">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Runtime Profile Wizard" Foreground="#F8FAFC" FontSize="26" FontWeight="SemiBold"/>
+                            <TextBlock Text="Create, edit, validate, and save runtime profiles without editing JSON by hand." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button x:Name="WizardCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="210"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="16" Margin="0,0,16,0">
+                            <StackPanel>
+                                <TextBlock Text="Steps" Style="{StaticResource LabelText}" Margin="0,0,0,10"/>
+                                <TextBlock x:Name="WizardStepProfileText" Text="1. Profile" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="WizardStepEnvironmentText" Text="2. Environment" Foreground="#94A3B8" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="WizardStepRuntimeText" Text="3. Runtime Mode" Foreground="#94A3B8" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="WizardStepProvidersText" Text="4. Providers" Foreground="#94A3B8" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="WizardStepValidationText" Text="5. Validation" Foreground="#94A3B8" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="WizardStepSummaryText" Text="6. Summary" Foreground="#94A3B8" Margin="0,0,0,12"/>
+                                <Border Background="#111827" CornerRadius="10" Padding="10" Margin="0,18,0,0">
+                                    <TextBlock Text="Use Next to move through the profile workflow. Validate before saving." Foreground="#CBD5E1" TextWrapping="Wrap" FontSize="12"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="#0F172A" CornerRadius="14" Padding="18">
+                            <Grid>
+                                <StackPanel x:Name="WizardStepProfilePanel" Visibility="Visible">
+                                    <TextBlock Text="Step 1: Profile" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Name the runtime profile and identify the organization it belongs to." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <TextBlock Text="Profile Name" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="WizardProfileNameTextBox" Text="Custom Simulation" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Organization" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="WizardOrganizationTextBox" Text="Atlas" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Tenant ID" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="WizardTenantIdTextBox" Text="" Height="34" Margin="0,4,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel x:Name="WizardStepEnvironmentPanel" Visibility="Collapsed">
+                                    <TextBlock Text="Step 2: Environment" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Choose the Microsoft cloud container this runtime profile targets." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/>
+                                    <ComboBox x:Name="WizardCloudComboBox" Height="34" SelectedIndex="0" MaxWidth="360" HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="Commercial"/>
+                                        <ComboBoxItem Content="GCCHigh"/>
+                                        <ComboBoxItem Content="DoD"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel x:Name="WizardStepRuntimePanel" Visibility="Collapsed">
+                                    <TextBlock Text="Step 3: Runtime Mode" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Select whether this profile uses live providers, simulated providers, or a hybrid of both." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/>
+                                    <ComboBox x:Name="WizardModeComboBox" Height="34" SelectedIndex="0" MaxWidth="360" HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="Simulation"/>
+                                        <ComboBoxItem Content="Live"/>
+                                        <ComboBoxItem Content="Hybrid"/>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel x:Name="WizardStepProvidersPanel" Visibility="Collapsed">
+                                    <TextBlock Text="Step 4: Providers" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Enable each provider and choose the runtime mode it should use." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Provider" Style="{StaticResource LabelText}"/>
+                                        <TextBlock Grid.Column="1" Text="Enabled" Style="{StaticResource LabelText}"/>
+                                        <TextBlock Grid.Column="2" Text="Mode" Style="{StaticResource LabelText}"/>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Directory Simulator" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardDirectorySimulatorEnabledCheckBox" Grid.Column="1" IsChecked="True" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="WizardDirectorySimulatorModeComboBox" Grid.Column="2" SelectedIndex="0"><ComboBoxItem Content="Simulation"/><ComboBoxItem Content="Disabled"/></ComboBox>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Active Directory" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardActiveDirectoryEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="WizardActiveDirectoryModeComboBox" Grid.Column="2" SelectedIndex="2"><ComboBoxItem Content="Live"/><ComboBoxItem Content="Simulation"/><ComboBoxItem Content="Disabled"/></ComboBox>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Microsoft Graph" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardMicrosoftGraphEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="WizardMicrosoftGraphModeComboBox" Grid.Column="2" SelectedIndex="2"><ComboBoxItem Content="Live"/><ComboBoxItem Content="Simulation"/><ComboBoxItem Content="Disabled"/></ComboBox>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Exchange Online" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardExchangeOnlineEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="WizardExchangeOnlineModeComboBox" Grid.Column="2" SelectedIndex="2"><ComboBoxItem Content="Live"/><ComboBoxItem Content="Simulation"/><ComboBoxItem Content="Disabled"/></ComboBox>
+                                    </Grid>
+                                </StackPanel>
+
+                                <StackPanel x:Name="WizardStepValidationPanel" Visibility="Collapsed">
+                                    <TextBlock Text="Step 5: Validation" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Validate the generated runtime profile before saving it." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <Button x:Name="WizardValidateButton" Content="Validate Profile" Height="38" MinWidth="140" HorizontalAlignment="Left" Margin="0,0,0,14"/>
+                                    <Border Background="#111827" CornerRadius="10" Padding="12">
+                                        <TextBlock x:Name="WizardValidationText" Text="Select Validate Profile to preview the generated runtime profile." Foreground="#CBD5E1" TextWrapping="Wrap"/>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel x:Name="WizardStepSummaryPanel" Visibility="Collapsed">
+                                    <TextBlock Text="Step 6: Summary" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Save the runtime profile after validation. The profile is written under profiles\\Runtime." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <Border Background="#111827" CornerRadius="10" Padding="12" Margin="0,0,0,14">
+                                        <TextBlock x:Name="WizardSummaryText" Text="Profile has not been validated yet." Foreground="#CBD5E1" TextWrapping="Wrap"/>
+                                    </Border>
+                                    <Button x:Name="WizardSaveButton" Content="Save Profile" Height="38" MinWidth="130" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Button x:Name="WizardCancelButton" Grid.Column="0" Content="Cancel" Height="38" MinWidth="90"/>
+                        <TextBlock x:Name="WizardStepStatusText" Grid.Column="1" Text="Step 1 of 6" Foreground="#94A3B8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Button x:Name="WizardBackButton" Grid.Column="2" Content="Back" Height="38" MinWidth="90" Margin="0,0,10,0" IsEnabled="False"/>
+                        <Button x:Name="WizardNextButton" Grid.Column="3" Content="Next" Height="38" MinWidth="90"/>
+                    </Grid>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
@@ -294,14 +427,14 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
 $script:SelectedHybridUser = $null
 
 function Get-HybridRuntimeDisplayValue {
-    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '—')
+    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '-')
     foreach ($name in $Names) {
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
@@ -360,6 +493,176 @@ function Show-HybridConsoleView {
     if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
 }
 
+
+$script:HybridRuntimeProfileWizardStep = 0
+$script:HybridRuntimeProfileWizardStepCount = 6
+
+function Set-HybridRuntimeProfileWizardStep {
+    param([int]$Step)
+
+    if ($Step -lt 0) { $Step = 0 }
+    if ($Step -ge $script:HybridRuntimeProfileWizardStepCount) { $Step = $script:HybridRuntimeProfileWizardStepCount - 1 }
+    $script:HybridRuntimeProfileWizardStep = $Step
+
+    $panels = @(
+        'WizardStepProfilePanel',
+        'WizardStepEnvironmentPanel',
+        'WizardStepRuntimePanel',
+        'WizardStepProvidersPanel',
+        'WizardStepValidationPanel',
+        'WizardStepSummaryPanel'
+    )
+    $labels = @(
+        'WizardStepProfileText',
+        'WizardStepEnvironmentText',
+        'WizardStepRuntimeText',
+        'WizardStepProvidersText',
+        'WizardStepValidationText',
+        'WizardStepSummaryText'
+    )
+
+    for ($index = 0; $index -lt $panels.Count; $index++) {
+        $controls[$panels[$index]].Visibility = if ($index -eq $Step) { 'Visible' } else { 'Collapsed' }
+        $controls[$labels[$index]].Foreground = if ($index -eq $Step) { '#38BDF8' } else { '#94A3B8' }
+        $controls[$labels[$index]].FontWeight = if ($index -eq $Step) { 'SemiBold' } else { 'Normal' }
+    }
+
+    $controls.WizardBackButton.IsEnabled = ($Step -gt 0)
+    $controls.WizardNextButton.Content = if ($Step -eq ($script:HybridRuntimeProfileWizardStepCount - 1)) { 'Finish' } else { 'Next' }
+    $controls.WizardStepStatusText.Text = 'Step {0} of {1}' -f ($Step + 1), $script:HybridRuntimeProfileWizardStepCount
+}
+
+function Move-HybridRuntimeProfileWizardNext {
+    if ($script:HybridRuntimeProfileWizardStep -eq ($script:HybridRuntimeProfileWizardStepCount - 1)) {
+        Hide-HybridRuntimeProfileWizard
+        return
+    }
+    Set-HybridRuntimeProfileWizardStep -Step ($script:HybridRuntimeProfileWizardStep + 1)
+}
+
+function Move-HybridRuntimeProfileWizardBack {
+    Set-HybridRuntimeProfileWizardStep -Step ($script:HybridRuntimeProfileWizardStep - 1)
+}
+
+function Show-HybridRuntimeProfileWizard {
+    $controls.OverlayRegion.Visibility = 'Visible'
+    Set-HybridRuntimeProfileWizardStep -Step 0
+    $controls.WizardValidationText.Text = 'Select Validate Profile to preview the generated runtime profile.'
+    $controls.WizardSummaryText.Text = 'Profile has not been validated yet.'
+    $controls.StatusText.Text = 'Runtime Profile Wizard opened.'
+}
+
+function Hide-HybridRuntimeProfileWizard {
+    $controls.OverlayRegion.Visibility = 'Collapsed'
+    $controls.StatusText.Text = 'Runtime Profile Wizard closed.'
+}
+
+function Get-HybridWizardComboValue {
+    param([Parameter(Mandatory=$true)][object]$ComboBox)
+    if ($null -ne $ComboBox.SelectedItem -and $ComboBox.SelectedItem.PSObject.Properties.Name -contains 'Content') {
+        return [string]$ComboBox.SelectedItem.Content
+    }
+    return [string]$ComboBox.Text
+}
+
+function New-HybridRuntimeProfileFromWizard {
+    $profileName = $controls.WizardProfileNameTextBox.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($profileName)) { throw 'Profile name is required.' }
+
+    $cloud = Get-HybridWizardComboValue -ComboBox $controls.WizardCloudComboBox
+    $mode = Get-HybridWizardComboValue -ComboBox $controls.WizardModeComboBox
+    $organization = $controls.WizardOrganizationTextBox.Text.Trim()
+    $tenantId = $controls.WizardTenantIdTextBox.Text.Trim()
+
+    $providerMap = [ordered]@{
+        DirectorySimulator = @{
+            EnabledControl = 'WizardDirectorySimulatorEnabledCheckBox'
+            ModeControl = 'WizardDirectorySimulatorModeComboBox'
+            Authentication = 'None'
+        }
+        ActiveDirectory = @{
+            EnabledControl = 'WizardActiveDirectoryEnabledCheckBox'
+            ModeControl = 'WizardActiveDirectoryModeComboBox'
+            Authentication = 'Integrated'
+        }
+        MicrosoftGraph = @{
+            EnabledControl = 'WizardMicrosoftGraphEnabledCheckBox'
+            ModeControl = 'WizardMicrosoftGraphModeComboBox'
+            Authentication = 'Interactive'
+        }
+        ExchangeOnline = @{
+            EnabledControl = 'WizardExchangeOnlineEnabledCheckBox'
+            ModeControl = 'WizardExchangeOnlineModeComboBox'
+            Authentication = 'Interactive'
+        }
+    }
+
+    $providers = [ordered]@{}
+    foreach ($providerName in $providerMap.Keys) {
+        $settings = $providerMap[$providerName]
+        $enabled = [bool]$controls[$settings.EnabledControl].IsChecked
+        $providerMode = if ($enabled) { Get-HybridWizardComboValue -ComboBox $controls[$settings.ModeControl] } else { 'Disabled' }
+        $providers[$providerName] = [ordered]@{
+            Enabled = $enabled
+            Mode = $providerMode
+            Required = $enabled
+            Authentication = $settings.Authentication
+        }
+    }
+
+    return [ordered]@{
+        ProfileName = $profileName
+        Mode = $mode
+        Cloud = $cloud
+        Environment = 'Development'
+        Organization = $organization
+        TenantId = $tenantId
+        Providers = $providers
+    }
+}
+
+function Test-HybridRuntimeProfileWizardInput {
+    try {
+        $profile = New-HybridRuntimeProfileFromWizard
+        $enabledProviders = @($profile.Providers.Keys | Where-Object { [bool]$profile.Providers[$_].Enabled })
+        if ($enabledProviders.Count -eq 0) { throw 'At least one provider must be enabled.' }
+        if ($profile.Mode -eq 'Live' -and [string]::IsNullOrWhiteSpace($profile.TenantId)) {
+            $controls.WizardValidationText.Text = 'Warning: Live profiles should include a Tenant ID before production use. Profile shape is otherwise valid.'
+        }
+        else {
+            $controls.WizardValidationText.Text = ('Profile is valid. Mode={0}; Cloud={1}; Enabled providers={2}.' -f $profile.Mode, $profile.Cloud, ($enabledProviders -join ', '))
+        }
+        $controls.WizardSummaryText.Text = $controls.WizardValidationText.Text
+        $controls.StatusText.Text = 'Runtime profile validation completed.'
+        return $true
+    }
+    catch {
+        $controls.WizardValidationText.Text = "Validation failed: $($_.Exception.Message)"
+        $controls.WizardSummaryText.Text = $controls.WizardValidationText.Text
+        $controls.StatusText.Text = 'Runtime profile validation failed.'
+        return $false
+    }
+}
+
+function Save-HybridRuntimeProfileFromWizard {
+    if (-not (Test-HybridRuntimeProfileWizardInput)) { return }
+    try {
+        $profile = New-HybridRuntimeProfileFromWizard
+        $runtimeProfileRoot = Join-Path $repoRoot 'profiles\Runtime'
+        if (-not (Test-Path $runtimeProfileRoot)) { New-Item -Path $runtimeProfileRoot -ItemType Directory -Force | Out-Null }
+        $safeName = ($profile.ProfileName -replace '[^a-zA-Z0-9._-]', '-')
+        $targetPath = Join-Path $runtimeProfileRoot ("$safeName.json")
+        $profile | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $targetPath -Encoding UTF8
+        $controls.WizardValidationText.Text = "Profile saved: $targetPath"
+        $controls.StatusText.Text = "Runtime profile saved: $safeName.json"
+        Update-HybridStartupView
+    }
+    catch {
+        $controls.WizardValidationText.Text = "Save failed: $($_.Exception.Message)"
+        $controls.StatusText.Text = 'Runtime profile save failed.'
+    }
+}
+
 function Set-HybridUiBusyState {
     param([bool]$Busy)
     $script:IsSearchBusy = $Busy
@@ -369,7 +672,7 @@ function Set-HybridUiBusyState {
 }
 
 function Get-DisplayValue {
-    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '—')
+    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '-')
     foreach ($name in $Names) {
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
@@ -418,7 +721,7 @@ function Update-AggregationPanel {
         }
 
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '-') { $identity = $Query }
 
         $aggregate = Get-HybridUserAggregateProfile -Identity $identity
         if ($null -eq $aggregate) {
@@ -464,7 +767,7 @@ function Reset-AuthenticationPanel {
 
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
-    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '—' }
+    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '-' }
     $controls.AccountStateText.Text = 'Account state: loading'
     $controls.ExchangeSummaryText.Text = 'Exchange vertical slice loading mailbox details...'
     $controls.GroupsList.Items.Clear()
@@ -500,7 +803,7 @@ function Update-DetailPanels {
     $details = $User
     if (Get-Command Get-HybridUserDetails -ErrorAction SilentlyContinue) {
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '-') { $identity = $Query }
         $details = Get-HybridUserDetails -Identity $identity
     }
 
@@ -531,7 +834,7 @@ function Update-GraphPanels {
 
     try {
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '-') { $identity = $Query }
 
         $graphProfile = $null
         if (Get-Command Get-HybridUserGraphProfile -ErrorAction SilentlyContinue) {
@@ -579,7 +882,7 @@ function Update-AuthenticationPanels {
         }
 
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '-') { $identity = $Query }
 
         $profile = Get-HybridUserAuthenticationProfile -Identity $identity
         if ($null -eq $profile) {
@@ -621,7 +924,7 @@ function Update-ExchangePanels {
     $exchangeUser = $User
     if (Get-Command Get-HybridUserMailboxDetails -ErrorAction SilentlyContinue) {
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '-') { $identity = $Query }
         $exchangeUser = Get-HybridUserMailboxDetails -Identity $identity
     }
 
@@ -722,6 +1025,13 @@ $controls.SearchBox.Text = $InitialQuery
 $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.Text })
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
 $controls.LaunchConsoleButton.Add_Click({ Show-HybridConsoleView })
+$controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizard })
+$controls.WizardCancelButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
+$controls.WizardCloseButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
+$controls.WizardBackButton.Add_Click({ Move-HybridRuntimeProfileWizardBack })
+$controls.WizardNextButton.Add_Click({ Move-HybridRuntimeProfileWizardNext })
+$controls.WizardValidateButton.Add_Click({ [void](Test-HybridRuntimeProfileWizardInput) })
+$controls.WizardSaveButton.Add_Click({ Save-HybridRuntimeProfileFromWizard })
 $controls.ExitButton.Add_Click({ $window.Close() })
 
 Update-HybridStartupView
