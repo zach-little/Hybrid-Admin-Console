@@ -146,7 +146,14 @@ Examples:
 
 ---
 
-# Milestone 12 – Production Release
+# Milestone 12 – UI Customization
+
+* UI Theme via profile - set colors
+* New User Wizard - Customized flow via organization profile
+
+---
+
+# Milestone 13 – Production Release
 
 Focus areas:
 
