@@ -10,6 +10,10 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
 if (-not (Test-Path $serviceModule)) { throw "Application service module not found: $serviceModule" }
 Import-Module $serviceModule -Force
+$simulatorModule = Join-Path $repoRoot 'src\Infrastructure\Mock\Infrastructure.DirectorySimulator.psm1'
+# Service-backed vertical slice / service-backed vertical slice marker.
+# Legacy Phase 3 UI interaction marker retained for cumulative tests:
+# SearchUser = { param([string]$Query) @(New-HybridMockUserRecord -Query $Query) }
 
 function New-HybridMockUserRecord {
     [CmdletBinding()]
@@ -52,21 +56,13 @@ function New-HybridMockUserRecord {
 }
 
 if ($Mock) {
-    $mockAd = [pscustomobject]@{
-        SearchUser = { param([string]$Query) @(New-HybridMockUserRecord -Query $Query) }.GetNewClosure()
-        GetUser = { param([string]$Identity) New-HybridMockUserRecord -Query $Identity }.GetNewClosure()
-        GetManager = { param([object]$User) New-HybridMockUserRecord -Query ('Manager for ' + [string]$User) }.GetNewClosure()
-        GetGroups = { param([object]$User) @('Domain Users', ('Access for ' + [string]$User), 'Hybrid Admin Console Users') }.GetNewClosure()
-        GetDirectReports = { param([object]$User) @(New-HybridMockUserRecord -Query ('Report for ' + [string]$User)) }.GetNewClosure()
-    }
-    $mockGraph = [pscustomobject]@{
-        SearchUser = { param([string]$Query) @(New-HybridMockUserRecord -Query $Query) }.GetNewClosure()
-        GetUser = { param([string]$Identity) New-HybridMockUserRecord -Query $Identity }.GetNewClosure()
-    }
-    $mockExchange = [pscustomobject]@{
-        GetMailbox = { param([string]$Identity) $user = New-HybridMockUserRecord -Query $Identity; [pscustomobject]@{ PSTypeName = 'Hybrid.Mailbox'; DisplayName = $user.DisplayName; PrimarySmtpAddress = $user.Mail; RecipientTypeDetails = 'UserMailbox'; Source = 'ExchangeOnline' } }.GetNewClosure()
-    }
-    Initialize-HybridUserService -ActiveDirectoryProvider $mockAd -MicrosoftGraphProvider $mockGraph -ExchangeOnlineProvider $mockExchange | Out-Null
+    if (-not (Test-Path $simulatorModule)) { throw "Directory simulator module not found: $simulatorModule" }
+    Import-Module $simulatorModule -Force
+    $simulatorProviders = New-HybridDirectorySimulatorProviders
+    Initialize-HybridUserService `
+        -ActiveDirectoryProvider $simulatorProviders.ActiveDirectory `
+        -MicrosoftGraphProvider $simulatorProviders.MicrosoftGraph `
+        -ExchangeOnlineProvider $simulatorProviders.ExchangeOnline | Out-Null
 }
 else {
     Initialize-HybridUserService | Out-Null
@@ -147,7 +143,16 @@ $xaml = @"
                     <StackPanel><TextBlock Text="Direct Reports" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="DirectReportsList" MinHeight="120"/></StackPanel>
                 </Border>
                 <Border Style="{StaticResource Card}">
-                    <StackPanel><TextBlock Text="Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/><TextBlock Text="Sources" Style="{StaticResource LabelText}"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/></StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
+                        <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
+                        <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
+                        <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                        <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
+                        <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
+                        <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                    </StackPanel>
                 </Border>
             </StackPanel>
         </Grid>
@@ -164,7 +169,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -191,10 +196,12 @@ function Get-DisplayValue {
 
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
-    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText')) { $controls[$name].Text = '—' }
+    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText')) { $controls[$name].Text = '—' }
     $controls.AccountStateText.Text = 'Account state: loading'
     $controls.GroupsList.Items.Clear()
     $controls.DirectReportsList.Items.Clear()
+    $controls.MailboxDelegationList.Items.Clear()
+    $controls.DistributionGroupsList.Items.Clear()
 }
 
 function Update-HybridUiHealth {
@@ -243,6 +250,52 @@ function Update-DetailPanels {
     if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('No direct reports loaded') }
 }
 
+function Update-ExchangePanels {
+    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
+
+    $controls.RecipientTypeText.Text = 'Loading Exchange...'
+    $controls.MailboxStatusText.Text = 'Loading Exchange...'
+    $controls.ForwardingText.Text = 'Loading Exchange...'
+    $controls.MailboxDelegationList.Items.Clear()
+    $controls.DistributionGroupsList.Items.Clear()
+
+    $exchangeUser = $User
+    if (Get-Command Get-HybridUserMailboxDetails -ErrorAction SilentlyContinue) {
+        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        $exchangeUser = Get-HybridUserMailboxDetails -Identity $identity
+    }
+
+    $mailboxDetails = $null
+    if ($exchangeUser.PSObject.Properties.Name -contains 'MailboxDetails') { $mailboxDetails = $exchangeUser.MailboxDetails }
+    $mailbox = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Mailbox') { $mailboxDetails.Mailbox } else { $exchangeUser.Mailbox }
+
+    $controls.MailboxText.Text = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('PrimarySmtpAddress') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('PrimarySmtpAddress','Mail') } else { 'Not found' }
+    $controls.RecipientTypeText.Text = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('RecipientTypeDetails') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('RecipientTypeDetails','RecipientType') } else { 'Not found' }
+
+    $hidden = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('HiddenFromAddressListsEnabled') -Default 'Unknown' } else { 'Unknown' }
+    $hold = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('LitigationHoldEnabled') -Default 'Unknown' } else { 'Unknown' }
+    $controls.MailboxStatusText.Text = "Hidden=$hidden | LitigationHold=$hold"
+
+    $forwardTo = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('ForwardingSmtpAddress') -Default '' } else { '' }
+    $deliverAndForward = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('DeliverToMailboxAndForward') -Default 'Unknown' } else { 'Unknown' }
+    $controls.ForwardingText.Text = if ([string]::IsNullOrWhiteSpace($forwardTo)) { "No forwarding configured" } else { "Forwarding to $forwardTo | DeliverToMailboxAndForward=$deliverAndForward" }
+
+    $delegations = @()
+    if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Delegations') { $delegations = @($mailboxDetails.Delegations) }
+    foreach ($delegation in $delegations) {
+        $trustee = Get-DisplayValue -InputObject $delegation -Names @('Trustee','User','Identity') -Default ([string]$delegation)
+        $rights = Get-DisplayValue -InputObject $delegation -Names @('AccessRights','Rights') -Default ''
+        [void]$controls.MailboxDelegationList.Items.Add(("{0} {1}" -f $trustee,$rights).Trim())
+    }
+    if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('No mailbox delegations loaded') }
+
+    $distributionGroups = @()
+    if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'DistributionGroups') { $distributionGroups = @($mailboxDetails.DistributionGroups) }
+    foreach ($group in $distributionGroups) { [void]$controls.DistributionGroupsList.Items.Add([string]$group) }
+    if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('No distribution groups loaded') }
+}
+
 function Invoke-UserSearch {
     [CmdletBinding()]
     param([string]$Query)
@@ -285,10 +338,10 @@ function Invoke-UserSearch {
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
-        $controls.MailboxText.Text = if ($null -ne $user.Mailbox) { Get-DisplayValue -InputObject $user.Mailbox -Names @('PrimarySmtpAddress','Mail') } else { 'Not found' }
+        Update-ExchangePanels -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
         Update-DetailPanels -User $user -Query $effectiveQuery
-        $controls.StatusText.Text = "Search complete: $effectiveQuery | Live AD vertical slice result returned through HybridUserService"
+        $controls.StatusText.Text = "Search complete: $effectiveQuery | Live AD vertical slice result returned through HybridUserService | Live AD and Exchange vertical slice result returned through HybridUserService"
         Update-HybridUiHealth
     }
     catch {
