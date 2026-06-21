@@ -68,3 +68,32 @@ Authentication
 The Aggregation Service coordinates vertical retrieval while remaining provider-agnostic.
 
 This architecture is considered stable and will remain the foundation for future milestones.
+---
+
+# Version 0.8 Runtime Platform Notes
+
+## Milestone 8 Phase 2: Runtime Bootstrap Engine
+
+The Runtime Bootstrap Engine is implemented in `src/Core/Core.Runtime.psm1` and is the startup orchestration boundary for runtime-profile-driven launches.
+
+### Public API
+
+- `Initialize-HybridRuntime`
+- `Get-HybridRuntime`
+- `Reset-HybridRuntime`
+
+### Runtime ownership
+
+Runtime bootstrap is Core infrastructure. UI scripts must not load profiles, decide provider modes, or initialize provider stacks directly once they are migrated to the runtime path in later phases.
+
+### Authentication boundary
+
+Phase 2 does not perform live authentication or provider connectivity checks. Live providers are registered as deferred runtime records. This preserves startup safety and keeps authentication verification reserved for the diagnostics/authentication phases.
+
+### Simulation behavior
+
+Simulation profiles initialize the Directory Simulator and wire the existing service-backed verticals through application services. This allows the runtime engine to exercise the vertical service layer without live Microsoft dependencies.
+
+### Additive development rule
+
+The runtime engine extends the existing Milestone 8 Phase 1 Runtime Profile foundation. It does not alter profile contracts, UI behavior, or previous milestone exports.

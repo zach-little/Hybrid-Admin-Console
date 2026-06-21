@@ -1,0 +1,38 @@
+{
+  "ProfileName": "Hybrid Example",
+  "Mode": "Hybrid",
+  "Cloud": "GCCHigh",
+  "Environment": "Development",
+  "Organization": "Hybrid Demo",
+  "TenantId": "00000000-0000-0000-0000-000000000000",
+  "Providers": {
+    "DirectorySimulator": {
+      "Enabled": true,
+      "Mode": "Simulation",
+      "Required": true,
+      "Authentication": "None",
+      "Notes": "Provides simulator-backed providers for any vertical explicitly marked Simulation."
+    },
+    "ActiveDirectory": {
+      "Enabled": true,
+      "Mode": "Simulation",
+      "Required": true,
+      "Authentication": "None",
+      "Notes": "AD is simulated while cloud providers are deferred/live."
+    },
+    "MicrosoftGraph": {
+      "Enabled": true,
+      "Mode": "Live",
+      "Required": false,
+      "Authentication": "Interactive",
+      "Notes": "Live Graph registration is deferred until approved authentication is invoked. Device Code is not allowed."
+    },
+    "ExchangeOnline": {
+      "Enabled": true,
+      "Mode": "Live",
+      "Required": false,
+      "Authentication": "Interactive",
+      "Notes": "Live Exchange registration is deferred until the later authentication/connectivity phase."
+    }
+  }
+}
