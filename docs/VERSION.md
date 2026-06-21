@@ -19,7 +19,7 @@ Hybrid Administration Platform
 
 **Version**
 
-0.5.0-dev
+0.5.0
 
 **Codename**
 
@@ -27,7 +27,7 @@ Cloud Foundation
 
 **Release Stage**
 
-Development
+Complete
 
 **Current Development Milestone**
 
@@ -41,29 +41,45 @@ Milestone 5 – Cloud Platform Foundation
 
 0.4.0
 
-**Next Planned Release**
+**Current Release**
 
 0.5.0
 
+**Next Planned Release**
+
+0.6.0
+
 ---
 
-# Current Focus
+# Release Summary
 
 Version 0.5 establishes the shared cloud platform infrastructure that all future Microsoft cloud providers will consume.
 
-Primary objectives include:
+The release introduces reusable abstractions for cloud environments, tenants, organizations, authentication framework contracts, authentication sessions, token descriptors, HTTP response handling, retry policy, HTTP pipeline execution, Microsoft Graph provider foundation, Graph request construction, Graph OData query construction, Graph diagnostics, Graph error translation, and Graph batch contracts.
+
+---
+
+# Completed Version 0.5 Objectives
 
 * Authentication Framework
+* Authentication Policy
+* Authentication Method Registry
 * Tenant Context
 * Organization Context
 * Cloud Environment Abstraction
 * Microsoft Graph Infrastructure
-* Microsoft Graph Provider
+* Microsoft Graph Provider Foundation
 * Shared HTTP Pipeline
 * Retry Infrastructure
-* Paging Infrastructure
-* Token Management
-* Provider Telemetry
+* Paging State
+* Token Management Contracts
+* Authentication Session Contracts
+* Provider Diagnostics
+* Graph Endpoint Builder
+* Graph Query Builder
+* Graph Error Translation
+* Graph Request Builders
+* Graph Batch Contracts
 
 ---
 
@@ -127,7 +143,7 @@ Production releases remove all suffixes.
 
 # Release Policy
 
-A version may be promoted from Development to Production only when:
+A version may be promoted from Development to Complete or Production only when:
 
 * All milestone objectives have been completed.
 * Automated tests pass.
