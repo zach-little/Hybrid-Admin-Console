@@ -1,237 +1,181 @@
-# Hybrid Administration Platform (HAP)
+# ROADMAP.md
 
-**Document**
-Roadmap
+# Hybrid Admin Console Roadmap
 
-**Purpose**
-Defines the planned evolution of the Hybrid Administration Platform from its current state through the initial production release.
-
-**Scope**
-This roadmap describes strategic platform milestones. Detailed implementation work is tracked independently.
+This roadmap represents the long-term engineering plan for the Hybrid Admin Console. The project is intentionally milestone-driven, with each milestone producing a stable, testable increment.
 
 ---
 
-# Vision
+# Current Status
 
-Hybrid Administration Platform is being developed as a modular, provider-driven enterprise administration platform.
+**Current Version:** 0.6.0
 
-Development is intentionally infrastructure-first.
+**Completed Milestones**
 
-Each milestone establishes reusable platform capabilities before building features that depend upon them.
+* ✅ Milestone 1 – Project Foundation
+* ✅ Milestone 2 – Domain Models
+* ✅ Milestone 3 – Active Directory Provider
+* ✅ Milestone 4 – Provider Architecture
+* ✅ Milestone 5 – Authentication Platform
+* ✅ Milestone 6 – Microsoft 365 Platform Foundation
 
-The long-term objective is to support multiple organizations, multiple cloud environments, and multiple providers through reusable infrastructure rather than customer-specific implementations.
-
----
-
-# Version 0.5 — Cloud Platform Foundation
-
-**Status:** ✅ Complete
-
-## Objective
-
-Establish the shared cloud infrastructure required for all future Microsoft cloud providers.
-
-Microsoft Graph is the first implementation built upon this foundation.
-
-## Completed Deliverables
-
-### Platform Infrastructure
-
-* Authentication Framework
-* Authentication Policies
-* Authentication Method Registry
-* Authentication Request Contract
-* Authentication Session Contract
-* Authentication Result Contract
-* Token Descriptor Contract
-* Authentication Cache Key and Entry Contracts
-* Cloud Environment Abstraction
-* Endpoint Resolution
-* Tenant Context
-* Organization Context
-* HTTP Request Pipeline
-* HTTP Response and Error Objects
-* Retry Policies
-* Pagination State
-* Pipeline Diagnostics
-* Provider Health
-* Capability Discovery
-
-### Microsoft Graph Foundation
-
-* Graph Infrastructure
-* Graph Client
-* Graph Provider
-* Graph User Wrapper
-* Graph Group Wrapper
-* Graph Organization Wrapper
-* Graph Model Conversion Contracts
-* Graph Endpoint Builder
-* Graph OData Query Builder
-* Graph Error Translator
-* Graph Request Builders
-* Graph Diagnostics
-* Graph Batch Contracts
-
-### Engineering
-
-* Automated Tests
-* Documentation
-* Provider Contracts
-* Shared Infrastructure
-* Changed-files-only phase ZIP standard
-* Standard validation procedure
-* Documentation cadence standard
-
-## Exit Criteria
-
-Cloud providers can be developed without implementing authentication, paging, retry logic, endpoint resolution, common HTTP infrastructure, query construction, Graph request construction, diagnostics, or basic error translation.
+Current development has shifted from building infrastructure to delivering complete vertical slices through the application.
 
 ---
 
-# Version 0.6 — Microsoft Cloud Platform
+# Milestone 7 – First Vertical Slice
 
-## Objective
+Objective:
 
-Complete the Microsoft identity and productivity platform by building provider capabilities on top of the Version 0.5 cloud foundation.
+Deliver the first end-to-end Hybrid Admin Console experience using the architecture established in Milestones 1–6.
 
-## Planned Deliverables
+## Phase 1 – Vertical Slice Foundation ✅
 
-* Live Authentication Implementation
-* Microsoft Graph Feature Expansion
-* Exchange Online Provider
-* Intune Provider
-* Entra Directory Services
-* Licensing
-* Administrative Units
-* Role Management
-* Organization Management
-* Device Management
-* Mailbox Management
-* Distribution Groups
-* Microsoft Cloud Provider Health
-* Microsoft Cloud Provider Diagnostics
+* Hybrid User Service
+* Initial application service layer
+* First WPF application shell
+* Canonical `Hybrid.User` composition
+* Mock provider integration
+* End-to-end architecture validation
 
-## Exit Criteria
+## Phase 2 – Live Active Directory
 
-Microsoft cloud identity and productivity services are available through provider abstraction while consuming the shared cloud, authentication, session, HTTP, retry, query, diagnostic, and mapping infrastructure established in Version 0.5.
+* Replace mock AD provider with live provider
+* Search real Active Directory users
+* Display live AD properties
+* Provider health integration
+
+## Phase 3 – Live Microsoft Graph
+
+* Replace mock Graph provider
+* Live Graph authentication
+* Merge Entra ID properties
+* License information
+* Group membership foundation
+
+## Phase 4 – Live Exchange Online
+
+* Replace mock Exchange provider
+* Live mailbox lookup
+* Mailbox status
+* Recipient information
+* Exchange health
+
+## Phase 5 – Unified Search Experience
+
+* Multi-result search
+* Duplicate resolution
+* Loading overlay
+* Provider status indicators
+* Search performance improvements
+* Intelligent caching
+
+## Phase 6 – User Overview
+
+Single Hybrid.User dashboard displaying:
+
+* Active Directory
+* Microsoft Graph
+* Exchange Online
+
+within one unified interface.
+
+Deliverable:
+
+A usable application capable of searching production users through the complete platform.
 
 ---
 
-# Version 0.7 — Azure Platform
+# Milestone 8 – User Management
 
-## Objective
+Focus shifts from viewing users to managing them.
 
-Expand HAP into Azure resource administration.
+Planned features include:
 
-## Deliverables
-
-* Azure Resource Manager
-* Virtual Machines
-* Bastion
-* Storage
-* Networking
-* Key Vault
-* Defender
-* Monitoring
-* Resource Groups
-
-## Exit Criteria
-
-Azure infrastructure is managed through reusable platform providers.
-
----
-
-# Version 0.8 — Workflow Engine
-
-## Objective
-
-Provide reusable orchestration for enterprise administration.
-
-## Deliverables
-
-* Workflow Framework
-* Create User
-* Employee Transfer
-* Offboarding
+* Enable / Disable
+* Unlock Account
 * Password Reset
-* Azure Synchronization
-* Domain Controller Synchronization
-* Approval Workflows
-* Background Jobs
-* Audit History
-
-## Exit Criteria
-
-Administrative operations are implemented as reusable workflows rather than UI logic.
+* Group Membership
+* Move Subordinates
+* Change Manager
+* Exchange Mailbox
+* Mailbox Delegation
+* Distribution Groups
+* Licensing
+* Device Overview
 
 ---
 
-# Version 0.9 — User Experience
+# Milestone 9 – Device Management
 
-## Objective
+* Intune Provider
+* Device search
+* Primary user
+* Compliance
+* BitLocker
+* Sync
+* Remote actions
+* Autopilot integration
 
-Build a modern administrative experience on top of the completed platform.
+---
 
-## Deliverables
+# Milestone 10 – Administration
 
-* Dashboard
-* Navigation Framework
-* Dynamic Cards
-* Search
-* Notifications
-* Theme Engine
-* Plugin Host
-* Command Palette
-* Background Operations
+Administrative capabilities.
+
+Examples:
+
+* Azure AD Connect
+* Domain Controller Sync
+* Health Dashboard
+* Authentication Diagnostics
+* Provider Diagnostics
+* Logging
 * Debug Console
 
-## Exit Criteria
+---
 
-The UI consumes application services without direct knowledge of provider implementations.
+# Milestone 11 – Reporting
+
+* Reporting engine
+* Export framework
+* Audit reporting
+* License reporting
+* Device reporting
+* Scheduled reports
 
 ---
 
-# Version 1.0 — Enterprise Release
+# Milestone 12 – Production Release
 
-## Objective
+Focus areas:
 
-Deliver the first production-ready release of HAP.
-
-## Deliverables
-
-* Legacy Migration Complete
-* Atlas Production Profile
+* Performance
+* UI polish
+* Accessibility
+* Documentation
 * Installer
-* Automatic Updates
-* Code Signing
-* Profile Manager
-* Branding Support
-* Plugin SDK
-* Documentation Complete
-* Release Pipeline
-
-## Exit Criteria
-
-The platform is capable of supporting multiple organizations through configuration while maintaining provider independence, enterprise security, and reusable platform infrastructure.
+* Configuration wizard
+* Upgrade support
+* Release candidate testing
 
 ---
 
-# Beyond Version 1.0
+# Engineering Principles
 
-Future development will focus on expanding provider support, workflow capabilities, and platform extensibility.
+Throughout all milestones the following rules remain constant:
 
-Potential areas include:
+* UI never communicates directly with providers.
+* Providers never authenticate directly.
+* Authentication is owned by the Authentication Manager.
+* Application Services aggregate provider data.
+* Canonical Hybrid models are returned to the UI.
+* Every phase must be independently testable.
+* Every milestone must conclude with a stable, merge-ready branch.
+* New functionality is delivered as complete vertical slices whenever practical.
 
-* VMware
-* ScreenConnect
-* JAMIS
-* Zammad
-* DNS
-* DHCP
-* SQL
-* REST Providers
-* Community SDK
-* Additional Cloud Providers
+---
 
-Future roadmap items should continue following the architectural principles established by HAP rather than introducing platform-specific implementations.
+# Long-Term Vision
+
+The Hybrid Admin Console should become a unified administration platform capable of presenting and managing resources from multiple Microsoft services through a single consistent interface while maintaining clear architectural boundaries between the UI, service layer, provider layer, and authentication platform.
