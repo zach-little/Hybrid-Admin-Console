@@ -91,167 +91,200 @@ Add-Type -AssemblyName WindowsBase
 $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hybrid Admin Console" Height="760" Width="1180" WindowStartupLocation="CenterScreen" Background="#101826">
+        Title="Hybrid Admin Console" Height="800" Width="1280" MinHeight="720" MinWidth="1120" WindowStartupLocation="CenterScreen" Background="#101826">
     <Window.Resources>
         <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#172337"/><Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
         <Style x:Key="LabelText" TargetType="TextBlock"><Setter Property="Foreground" Value="#94A3B8"/><Setter Property="FontSize" Value="12"/></Style>
         <Style x:Key="ValueText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="FontSize" Value="15"/><Setter Property="Margin" Value="0,2,0,10"/></Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="Foreground" Value="#F8FAFC"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
     </Window.Resources>
-    <Grid>
-        <Grid x:Name="StartupView" Margin="34">
-            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-            <Border Grid.Row="1" Style="{StaticResource Card}" MaxWidth="760" HorizontalAlignment="Center">
-                <StackPanel>
-                    <TextBlock Text="Hybrid Admin Platform" Foreground="#E5E7EB" FontSize="34" FontWeight="SemiBold"/>
-                    <TextBlock Text="Runtime startup shell" Foreground="#38BDF8" FontSize="13" Margin="0,2,0,20"/>
-                    <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
-                            <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="—" Style="{StaticResource ValueText}"/>
+    <Grid x:Name="ShellRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="StartupRegion" Grid.Row="0">
+            <Grid x:Name="StartupView" Margin="34">
+                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Border Grid.Row="1" Style="{StaticResource Card}" MaxWidth="820" HorizontalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="Hybrid Admin Platform" Foreground="#E5E7EB" FontSize="34" FontWeight="SemiBold"/>
+                        <TextBlock Text="Runtime startup shell" Foreground="#38BDF8" FontSize="13" Margin="0,2,0,20"/>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                                <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="—" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="—" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="—" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="—" Style="{StaticResource ValueText}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Startup Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                            <Button x:Name="LaunchConsoleButton" Content="Launch Hybrid Admin Console" Height="40" MinWidth="220" Margin="0,0,10,0"/>
+                            <Button x:Name="EditRuntimeProfileButton" Content="Edit Runtime Profile" Height="40" MinWidth="160" IsEnabled="False" Margin="0,0,10,0"/>
+                            <Button x:Name="ExitButton" Content="Exit" Height="40" MinWidth="90"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Startup Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Grid>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                        <Button x:Name="LaunchConsoleButton" Content="Launch Hybrid Admin Console" Height="40" MinWidth="220" Margin="0,0,10,0"/>
-                        <Button x:Name="EditRuntimeProfileButton" Content="Edit Runtime Profile" Height="40" MinWidth="160" IsEnabled="False" Margin="0,0,10,0"/>
-                        <Button x:Name="ExitButton" Content="Exit" Height="40" MinWidth="90"/>
                     </StackPanel>
-                </StackPanel>
-            </Border>
-        </Grid>
-
-        <Grid x:Name="ConsoleView" Margin="22" Visibility="Collapsed">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-
-        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,18">
-            <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-            <TextBlock Text="Service-backed vertical slice" Foreground="#38BDF8" FontSize="13"/>
-        </StackPanel>
-
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/><ColumnDefinition Width="230"/></Grid.ColumnDefinitions>
-                <TextBox x:Name="SearchBox" Grid.Column="0" Height="38" FontSize="16" Padding="10" VerticalContentAlignment="Center"/>
-                <Button x:Name="SearchButton" Grid.Column="1" Content="Search" Height="38" Margin="12,0,0,0"/>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-                    <Ellipse x:Name="ProviderDot" Width="12" Height="12" Fill="#22C55E" Margin="0,0,8,0"/>
-                    <TextBlock x:Name="ProviderStatusText" Text="Provider health: checking" Foreground="#CBD5E1" VerticalAlignment="Center"/>
-                </StackPanel>
+                </Border>
             </Grid>
-        </Border>
-
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
-                <StackPanel>
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock x:Name="ResultHeader" Text="Search for a user" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="AccountStateText" Text="Account state: waiting" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,4,0,14"/>
-                            <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="—" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Live Active Directory Properties" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                            <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="—" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <Border x:Name="AggregationStatusCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Profile Aggregation" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="AggregationSummaryText" Text="Aggregation waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Identity" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationIdentityText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Verticals Loaded" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationVerticalsText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationStatusText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Retrieved" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationRetrievedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border x:Name="ExchangeMailboxCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="ExchangeSummaryText" Text="Exchange vertical slice waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
-                            <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
-                            <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border x:Name="MicrosoftGraphCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Microsoft Graph" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="GraphSummaryText" Text="Graph profile waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Graph Object ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphObjectIdText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="User Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUserTypeText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Usage Location" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUsageLocationText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Preferred Language" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPreferredLanguageText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Capable" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaCapableText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Authentication Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphAuthenticationMethodsText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Last Sign-In" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphLastSignInText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Password Last Changed" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPasswordLastChangedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border x:Name="AuthenticationPostureCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Authentication Posture" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="AuthenticationSummaryText" Text="Authentication posture waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Default Method" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthDefaultMethodText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Passwordless" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthPasswordlessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Authentication Strength" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthStrengthText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Conditional Access" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthConditionalAccessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Sign-In Risk" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthRiskText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Methods" Style="{StaticResource LabelText}"/><ListBox x:Name="AuthMethodsList" MinHeight="78"/>
-                        </StackPanel>
-                    </Border>
-                    <Border x:Name="ManagerCard" Style="{StaticResource Card}">
-                        <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
-                    </Border>
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel><TextBlock Text="Groups" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
-                    </Border>
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel><TextBlock Text="Direct Reports" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="DirectReportsList" MinHeight="120"/></StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
         </Grid>
 
-        <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,12,0,0">
-            <ProgressBar x:Name="SearchProgressIndicator" Height="8" IsIndeterminate="False" Visibility="Collapsed"/>
-            <TextBlock x:Name="StatusText" Text="Ready." Foreground="#CBD5E1" Margin="0,14,0,0"/>
+        <Grid x:Name="MainRegion" Grid.Row="0">
+            <Grid x:Name="ConsoleView" Margin="22" Visibility="Collapsed">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime shell hosted" Foreground="#38BDF8" FontSize="13"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="ProviderDot" Width="12" Height="12" Fill="#22C55E" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="ProviderStatusText" Text="Provider health: checking" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="1" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="SearchBox" Grid.Column="0" Height="38" FontSize="16" Padding="10" VerticalContentAlignment="Center"/>
+                        <Button x:Name="SearchButton" Grid.Column="1" Content="Search" Height="38" Margin="12,0,0,0"/>
+                        <TextBlock Grid.Column="2" Text="Search drives all dashboard cards" Foreground="#94A3B8" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                    </Grid>
+                </Border>
+
+                <Grid x:Name="MainDashboardGrid" Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.25*"/>
+                        <ColumnDefinition Width="1.55*"/>
+                        <ColumnDefinition Width="1.2*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer x:Name="UserIdentityColumn" Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
+                        <StackPanel>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock x:Name="ResultHeader" Text="Search for a user" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold"/>
+                                    <TextBlock x:Name="AccountStateText" Text="Account state: waiting" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,4,0,14"/>
+                                    <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="—" Style="{StaticResource ValueText}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Directory Facts" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="ManagerCard" Style="{StaticResource Card}">
+                                <StackPanel><TextBlock Text="Manager" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel><TextBlock Text="Groups" Style="{StaticResource SectionTitle}"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel><TextBlock Text="Direct Reports" Style="{StaticResource SectionTitle}"/><ListBox x:Name="DirectReportsList" MinHeight="120"/></StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="OperationsColumn" Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
+                        <StackPanel>
+                            <Border x:Name="ExchangeMailboxCard" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Exchange Mailbox" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock x:Name="ExchangeSummaryText" Text="Exchange vertical slice waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
+                                    <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
+                                    <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="RuntimeColumn" Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border x:Name="AggregationStatusCard" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Profile Aggregation" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock x:Name="AggregationSummaryText" Text="Aggregation waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Identity" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationIdentityText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Verticals Loaded" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationVerticalsText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationStatusText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Retrieved" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationRetrievedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="MicrosoftGraphCard" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Microsoft Graph" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock x:Name="GraphSummaryText" Text="Graph profile waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Graph Object ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphObjectIdText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="User Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUserTypeText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Usage Location" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUsageLocationText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Preferred Language" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPreferredLanguageText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="MFA Capable" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaCapableText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Authentication Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphAuthenticationMethodsText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Last Sign-In" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphLastSignInText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Password Last Changed" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPasswordLastChangedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border x:Name="AuthenticationPostureCard" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Authentication Posture" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock x:Name="AuthenticationSummaryText" Text="Authentication posture waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Default Method" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthDefaultMethodText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Passwordless" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthPasswordlessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Authentication Strength" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthStrengthText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Conditional Access" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthConditionalAccessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Sign-In Risk" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthRiskText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                    <TextBlock Text="Methods" Style="{StaticResource LabelText}"/><ListBox x:Name="AuthMethodsList" MinHeight="78"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
         </Grid>
+
+        <Grid x:Name="StatusBarRegion" Grid.Row="1" Background="#0B1220" MinHeight="38">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <ProgressBar x:Name="SearchProgressIndicator" Grid.Column="0" Width="120" Height="8" IsIndeterminate="False" Visibility="Collapsed" Margin="22,0,12,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="StatusText" Grid.Column="1" Text="Ready." Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,22,0"/>
+            <TextBlock x:Name="ShellStatusText" Grid.Column="1" Text="" Foreground="#64748B" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,22,0"/>
+        </Grid>
+
+        <Grid x:Name="OverlayRegion" Grid.RowSpan="2" Background="#990B1220" Visibility="Collapsed">
+            <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="560" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Overlay region reserved for guided runtime workflows." Foreground="#E5E7EB" FontSize="16" TextWrapping="Wrap"/>
+            </Border>
         </Grid>
     </Grid>
 </Window>
@@ -261,7 +294,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
