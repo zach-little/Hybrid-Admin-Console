@@ -9,11 +9,11 @@ function New-HybridMsalAuthenticationAdapter {
     )
 
     [pscustomobject]@{
-        PSTypeName   = 'Hybrid.MsalAuthenticationAdapter'
-        Name         = $MethodName
-        Runtime      = 'MSAL'
-        SupportsMock = $true
-        Status       = 'ContractOnly'
+        PSTypeName    = 'Hybrid.MsalAuthenticationAdapter'
+        Name          = $MethodName
+        Runtime       = 'MSAL'
+        SupportsMock  = $true
+        Status        = 'ContractOnly'
     }
 }
 
@@ -28,22 +28,16 @@ function Register-HybridMsalAuthenticationAdapters {
                 param($Request)
 
                 New-HybridAuthenticationSession `
-                    -TenantContext $Request.TenantContext `
-                    -CloudEnvironment $Request.CloudEnvironment `
-                    -MethodName $Request.MethodName `
+                    -AuthenticationRequest $Request `
                     -AccessToken ('msal-contract-token-{0}' -f ([guid]::NewGuid().ToString('N'))) `
-                    -Scopes $Request.Scopes `
                     -ExpiresOn (Get-Date).AddHours(1)
             } `
             -RefreshSession {
                 param($Request, $ExistingSession)
 
                 New-HybridAuthenticationSession `
-                    -TenantContext $Request.TenantContext `
-                    -CloudEnvironment $Request.CloudEnvironment `
-                    -MethodName $Request.MethodName `
+                    -AuthenticationRequest $Request `
                     -AccessToken ('msal-contract-refresh-{0}' -f ([guid]::NewGuid().ToString('N'))) `
-                    -Scopes $Request.Scopes `
                     -ExpiresOn (Get-Date).AddHours(1)
             } `
             -Force:$Force | Out-Null
