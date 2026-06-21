@@ -175,7 +175,7 @@ $xaml = @"
                             <TextBlock Text="Authentication Strength" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthStrengthText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                             <TextBlock Text="Conditional Access" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthConditionalAccessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
                             <TextBlock Text="Sign-In Risk" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthRiskText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Methods" Style="{StaticResource LabelText}"/><ListBox x:Name="AuthMethodsList" MinHeight="78"/>
+                            <TextBlock Text="Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthMethodsText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
                     <Border x:Name="ManagerCard" Style="{StaticResource Card}">
@@ -203,7 +203,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsText') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -251,10 +251,9 @@ function Reset-GraphPanel {
 
 function Reset-AuthenticationPanel {
     $controls.AuthenticationSummaryText.Text = 'Authentication posture waiting for a user search.'
-    foreach ($name in @('AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText')) {
+    foreach ($name in @('AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsText')) {
         $controls[$name].Text = 'Not loaded'
     }
-    if ($controls.ContainsKey('AuthMethodsList') -and $null -ne $controls.AuthMethodsList) { $controls.AuthMethodsList.Items.Clear() }
 }
 
 function Reset-UserDisplay {
@@ -390,11 +389,7 @@ function Update-AuthenticationPanels {
 
         $methods = @()
         if ($profile.PSObject.Properties.Name -contains 'AuthenticationMethods' -and $null -ne $profile.AuthenticationMethods) { $methods = @($profile.AuthenticationMethods) }
-        if ($controls.ContainsKey('AuthMethodsList') -and $null -ne $controls.AuthMethodsList) {
-            $controls.AuthMethodsList.Items.Clear()
-            foreach ($method in $methods) { [void]$controls.AuthMethodsList.Items.Add([string]$method) }
-            if ($methods.Count -eq 0) { [void]$controls.AuthMethodsList.Items.Add('None reported') }
-        }
+        $controls.AuthMethodsText.Text = if ($methods.Count -gt 0) { ($methods -join ', ') } else { 'None reported' }
         $controls.AuthenticationSummaryText.Text = "Authentication loaded for $($controls.UpnText.Text)."
     }
     catch {

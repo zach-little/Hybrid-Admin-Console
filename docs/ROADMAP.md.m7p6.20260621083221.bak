@@ -5,7 +5,7 @@
 **Current Version:** 0.7.0-dev  
 **Current Branch:** `feature/milestone7-service-layer`  
 **Current Milestone:** Milestone 7 - Hybrid Service Layer  
-**Current Phase:** Phase 6 - Authentication Vertical
+**Current Phase:** Phase 5 - Microsoft Graph Vertical
 
 ## Milestone 7 - Hybrid Service Layer
 
@@ -15,8 +15,8 @@
 | Phase 2 | Active Directory Vertical | Complete |
 | Phase 3 | Entra ID Vertical | Complete |
 | Phase 4 | Exchange Vertical | Complete / Stable Baseline |
-| Phase 5 | Microsoft Graph Vertical | Complete |
-| Phase 6 | Authentication Vertical | In Progress |
+| Phase 5 | Microsoft Graph Vertical | In Progress |
+| Phase 6 | Authentication Vertical | Pending |
 | Phase 7 | Aggregation and Orchestration | Pending |
 
 ## Phase 5 Goal
@@ -30,7 +30,3 @@ Expose Microsoft Graph user profile and authentication posture data through the 
 - Directory Simulator is the canonical simulated enterprise provider.
 - Every new feature must be visible in the UI.
 - Cumulative milestone tests must pass before the phase is considered stable.
-
-## Phase 6 Goal
-
-Expose authentication posture as a live dashboard card through service-layer and provider abstractions. The card loads automatically when a user is searched and is backed by the Directory Simulator in mock mode.

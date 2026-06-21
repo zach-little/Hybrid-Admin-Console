@@ -164,20 +164,6 @@ $xaml = @"
                             <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="Not loaded" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
-
-                    <Border x:Name="AuthenticationPostureCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Authentication Posture" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="AuthenticationSummaryText" Text="Authentication posture waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Default Method" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthDefaultMethodText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Passwordless" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthPasswordlessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Authentication Strength" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthStrengthText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Conditional Access" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthConditionalAccessText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Sign-In Risk" Style="{StaticResource LabelText}"/><TextBlock x:Name="AuthRiskText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Methods" Style="{StaticResource LabelText}"/><ListBox x:Name="AuthMethodsList" MinHeight="78"/>
-                        </StackPanel>
-                    </Border>
                     <Border x:Name="ManagerCard" Style="{StaticResource Card}">
                         <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
                     </Border>
@@ -203,7 +189,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -249,14 +235,6 @@ function Reset-GraphPanel {
     }
 }
 
-function Reset-AuthenticationPanel {
-    $controls.AuthenticationSummaryText.Text = 'Authentication posture waiting for a user search.'
-    foreach ($name in @('AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText')) {
-        $controls[$name].Text = 'Not loaded'
-    }
-    if ($controls.ContainsKey('AuthMethodsList') -and $null -ne $controls.AuthMethodsList) { $controls.AuthMethodsList.Items.Clear() }
-}
-
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
     foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '—' }
@@ -267,7 +245,6 @@ function Reset-UserDisplay {
     $controls.MailboxDelegationList.Items.Clear()
     $controls.DistributionGroupsList.Items.Clear()
     Reset-GraphPanel
-    Reset-AuthenticationPanel
 }
 
 function Update-HybridUiHealth {
@@ -356,49 +333,6 @@ function Update-GraphPanels {
     }
     catch {
         $controls.GraphSummaryText.Text = "Graph profile load failed: $($_.Exception.Message)"
-    }
-}
-
-
-function Update-AuthenticationPanels {
-    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
-
-    Reset-AuthenticationPanel
-    $controls.AuthenticationSummaryText.Text = 'Loading authentication posture...'
-
-    try {
-        if (-not (Get-Command Get-HybridUserAuthenticationProfile -ErrorAction SilentlyContinue)) {
-            $controls.AuthenticationSummaryText.Text = 'Authentication service unavailable.'
-            return
-        }
-
-        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
-
-        $profile = Get-HybridUserAuthenticationProfile -Identity $identity
-        if ($null -eq $profile) {
-            $controls.AuthenticationSummaryText.Text = "No authentication profile returned for $identity."
-            return
-        }
-
-        $controls.AuthDefaultMethodText.Text = Get-DisplayValue -InputObject $profile -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default 'Not loaded'
-        $controls.AuthMfaRegisteredText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $profile -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $null)
-        $controls.AuthPasswordlessText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $profile -Names @('PasswordlessRegistered','IsPasswordlessRegistered') -Default $null)
-        $controls.AuthStrengthText.Text = Get-DisplayValue -InputObject $profile -Names @('AuthenticationStrength') -Default 'Not loaded'
-        $controls.AuthConditionalAccessText.Text = Get-DisplayValue -InputObject $profile -Names @('ConditionalAccessState','ConditionalAccess') -Default 'Not evaluated'
-        $controls.AuthRiskText.Text = Get-DisplayValue -InputObject $profile -Names @('SignInRiskState','RiskState','UserRiskState') -Default 'none'
-
-        $methods = @()
-        if ($profile.PSObject.Properties.Name -contains 'AuthenticationMethods' -and $null -ne $profile.AuthenticationMethods) { $methods = @($profile.AuthenticationMethods) }
-        if ($controls.ContainsKey('AuthMethodsList') -and $null -ne $controls.AuthMethodsList) {
-            $controls.AuthMethodsList.Items.Clear()
-            foreach ($method in $methods) { [void]$controls.AuthMethodsList.Items.Add([string]$method) }
-            if ($methods.Count -eq 0) { [void]$controls.AuthMethodsList.Items.Add('None reported') }
-        }
-        $controls.AuthenticationSummaryText.Text = "Authentication loaded for $($controls.UpnText.Text)."
-    }
-    catch {
-        $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($_.Exception.Message)"
     }
 }
 
@@ -495,7 +429,6 @@ function Invoke-UserSearch {
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
         Update-GraphPanels -User $user -Query $effectiveQuery
-        Update-AuthenticationPanels -User $user -Query $effectiveQuery
         Update-ExchangePanels -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
         Update-DetailPanels -User $user -Query $effectiveQuery

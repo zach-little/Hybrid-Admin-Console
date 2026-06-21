@@ -285,46 +285,6 @@ function Get-HybridDirectorySimulatorGraphProfile {
     }
 }
 
-
-function Get-HybridDirectorySimulatorAuthenticationProfile {
-    [CmdletBinding()]
-    param([Parameter(Mandatory=$true)][string]$Identity)
-
-    $user = Get-HybridDirectorySimulatorUser -Identity $Identity
-    $seed = $user.SamAccountName.ToLowerInvariant()
-    $hash = [Math]::Abs($seed.GetHashCode())
-    $methodSets = @(
-        @('password','microsoftAuthenticatorPush','fido2SecurityKey'),
-        @('password','microsoftAuthenticatorPush','softwareOath'),
-        @('password','sms','voiceMobile'),
-        @('password')
-    )
-    $methods = @($methodSets[$hash % $methodSets.Count])
-    $strongMethodCount = @($methods | Where-Object { $_ -ne 'password' -and $_ -ne 'sms' -and $_ -ne 'voiceMobile' }).Count
-    $mfaMethodCount = @($methods | Where-Object { $_ -ne 'password' }).Count
-    $passwordlessMethodCount = @($methods | Where-Object { $_ -in @('fido2SecurityKey','windowsHelloForBusiness','temporaryAccessPass') }).Count
-
-    [pscustomobject]@{
-        PSTypeName = 'Hybrid.AuthenticationProfile'
-        UserPrincipalName = $user.UserPrincipalName
-        DisplayName = $user.DisplayName
-        DefaultMethod = if ($methods.Count -gt 1) { [string]$methods[1] } else { 'password' }
-        AuthenticationMethods = @($methods)
-        MfaRegistered = [bool]($mfaMethodCount -gt 0)
-        MfaCapable = [bool]($mfaMethodCount -gt 0)
-        PasswordlessRegistered = [bool]($passwordlessMethodCount -gt 0)
-        TemporaryAccessPassEligible = [bool]($hash % 3 -ne 0)
-        AuthenticationStrength = if ($strongMethodCount -gt 0) { 'Phishing-resistant capable' } elseif ($mfaMethodCount -gt 0) { 'Multifactor capable' } else { 'Single-factor only' }
-        ConditionalAccessState = if ($mfaMethodCount -gt 0) { 'Satisfied' } else { 'Requires registration' }
-        SignInRiskState = @('none','low','none','none','medium')[$hash % 5]
-        LastMfaRegistrationDateTime = if ($mfaMethodCount -gt 0) { (Get-Date).Date.AddDays(-1 * (($hash % 120) + 3)) } else { $null }
-        LastSuccessfulSignInDateTime = (Get-Date).AddHours(-1 * (($hash % 72) + 1))
-        PasswordLastChangedDateTime = (Get-Date).Date.AddDays(-1 * (($hash % 90) + 10))
-        Source = 'DirectorySimulator.MicrosoftGraph.Authentication'
-        RetrievedOn = [datetime]::UtcNow
-    }
-}
-
 function New-HybridDirectorySimulatorProviders {
     [CmdletBinding()]
     param()
@@ -345,9 +305,7 @@ function New-HybridDirectorySimulatorProviders {
         GetUser = { param([string]$Identity) Get-HybridDirectorySimulatorUser -Identity $Identity }.GetNewClosure()
         GetGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
         GetUserGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
-        GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
-        GetUserAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
-        GetGraphAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
+        GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.MicrosoftGraph' } }.GetNewClosure()
     }
 
@@ -393,6 +351,5 @@ Export-ModuleMember -Function @(
     'Get-HybridDirectorySimulatorMailboxStatistics',
     'Get-HybridDirectorySimulatorMailboxDelegations',
     'Get-HybridDirectorySimulatorDistributionGroups',
-    'Get-HybridDirectorySimulatorExchangeHealth',
-    'Get-HybridDirectorySimulatorAuthenticationProfile'
+    'Get-HybridDirectorySimulatorExchangeHealth'
 )

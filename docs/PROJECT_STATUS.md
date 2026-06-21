@@ -2,8 +2,8 @@
 
 **Project:** Hybrid Admin Console  
 **Current Milestone:** Milestone 7 - Hybrid Service Layer  
-**Current Phase:** Phase 5 - Microsoft Graph Vertical  
-**Baseline:** Milestone 7 Phase 4 - Exchange Vertical stable
+**Current Phase:** Phase 6 - Authentication Vertical  
+**Baseline:** Milestone 7 Milestone 7 Phase 5 - Microsoft Graph Vertical stable
 
 ## Completed in Milestone 7
 
@@ -14,13 +14,13 @@
 
 ## Active Work
 
-Phase 5 adds Microsoft Graph profile details as a complete vertical slice:
+Phase 6 adds an authentication posture vertical as a live card:
 
-- Service-layer Graph profile retrieval
-- Canonical `Hybrid.GraphProfile` model
-- Directory Simulator Graph profile data
-- UI display helpers for the Graph card
-- Phase 5 validation tests
+- Service-layer authentication profile retrieval
+- Canonical `Hybrid.AuthenticationProfile` model
+- Directory Simulator authentication posture data
+- UI authentication card that updates automatically after search
+- Phase 6 cumulative validation tests
 
 ## Stability Rule
 

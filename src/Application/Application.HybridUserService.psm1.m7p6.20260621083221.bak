@@ -1,4 +1,4 @@
-#region Module Information
+﻿#region Module Information
 # Name: Application.HybridUserService
 # Purpose: Vertical-slice service layer for unified Hybrid.User search and enriched user details.
 # Dependencies: Provider services supplied by caller.
@@ -512,47 +512,6 @@ function Get-HybridUserGraphProfile {
     return $graphProfile
 }
 #endregion
-
-#region Milestone 7 Phase 6 - Authentication Profile Extension
-function Get-HybridUserAuthenticationProfile {
-    [CmdletBinding()]
-    param([Parameter(Mandatory=$true)][string]$Identity)
-
-    if (-not $script:HybridUserServiceState.Initialized) { throw 'Hybrid user service has not been initialized.' }
-    if ([string]::IsNullOrWhiteSpace($Identity)) { throw 'User identity cannot be empty.' }
-
-    $provider = $script:HybridUserServiceState.MicrosoftGraph
-    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','Get') -Arguments @($Identity) | Select-Object -First 1)
-    if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }
-
-    $raw = $profile[0]
-    $methods = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethods','Methods') -Default @())
-    $defaultMethod = [string](Get-HybridObjectValue -InputObject $raw -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default '')
-    if ([string]::IsNullOrWhiteSpace($defaultMethod)) { $defaultMethod = if ($methods.Count -gt 0) { [string]$methods[0] } else { 'password' } }
-
-    $authProfile = [pscustomobject]@{
-        PSTypeName = 'Hybrid.AuthenticationProfile'
-        UserPrincipalName = [string](Get-HybridObjectValue -InputObject $raw -Names @('UserPrincipalName','UPN') -Default $Identity)
-        DisplayName = [string](Get-HybridObjectValue -InputObject $raw -Names @('DisplayName','Name') -Default $Identity)
-        DefaultMethod = $defaultMethod
-        AuthenticationMethods = @($methods)
-        MfaRegistered = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
-        MfaCapable = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaCapable','IsMfaCapable') -Default $false)
-        PasswordlessRegistered = [bool](Get-HybridObjectValue -InputObject $raw -Names @('PasswordlessRegistered','IsPasswordlessRegistered') -Default $false)
-        TemporaryAccessPassEligible = [bool](Get-HybridObjectValue -InputObject $raw -Names @('TemporaryAccessPassEligible','TapEligible') -Default $false)
-        AuthenticationStrength = [string](Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationStrength','StrongAuthenticationRequirement') -Default 'Single-factor')
-        ConditionalAccessState = [string](Get-HybridObjectValue -InputObject $raw -Names @('ConditionalAccessState','ConditionalAccess') -Default 'Not evaluated')
-        SignInRiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('SignInRiskState','RiskState','UserRiskState') -Default 'none')
-        LastMfaRegistrationDateTime = Get-HybridObjectValue -InputObject $raw -Names @('LastMfaRegistrationDateTime','MfaRegisteredOn') -Default $null
-        LastSuccessfulSignInDateTime = Get-HybridObjectValue -InputObject $raw -Names @('LastSuccessfulSignInDateTime','LastSignInDateTime','LastSignIn') -Default $null
-        PasswordLastChangedDateTime = Get-HybridObjectValue -InputObject $raw -Names @('PasswordLastChangedDateTime','PasswordLastChanged','LastPasswordChange') -Default $null
-        Source = [string](Get-HybridObjectValue -InputObject $raw -Names @('Source') -Default 'MicrosoftGraph')
-        RetrievedOn = [datetime]::UtcNow
-    }
-    $authProfile.PSObject.TypeNames.Insert(0, 'Hybrid.AuthenticationProfile.Milestone7Phase6')
-    return $authProfile
-}
-#endregion
 Export-ModuleMember -Function @(
     'Initialize-HybridUserService',
     'Search-HybridUser',
@@ -560,8 +519,6 @@ Export-ModuleMember -Function @(
     'Get-HybridUserDetails',
     'Get-HybridUserMailboxDetails',
     'Get-HybridUserGraphProfile',
-    
-    'Get-HybridUserAuthenticationProfile',
     'Get-HybridUserServiceHealth',
     'Clear-HybridUserService'
 )

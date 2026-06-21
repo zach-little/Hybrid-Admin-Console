@@ -324,7 +324,6 @@ function Get-HybridDirectorySimulatorAuthenticationProfile {
         RetrievedOn = [datetime]::UtcNow
     }
 }
-
 function New-HybridDirectorySimulatorProviders {
     [CmdletBinding()]
     param()
@@ -345,9 +344,7 @@ function New-HybridDirectorySimulatorProviders {
         GetUser = { param([string]$Identity) Get-HybridDirectorySimulatorUser -Identity $Identity }.GetNewClosure()
         GetGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
         GetUserGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
-        GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
-        GetUserAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
-        GetGraphAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
+        GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.MicrosoftGraph' } }.GetNewClosure()
     }
 
@@ -393,6 +390,6 @@ Export-ModuleMember -Function @(
     'Get-HybridDirectorySimulatorMailboxStatistics',
     'Get-HybridDirectorySimulatorMailboxDelegations',
     'Get-HybridDirectorySimulatorDistributionGroups',
-    'Get-HybridDirectorySimulatorExchangeHealth',
-    'Get-HybridDirectorySimulatorAuthenticationProfile'
-)
+    'Get-HybridDirectorySimulatorExchangeHealth'
+,
+    'Get-HybridDirectorySimulatorAuthenticationProfile')
