@@ -30,5 +30,6 @@
                                              "Required":  false,
                                              "Authentication":  "Interactive"
                                          }
-                  }
+                  },
+    "IsDefault":  true
 }

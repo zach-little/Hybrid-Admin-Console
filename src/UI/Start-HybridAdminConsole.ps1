@@ -7,6 +7,10 @@ param(
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$script:HapPngIcon = Join-Path $repoRoot 'assets\icons\HAP_Icon.png'
+$script:HapPngLogoFallback = Join-Path $repoRoot 'assets\icons\HAP_Logo.png'
+$script:HapIcoIcon = Join-Path $repoRoot 'assets\icons\HAP_Icon.ico'
+$script:HapIcoLogoFallback = Join-Path $repoRoot 'assets\icons\HAP_Logo.ico'
 $runtimeModule = Join-Path $repoRoot 'src\Core\Core.Runtime.psm1'
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
 $aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
@@ -94,13 +98,50 @@ Add-Type -AssemblyName System.Windows.Forms
 $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hybrid Admin Console" Height="800" Width="1280" MinHeight="720" MinWidth="1120" WindowStartupLocation="CenterScreen" Background="#101826">
+        Title="Hybrid Admin Console" Height="980" Width="1600" MinHeight="900" MinWidth="1360" WindowStartupLocation="CenterScreen" Background="#0B1220">
     <Window.Resources>
-        <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#172337"/><Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
-        <Style x:Key="LabelText" TargetType="TextBlock"><Setter Property="Foreground" Value="#94A3B8"/><Setter Property="FontSize" Value="12"/></Style>
+        <LinearGradientBrush x:Key="ShellBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0B1220" Offset="0"/>
+            <GradientStop Color="#101826" Offset="0.55"/>
+            <GradientStop Color="#08111E" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="PanelBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#111827" Offset="0"/>
+            <GradientStop Color="#0F172A" Offset="1"/>
+        </LinearGradientBrush>
+        <Style x:Key="Card" TargetType="Border"><Setter Property="Background" Value="#152033"/><Setter Property="BorderBrush" Value="#26364F"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
+        <Style x:Key="PanelCard" TargetType="Border" BasedOn="{StaticResource Card}"><Setter Property="Background" Value="{StaticResource PanelBrush}"/><Setter Property="Padding" Value="18"/></Style>
+        <Style x:Key="LabelText" TargetType="TextBlock"><Setter Property="Foreground" Value="#8EA4C2"/><Setter Property="FontSize" Value="12"/></Style>
         <Style x:Key="ValueText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="FontSize" Value="15"/><Setter Property="Margin" Value="0,2,0,10"/></Style>
-        <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="Foreground" Value="#F8FAFC"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="Foreground" Value="#F8FAFC"/><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
         <Style x:Key="ProfileCardText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+        <Style x:Key="RuntimeActionButton" TargetType="Button">
+            <Setter Property="Height" Value="86"/><Setter Property="MinWidth" Value="142"/><Setter Property="Margin" Value="8,0"/><Setter Property="Padding" Value="14,10"/><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="Background" Value="#1A2538"/><Setter Property="BorderBrush" Value="#2B3A55"/><Setter Property="BorderThickness" Value="1"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#22314A"/><Setter Property="BorderBrush" Value="#38BDF8"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="#0F172A"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="LaunchActionButton" TargetType="Button" BasedOn="{StaticResource RuntimeActionButton}"><Setter Property="Background" Value="#14532D"/><Setter Property="BorderBrush" Value="#22C55E"/><Setter Property="MinWidth" Value="132"/></Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Foreground" Value="#38BDF8"/>
+            <Setter Property="Width" Value="10"/>
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border Background="{TemplateBinding Background}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#13243A"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+        </Style>
     </Window.Resources>
     <Grid x:Name="ShellRoot">
         <Grid.RowDefinitions>
@@ -108,87 +149,227 @@ $xaml = @"
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid x:Name="StartupRegion" Grid.Row="0">
-            <Grid x:Name="StartupView" Margin="34">
-                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <Border Grid.Row="1" Style="{StaticResource Card}" MaxWidth="1120" HorizontalAlignment="Center">
-                    <Grid>
-                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                            <TextBlock Text="Hybrid Admin Platform" Foreground="#E5E7EB" FontSize="34" FontWeight="SemiBold"/>
-                            <TextBlock Text="Home - select a runtime profile before launch" Foreground="#38BDF8" FontSize="13" Margin="0,2,0,0"/>
-                        </StackPanel>
+        <Grid x:Name="StartupRegion" Grid.Row="0" Background="{StaticResource ShellBackgroundBrush}">
+            <!-- Milestone 8 Final UI Polish: Runtime Home mirrors the polished admin-console concept with fixed footer actions. -->
+            <Grid x:Name="StartupView" Margin="22">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="1" Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="340"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="52"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Width="42" Height="42" CornerRadius="10" Background="#0F172A" BorderBrush="#26364F" BorderThickness="1" VerticalAlignment="Center">
+                        <Image x:Name="StartupBrandIcon" Source="assets/icons/HAP_Icon.png" Width="34" Height="34" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Hybrid Admin Platform" Foreground="#F8FAFC" FontSize="30" FontWeight="SemiBold"/>
+                        <TextBlock Text="Select a runtime profile and launch Hybrid Admin Console" Foreground="#38BDF8" FontSize="13" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Grid>
 
-                            <Border Grid.Column="0" Background="#0F172A" CornerRadius="12" Padding="14">
-                                <Grid>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                    <TextBlock Text="Runtime Profiles" Style="{StaticResource SectionTitle}"/>
-                                    <!-- Phase 8.2 RuntimeProfileCardView: profile cards with Default/Last Used/Ready badges -->
-                                    <ListBox x:Name="RuntimeProfileListBox" Grid.Row="1" MinHeight="270" Background="Transparent" Foreground="#E5E7EB" BorderBrush="#334155" BorderThickness="0" Padding="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border x:Name="RuntimeProfileCard" Background="#111827" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                                                    <StackPanel>
-                                                        <DockPanel LastChildFill="True">
-                                                            <TextBlock Text="{Binding BadgeText}" Foreground="#38BDF8" FontSize="11" FontWeight="SemiBold" DockPanel.Dock="Right" Margin="10,0,0,0"/>
-                                                            <TextBlock Text="{Binding ProfileName}" Style="{StaticResource ProfileCardText}" FontSize="16" FontWeight="SemiBold"/>
-                                                        </DockPanel>
-                                                        <TextBlock Text="{Binding Organization}" Foreground="#94A3B8" FontSize="12" Margin="0,3,0,0"/>
-                                                        <TextBlock Text="{Binding CloudEnvironment}" Foreground="#CBD5E1" FontSize="12" Margin="0,6,0,0"/>
-                                                        <TextBlock Text="{Binding RuntimeMode}" Foreground="#CBD5E1" FontSize="12"/>
-                                                        <TextBlock Text="{Binding HealthLabel}" Foreground="#22C55E" FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0"/>
-                                                    </StackPanel>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="460"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource PanelCard}" Margin="0,0,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="0,0,0,14">
+                                <Border DockPanel.Dock="Right" Background="#1E293B" CornerRadius="6" Padding="8,3" Margin="8,0,0,0">
+                                    <TextBlock Text="profiles" Foreground="#CBD5E1" FontSize="12"/>
+                                </Border>
+                                <TextBlock Text="RUNTIME PROFILES" Style="{StaticResource SectionTitle}" Margin="0"/>
+                            </DockPanel>
+                            <Grid Grid.Row="1" Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="46"/><ColumnDefinition Width="46"/></Grid.ColumnDefinitions>
+                                <TextBox x:Name="RuntimeProfileSearchBox" Grid.Column="0" Height="34" Background="#0B1220" Foreground="#CBD5E1" BorderBrush="#26364F" Padding="10,0" VerticalContentAlignment="Center" Text="Search profiles..."/>
+                                <Button Grid.Column="1" Content="Filter" Height="34" Margin="8,0,0,0" Background="#111827" Foreground="#CBD5E1" BorderBrush="#26364F"/>
+                                <Button x:Name="RefreshRuntimeProfilesButton" Grid.Column="2" Content="Refresh" Height="34" Margin="8,0,0,0" Background="#111827" Foreground="#CBD5E1" BorderBrush="#26364F"/>
+                            </Grid>
+
+                            <!-- Phase 8.2 RuntimeProfileCardView: profile cards with Default/Last Used/Ready badges -->
+                            <ListBox x:Name="RuntimeProfileListBox" Grid.Row="2" Background="Transparent" Foreground="#E5E7EB" BorderThickness="0" Padding="0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="RuntimeProfileCard" Background="#111827" BorderBrush="#2B3A55" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,14">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="72"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" Width="58" Height="58" CornerRadius="9" Background="#1E293B" VerticalAlignment="Top">
+                                                    <Image Source="assets/icons/HAP_Icon.png" Width="46" Height="46" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-                                    <WrapPanel Grid.Row="2" HorizontalAlignment="Right" Margin="0,12,0,0">
-                                        <Button x:Name="RefreshRuntimeProfilesButton" Content="Refresh" Height="32" MinWidth="82" Margin="0,0,8,8"/>
-                                        <Button x:Name="NewRuntimeProfileButton" Content="New" Height="32" MinWidth="70" Margin="0,0,8,8"/>
-                                        <Button x:Name="EditRuntimeProfileButton" Content="Edit" Height="32" MinWidth="70" Margin="0,0,8,8" IsEnabled="True"/>
-                                        <Button x:Name="DuplicateRuntimeProfileButton" Content="Duplicate" Height="32" MinWidth="86" Margin="0,0,8,8"/>
-                                        <Button x:Name="DeleteRuntimeProfileButton" Content="Delete" Height="32" MinWidth="74" Margin="0,0,8,8"/>
-                                        <Button x:Name="ImportRuntimeProfileButton" Content="Import" Height="32" MinWidth="74" Margin="0,0,8,8"/>
-                                        <Button x:Name="ExportRuntimeProfileButton" Content="Export" Height="32" MinWidth="74" Margin="0,0,8,8"/>
-                                        <Button x:Name="SetDefaultRuntimeProfileButton" Content="Set Default" Height="32" MinWidth="104" Margin="0,0,0,8"/>
-                                    </WrapPanel>
+                                                <StackPanel Grid.Column="1" Margin="10,0,8,0">
+                                                    <TextBlock Text="{Binding ProfileName}" Style="{StaticResource ProfileCardText}" FontSize="18" FontWeight="SemiBold"/>
+                                                    <WrapPanel Margin="0,8,0,0">
+                                                        <Border Background="#312E81" CornerRadius="5" Padding="7,3" Margin="0,0,6,6"><TextBlock Text="{Binding Organization}" Foreground="#DDD6FE" FontSize="11"/></Border>
+                                                        <Border Background="#0F2A44" CornerRadius="5" Padding="7,3" Margin="0,0,6,6"><TextBlock Text="{Binding CloudEnvironment}" Foreground="#BAE6FD" FontSize="11"/></Border>
+                                                        <Border Background="#064E3B" CornerRadius="5" Padding="7,3" Margin="0,0,6,6"><TextBlock Text="{Binding RuntimeMode}" Foreground="#BBF7D0" FontSize="11"/></Border>
+                                                    </WrapPanel>
+                                                    <TextBlock Text="Profile ready for bootstrap and validation." Foreground="#B6C2D3" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                    <DockPanel Margin="0,12,0,0">
+                                                        <TextBlock Text="Ready" Foreground="#22C55E" FontWeight="SemiBold" FontSize="12" DockPanel.Dock="Left"/>
+                                                        <TextBlock Text="Last used: tracked" Foreground="#94A3B8" FontSize="12" Margin="20,0,0,0"/>
+                                                    </DockPanel>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding BadgeText}" Foreground="#FACC15" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Top"/>
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
+                                                <Setter TargetName="RuntimeProfileCard" Property="Background" Value="#13243A"/>
+                                                <Setter TargetName="RuntimeProfileCard" Property="BorderBrush" Value="#38BDF8"/>
+                                                <Setter TargetName="RuntimeProfileCard" Property="BorderThickness" Value="3"/>
+                                                <Setter TargetName="RuntimeProfileCard" Property="Effect">
+                                                    <Setter.Value><DropShadowEffect Color="#38BDF8" BlurRadius="18" ShadowDepth="0" Opacity="0.35"/></Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock Grid.Row="3" Text="Profiles are discovered from profiles\Runtime" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,12,0,0" FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" x:Name="RuntimeSummaryPanel" Style="{StaticResource PanelCard}" Margin="0">
+                        <!-- Phase 8.3 RuntimeSummaryPanel -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="Last validated: on launch" Foreground="#CBD5E1" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Button Content="Refresh" Height="28" MinWidth="70" Background="#111827" Foreground="#CBD5E1" BorderBrush="#26364F"/>
+                                </StackPanel>
+                                <TextBlock Text="RUNTIME SUMMARY" Style="{StaticResource SectionTitle}" Margin="0"/>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="1.5*"/><ColumnDefinition Width="1.2*"/><ColumnDefinition Width="1.1*"/></Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="78"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="10" Background="#1E293B" VerticalAlignment="Top"><Image x:Name="SummaryBrandIcon" Source="assets/icons/HAP_Icon.png" Width="52" Height="52" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                                        <StackPanel Grid.Column="1" Margin="12,0,24,0">
+                                            <TextBlock Text="PROFILE" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
+                                            <TextBlock x:Name="RuntimeProfileText" Text="-" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                            <TextBlock Text="Runtime profile selected for launch" Foreground="#CBD5E1" FontSize="13" Margin="0,6,0,0"/>
+                                            <TextBlock Text="File: profiles\Runtime" Foreground="#94A3B8" FontSize="12" Margin="0,14,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <StackPanel Grid.Column="1" Margin="18,0,18,0">
+                                        <TextBlock Text="ENVIRONMENT" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
+                                        <UniformGrid Columns="2" Margin="0,10,0,0">
+                                            <StackPanel Margin="0,0,12,12"><TextBlock Text="Cloud" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Foreground="#A78BFA" FontWeight="SemiBold"/></StackPanel>
+                                            <StackPanel Margin="0,0,12,12"><TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Foreground="#22C55E" FontWeight="SemiBold"/></StackPanel>
+                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="Schema" Style="{StaticResource LabelText}"/><TextBlock Text="1.0" Foreground="#CBD5E1"/></StackPanel>
+                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="HAP Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="v0.8.0-dev" Foreground="#CBD5E1"/></StackPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="18,0,0,0">
+                                        <TextBlock Text="COMPATIBILITY" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Compatible" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,12,0,6"/>
+                                        <TextBlock Text="Min Supported" Style="{StaticResource LabelText}"/><TextBlock Text="v0.7.0" Foreground="#CBD5E1" Margin="0,2,0,8"/>
+                                        <TextBlock Text="Max Tested" Style="{StaticResource LabelText}"/><TextBlock Text="v0.8.0-dev" Foreground="#CBD5E1"/>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
 
-                            <StackPanel Grid.Column="2">
-                                <!-- Phase 8.3 RuntimeSummaryPanel: pre-flight profile/runtime summary -->
-                                <Grid Margin="0,0,0,12">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,12">
+                            <Grid Grid.Row="2">
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,14">
                                         <StackPanel>
-                                            <TextBlock Text="Profile" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="-" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Selected Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="-" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="PROVIDERS" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
+                                            <TextBlock Text="Active Directory        Ready" Foreground="#22C55E" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Microsoft Graph         Deferred" Foreground="#FACC15" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Exchange Online         Deferred" Foreground="#FACC15"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,0,12">
+                                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,14">
                                         <StackPanel>
-                                            <TextBlock Text="Runtime Health" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Profile Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Authentication Posture" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeAuthenticationText" Text="Device Code disabled. Live providers authenticate on launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                                            <TextBlock Text="AUTHENTICATION" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock x:Name="RuntimeAuthenticationText" Text="Device Code disabled. Live providers authenticate on launch." TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
+                                            <TextBlock Text="App-Only            Deferred" Foreground="#CBD5E1" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Delegated           Required on launch" Foreground="#FACC15" Margin="0,0,0,8"/>
+                                            <TextBlock Text="Device Code         Disabled" Foreground="#94A3B8"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <TextBlock Text="RUNTIME HEALTH" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Healthy" Foreground="#22C55E" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                            <TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,12"/>
+                                            <TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Foreground="#CBD5E1"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
-                            </StackPanel>
-                        </Grid>
 
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                            <Button x:Name="LaunchConsoleButton" Content="Launch Hybrid Admin Console" Height="40" MinWidth="240" Margin="0,0,10,0"/>
-                            <Button x:Name="ExitButton" Content="Exit" Height="40" MinWidth="90"/>
-                        </StackPanel>
-                    </Grid>
+                                <Border Grid.Row="1" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="18">
+                                    <StackPanel>
+                                        <TextBlock Text="BOOTSTRAP PLAN PREVIEW" Style="{StaticResource SectionTitle}"/>
+                                        <UniformGrid Columns="6" Margin="0,10,0,0">
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="1" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Validate Profile" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="2" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Run Diagnostics" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="3" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Build Context" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="4" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Initialize Services" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="5" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Load Providers" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="6" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Launch Console" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Border x:Name="RuntimeActionFooter" Grid.Row="2" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="14" Margin="0,16,0,0">
+                    <!-- Fixed action footer: buttons remain visible regardless of profile-card scrolling. -->
+                    <!-- Phase 8 Final UI polish: action buttons are large, styled, single-row command tiles. -->
+                    <UniformGrid Columns="9" HorizontalAlignment="Stretch">
+                        <Button x:Name="LaunchConsoleButton" Style="{StaticResource LaunchActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="NewRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="New Profile" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+N" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="EditRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}" IsEnabled="True">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Edit Profile" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+E" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="DuplicateRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Duplicate" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+D" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="DeleteRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Delete" Foreground="#F87171" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Del" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="ImportRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Import" Foreground="#C084FC" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+I" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="ExportRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Export" Foreground="#C084FC" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+X" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="SetDefaultRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Set Default" Foreground="#FACC15" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+F" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                        <Button x:Name="ExitButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Exit" Foreground="#E5E7EB" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Alt+F4" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
+                    </UniformGrid>
                 </Border>
             </Grid>
         </Grid>
@@ -199,10 +380,16 @@ $xaml = @"
 
                 <Grid Grid.Row="0" Margin="0,0,0,14">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="52"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="42" Height="42" CornerRadius="10" Background="#0F172A" BorderBrush="#26364F" BorderThickness="1" VerticalAlignment="Center">
+                            <Image x:Name="ConsoleBrandIcon" Source="assets/icons/HAP_Icon.png" Width="34" Height="34" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                        </StackPanel>
+                    </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse x:Name="ProviderDot" Width="12" Height="12" Fill="#22C55E" Margin="0,0,8,0"/>
@@ -332,11 +519,18 @@ $xaml = @"
             </Grid>
         </Grid>
 
-        <Grid x:Name="StatusBarRegion" Grid.Row="1" Background="#0B1220" MinHeight="38">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Grid x:Name="StatusBarRegion" Grid.Row="1" Background="#08111E" MinHeight="44">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <ProgressBar x:Name="SearchProgressIndicator" Grid.Column="0" Width="120" Height="8" IsIndeterminate="False" Visibility="Collapsed" Margin="22,0,12,0" VerticalAlignment="Center"/>
             <TextBlock x:Name="StatusText" Grid.Column="1" Text="Ready." Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,22,0"/>
-            <TextBlock x:Name="ShellStatusText" Grid.Column="1" Text="" Foreground="#64748B" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,22,0"/>
+            <StackPanel x:Name="ShellStatusPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,22,0">
+                <TextBlock Text="Profile: " Foreground="#64748B"/><TextBlock x:Name="StatusProfileText" Text="-" Foreground="#94A3B8" Margin="0,0,14,0"/>
+                <TextBlock Text="Cloud: " Foreground="#64748B"/><TextBlock x:Name="StatusCloudText" Text="-" Foreground="#A78BFA" FontWeight="SemiBold" Margin="0,0,14,0"/>
+                <TextBlock Text="Mode: " Foreground="#64748B"/><TextBlock x:Name="StatusModeText" Text="-" Foreground="#94A3B8" Margin="0,0,14,0"/>
+                <TextBlock Text="Auth: " Foreground="#64748B"/><TextBlock x:Name="StatusAuthText" Text="-" Foreground="#CBD5E1" FontWeight="SemiBold" Margin="0,0,14,0"/>
+                <TextBlock Text="Health: " Foreground="#64748B"/><TextBlock x:Name="StatusHealthText" Text="-" Foreground="#22C55E" FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock x:Name="ShellStatusText" Grid.Column="2" Text="" Foreground="#64748B" Visibility="Collapsed"/>
         </Grid>
 
         <Grid x:Name="OverlayRegion" Grid.RowSpan="2" Background="#990B1220" Visibility="Collapsed">
@@ -495,7 +689,59 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+
+function Resolve-HybridBrandAssetPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$PrimaryPath,
+        [Parameter(Mandatory=$true)][string]$FallbackPath
+    )
+
+    if (Test-Path -LiteralPath $PrimaryPath) { return $PrimaryPath }
+    if (Test-Path -LiteralPath $FallbackPath) { return $FallbackPath }
+    return $null
+}
+
+function Set-HybridWindowIcon {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)]$Window)
+
+    $icoPath = Resolve-HybridBrandAssetPath -PrimaryPath $script:HapIcoIcon -FallbackPath $script:HapIcoLogoFallback
+    if ([string]::IsNullOrWhiteSpace($icoPath)) { return }
+
+    try {
+        $icoUri = [Uri]::new($icoPath, [UriKind]::Absolute)
+        $Window.Icon = [Windows.Media.Imaging.BitmapFrame]::Create($icoUri)
+    }
+    catch {
+        # Branding should never prevent the administrative console from opening.
+    }
+}
+
+function Set-HybridBrandIcons {
+    $pngPath = Resolve-HybridBrandAssetPath -PrimaryPath $script:HapPngIcon -FallbackPath $script:HapPngLogoFallback
+    if ([string]::IsNullOrWhiteSpace($pngPath)) { return }
+    try {
+        $uri = [Uri]::new($pngPath, [UriKind]::Absolute)
+        $bitmap = [Windows.Media.Imaging.BitmapImage]::new()
+        $bitmap.BeginInit()
+        $bitmap.UriSource = $uri
+        $bitmap.CacheOption = [Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+        $bitmap.EndInit()
+        $bitmap.Freeze()
+        foreach ($name in @('StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon')) {
+            if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Source = $bitmap }
+        }
+    }
+    catch {
+        # UI image branding is optional and should not block startup.
+    }
+}
+
+Set-HybridWindowIcon -Window $window
+Set-HybridBrandIcons
+
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -594,6 +840,30 @@ function Select-HybridRuntimeProfileFromList {
     Set-HybridSelectedRuntimeProfile -Profile $script:RuntimeProfileSummaries[$index] -Persist
 }
 
+
+function Set-HybridLaunchButtonLabel {
+    param([object]$Profile)
+    if ($null -eq $controls.LaunchConsoleButton) { return }
+    $name = if ($null -eq $Profile -or [string]::IsNullOrWhiteSpace([string]$Profile.ProfileName)) { 'Console' } else { [string]$Profile.ProfileName }
+    $label = $name
+    if ($label.Length -gt 22) { $label = $label.Substring(0,19) + '...' }
+    $line1 = if ($name -eq 'Console') { 'Launch Console' } else { "Launch $label" }
+    $content = $controls.LaunchConsoleButton.Content
+    if ($content -is [System.Windows.Controls.StackPanel] -and $content.Children.Count -ge 2) {
+        $content.Children[0].Text = $line1
+        $content.Children[1].Text = 'Enter'
+    }
+    else {
+        $controls.LaunchConsoleButton.Content = "$line1`nEnter"
+    }
+    if ($name -eq 'Console') {
+        $controls.LaunchConsoleButton.ToolTip = 'Launch Hybrid Admin Console'
+    }
+    else {
+        $controls.LaunchConsoleButton.ToolTip = "Launch $name"
+    }
+}
+
 function Update-HybridStartupView {
     $runtime = $script:HybridRuntime
     if ($null -eq $runtime -and (Get-Command Get-HybridRuntime -ErrorAction SilentlyContinue)) { $runtime = Get-HybridRuntime }
@@ -614,6 +884,7 @@ function Update-HybridStartupView {
         $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid) { 'Selected profile is ready for runtime bootstrap.' + $badgeSuffix } else { 'Selected profile cannot be launched until corrected.' + $badgeSuffix }
         if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = if ($selectedProfile.RuntimeMode -eq 'Simulation') { 'Authentication: not required. Device Code disabled.' } else { 'Authentication: interactive/app-only deferred until launch. Device Code disabled.' } }
         $controls.LaunchConsoleButton.IsEnabled = [bool]$selectedProfile.IsValid
+        Set-HybridLaunchButtonLabel -Profile $selectedProfile
         return
     }
 
@@ -625,6 +896,7 @@ function Update-HybridStartupView {
         $controls.RuntimeProviderSummaryText.Text = 'Runtime bootstrap unavailable; legacy startup path active.'
         $controls.RuntimeDiagnosticsText.Text = 'Diagnostics unavailable.'
         $controls.RuntimeStatusText.Text = 'Ready to launch legacy console.'
+        Set-HybridLaunchButtonLabel -Profile $null
         return
     }
 
@@ -652,15 +924,29 @@ function Update-HybridStartupView {
     }
     $controls.RuntimeDiagnosticsText.Text = $diagSummary
     $controls.RuntimeStatusText.Text = 'Runtime initialized. Launch the console when ready.'
+    Set-HybridLaunchButtonLabel -Profile $null
 }
 
 
 # Phase 8.4 ProfileOperations / Phase 8.5 LaunchWorkflow / Phase 8.6 PersistentRuntimeStatus
 function Update-HybridPersistentRuntimeStatus {
     $profile = $script:SelectedRuntimeProfileSummary
-    if ($null -eq $profile) { $controls.ShellStatusText.Text = 'No runtime profile selected'; return }
-    $auth = if ($profile.RuntimeMode -eq 'Simulation') { 'None' } else { 'Interactive/App-only on launch' }
+    if ($null -eq $profile) {
+        $controls.ShellStatusText.Text = 'No runtime profile selected'
+        if ($controls.StatusProfileText) { $controls.StatusProfileText.Text = '-' }
+        if ($controls.StatusCloudText) { $controls.StatusCloudText.Text = '-' }
+        if ($controls.StatusModeText) { $controls.StatusModeText.Text = '-' }
+        if ($controls.StatusAuthText) { $controls.StatusAuthText.Text = '-' }
+        if ($controls.StatusHealthText) { $controls.StatusHealthText.Text = '-' }
+        return
+    }
+    $auth = if ($profile.RuntimeMode -eq 'Simulation') { 'None' } else { 'Delegated (Required)' }
     $controls.ShellStatusText.Text = ('Profile: {0}   Cloud: {1}   Mode: {2}   Auth: {3}   Health: {4}' -f $profile.ProfileName, $profile.CloudEnvironment, $profile.RuntimeMode, $auth, $profile.HealthLabel)
+    if ($controls.StatusProfileText) { $controls.StatusProfileText.Text = $profile.ProfileName }
+    if ($controls.StatusCloudText) { $controls.StatusCloudText.Text = $profile.CloudEnvironment }
+    if ($controls.StatusModeText) { $controls.StatusModeText.Text = $profile.RuntimeMode }
+    if ($controls.StatusAuthText) { $controls.StatusAuthText.Text = $auth }
+    if ($controls.StatusHealthText) { $controls.StatusHealthText.Text = $profile.HealthLabel }
 }
 
 function Show-HybridHomeView {

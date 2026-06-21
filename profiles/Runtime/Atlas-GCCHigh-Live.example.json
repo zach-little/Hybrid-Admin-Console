@@ -1,37 +1,38 @@
-{
-  "ProfileName": "Atlas GCC High Live",
-  "Mode": "Live",
-  "Cloud": "GCCHigh",
-  "Environment": "Production",
-  "Organization": "Atlas",
-  "TenantId": "00000000-0000-0000-0000-000000000000",
-  "Providers": {
-    "DirectorySimulator": {
-      "Enabled": false,
-      "Mode": "Disabled",
-      "Required": false,
-      "Authentication": "None"
-    },
-    "ActiveDirectory": {
-      "Enabled": true,
-      "Mode": "Live",
-      "Required": true,
-      "Authentication": "Integrated",
-      "Notes": "Uses the ActiveDirectory PowerShell module and current admin context."
-    },
-    "MicrosoftGraph": {
-      "Enabled": true,
-      "Mode": "Live",
-      "Required": true,
-      "Authentication": "Interactive",
-      "Notes": "Interactive or app-only MSAL only. Device Code is not allowed."
-    },
-    "ExchangeOnline": {
-      "Enabled": true,
-      "Mode": "Live",
-      "Required": true,
-      "Authentication": "Interactive",
-      "Notes": "Exchange Online provider uses the selected cloud endpoint and approved auth method."
-    }
-  }
+﻿{
+    "ProfileName":  "Atlas GCC High Live",
+    "Mode":  "Live",
+    "Cloud":  "GCCHigh",
+    "Environment":  "Production",
+    "Organization":  "Atlas",
+    "TenantId":  "00000000-0000-0000-0000-000000000000",
+    "Providers":  {
+                      "DirectorySimulator":  {
+                                                 "Enabled":  false,
+                                                 "Mode":  "Disabled",
+                                                 "Required":  false,
+                                                 "Authentication":  "None"
+                                             },
+                      "ActiveDirectory":  {
+                                              "Enabled":  true,
+                                              "Mode":  "Live",
+                                              "Required":  true,
+                                              "Authentication":  "Integrated",
+                                              "Notes":  "Uses the ActiveDirectory PowerShell module and current admin context."
+                                          },
+                      "MicrosoftGraph":  {
+                                             "Enabled":  true,
+                                             "Mode":  "Live",
+                                             "Required":  true,
+                                             "Authentication":  "Interactive",
+                                             "Notes":  "Interactive or app-only MSAL only. Device Code is not allowed."
+                                         },
+                      "ExchangeOnline":  {
+                                             "Enabled":  true,
+                                             "Mode":  "Live",
+                                             "Required":  true,
+                                             "Authentication":  "Interactive",
+                                             "Notes":  "Exchange Online provider uses the selected cloud endpoint and approved auth method."
+                                         }
+                  },
+    "IsDefault":  false
 }
