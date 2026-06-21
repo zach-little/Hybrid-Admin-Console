@@ -30,3 +30,41 @@ Mock adapters return valid `Hybrid.AuthenticationSession` objects without requir
 ### Live Auth Boundary
 
 `Core.Authentication.MSAL` currently establishes the adapter contract shape. Live token acquisition can be wired behind this contract without changing provider behavior.
+
+# Architecture after Milestone 7
+
+The project has transitioned from provider-centric to service-centric.
+
+Search operations now flow through the following layers:
+
+UI
+
+↓
+
+Aggregation Service
+
+↓
+
+Vertical Services
+
+↓
+
+Providers
+
+↓
+
+Infrastructure
+
+Each vertical owns a single responsibility:
+
+Active Directory
+
+Exchange
+
+Microsoft Graph
+
+Authentication
+
+The Aggregation Service coordinates vertical retrieval while remaining provider-agnostic.
+
+This architecture is considered stable and will remain the foundation for future milestones.
