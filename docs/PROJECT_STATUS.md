@@ -1,76 +1,27 @@
 # Project Status
 
-**Project:** Hybrid Admin Console
+**Project:** Hybrid Admin Console  
+**Current Milestone:** Milestone 7 - Hybrid Service Layer  
+**Current Phase:** Phase 5 - Microsoft Graph Vertical  
+**Baseline:** Milestone 7 Phase 4 - Exchange Vertical stable
 
-**Current Version:** 0.6.0
+## Completed in Milestone 7
 
----
+- Phase 1 - Service Layer Foundation
+- Phase 2 - Active Directory Vertical
+- Phase 3 - Entra ID Vertical
+- Phase 4 - Exchange Vertical
 
-## Overall Completion
+## Active Work
 
-### Completed Milestones
+Phase 5 adds Microsoft Graph profile details as a complete vertical slice:
 
-* ✅ Milestone 1 – Foundation
-* ✅ Milestone 2 – Domain Models
-* ✅ Milestone 3 – Active Directory Provider
-* ✅ Milestone 4 – Provider Architecture
-* ✅ Milestone 5 – Authentication Platform
-* ✅ Milestone 6 – Microsoft 365 Platform Foundation
+- Service-layer Graph profile retrieval
+- Canonical `Hybrid.GraphProfile` model
+- Directory Simulator Graph profile data
+- UI display helpers for the Graph card
+- Phase 5 validation tests
 
----
+## Stability Rule
 
-## Current Architecture
-
-Implemented platform components:
-
-### Authentication
-
-* Authentication Manager
-* Authentication Session
-* Authentication Cache
-* Interactive MSAL Adapter
-* App-only MSAL Adapter
-
-### Providers
-
-* Active Directory
-* Microsoft Graph
-* Exchange Online
-
-### Domain Models
-
-* Hybrid.User
-* Authentication Request
-* Authentication Session
-* Provider Contexts
-
-### Platform Services
-
-* Provider Factory
-* Provider Health
-* Provider Registration
-* Canonical Object Conversion
-
----
-
-## Current Development Branch
-
-Next milestone:
-
-**Milestone 7 – Hybrid Service Layer**
-
-Primary objective:
-
-Create provider aggregation services that combine Active Directory, Microsoft Graph, and Exchange Online into unified Hybrid objects for UI consumption.
-
----
-
-## Build Status
-
-Current milestone validation:
-
-✅ All Milestone 6 tests passing.
-
-Project status:
-
-**Stable**
+Phase 4 remains the baseline. Phase 5 changes must be additive and must not regress Phase 1-4 behavior.

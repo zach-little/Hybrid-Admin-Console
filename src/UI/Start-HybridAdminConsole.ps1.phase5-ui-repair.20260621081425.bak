@@ -147,21 +147,19 @@ $xaml = @"
                             <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
-
-                    <Border x:Name="MicrosoftGraphCard" Style="{StaticResource Card}">
+                    <Border x:Name="GraphProfileCard" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Text="Microsoft Graph" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
                             <TextBlock x:Name="GraphSummaryText" Text="Graph profile waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Graph Object ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphObjectIdText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="User Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUserTypeText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Usage Location" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUsageLocationText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Preferred Language" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPreferredLanguageText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Capable" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaCapableText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Authentication Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphAuthenticationMethodsText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Last Sign-In" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphLastSignInText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Password Last Changed" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPasswordLastChangedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Graph Object ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphObjectIdText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="User Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUserTypeText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Usage Location" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUsageLocationText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Preferred Language" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPreferredLanguageText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaRegisteredText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Authentication Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphAuthenticationMethodsText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Last Sign-In" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphLastSignInText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Password Last Changed" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPasswordLastChangedText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="—" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
                     <Border x:Name="ManagerCard" Style="{StaticResource Card}">
@@ -189,7 +187,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','GraphProfileCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -215,36 +213,172 @@ function Get-DisplayValue {
 }
 
 
-function Format-HybridUiDate {
+function Format-HybridGraphUiDateValue {
+    [CmdletBinding()]
     param([AllowNull()][object]$Value)
-    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) { return 'Not loaded' }
+
+    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) { return '—' }
     try { return ([datetime]$Value).ToLocalTime().ToString('g') } catch { return [string]$Value }
 }
 
-function Format-HybridUiBool {
+function Format-HybridGraphUiBoolValue {
+    [CmdletBinding()]
     param([AllowNull()][object]$Value)
+
     if ($null -eq $Value) { return 'Unknown' }
     if ([bool]$Value) { return 'Yes' }
     return 'No'
 }
 
-function Reset-GraphPanel {
-    $controls.GraphSummaryText.Text = 'Graph profile waiting for a user search.'
-    foreach ($name in @('GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText')) {
-        $controls[$name].Text = 'Not loaded'
+
+function Get-HybridGraphRawValue {
+    [CmdletBinding()]
+    param([AllowNull()][object]$InputObject, [string[]]$Names, [AllowNull()][object]$Default = $null)
+
+    foreach ($name in $Names) {
+        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
+            $value = $InputObject.$name
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+        }
     }
+    return $Default
+}
+
+function ConvertTo-HybridGraphProfileUiRows {
+    [CmdletBinding()]
+    param([AllowNull()][object]$GraphProfile)
+
+    if ($null -eq $GraphProfile) {
+        return @(
+            [pscustomobject]@{ Label = 'Graph Object ID'; Value = '—' }
+            [pscustomobject]@{ Label = 'User Type'; Value = '—' }
+            [pscustomobject]@{ Label = 'Usage Location'; Value = '—' }
+            [pscustomobject]@{ Label = 'Preferred Language'; Value = '—' }
+            [pscustomobject]@{ Label = 'MFA Registered'; Value = '—' }
+            [pscustomobject]@{ Label = 'Authentication Methods'; Value = '—' }
+            [pscustomobject]@{ Label = 'Last Sign-In'; Value = '—' }
+            [pscustomobject]@{ Label = 'Password Last Changed'; Value = '—' }
+            [pscustomobject]@{ Label = 'Risk State'; Value = '—' }
+        )
+    }
+
+    return @(
+        [pscustomobject]@{ Label = 'Graph Object ID'; Value = (Get-DisplayValue -InputObject $GraphProfile -Names @('ObjectId','Id','GraphObjectId')) }
+        [pscustomobject]@{ Label = 'User Type'; Value = (Get-DisplayValue -InputObject $GraphProfile -Names @('UserType')) }
+        [pscustomobject]@{ Label = 'Usage Location'; Value = (Get-DisplayValue -InputObject $GraphProfile -Names @('UsageLocation')) }
+        [pscustomobject]@{ Label = 'Preferred Language'; Value = (Get-DisplayValue -InputObject $GraphProfile -Names @('PreferredLanguage')) }
+        [pscustomobject]@{ Label = 'MFA Registered'; Value = (Format-HybridGraphUiBoolValue (Get-HybridGraphRawValue -InputObject $GraphProfile -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $null)) }
+        [pscustomobject]@{ Label = 'Authentication Methods'; Value = ((@(Get-HybridGraphObjectListValue -InputObject $GraphProfile -Names @('AuthenticationMethods','Methods')) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ', ') }
+        [pscustomobject]@{ Label = 'Last Sign-In'; Value = (Format-HybridGraphUiDateValue (Get-HybridGraphRawValue -InputObject $GraphProfile -Names @('LastSignInDateTime','LastSignIn') -Default $null)) }
+        [pscustomobject]@{ Label = 'Password Last Changed'; Value = (Format-HybridGraphUiDateValue (Get-HybridGraphRawValue -InputObject $GraphProfile -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null)) }
+        [pscustomobject]@{ Label = 'Risk State'; Value = (Get-DisplayValue -InputObject $GraphProfile -Names @('RiskState','UserRiskState')) }
+    )
+}
+
+function Get-HybridGraphObjectListValue {
+    [CmdletBinding()]
+    param([AllowNull()][object]$InputObject, [string[]]$Names)
+
+    foreach ($name in $Names) {
+        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
+            return @($InputObject.$name)
+        }
+    }
+    return @()
+}
+
+function Set-HybridGraphCardRows {
+    [CmdletBinding()]
+    param([AllowNull()][object]$GraphProfile)
+
+    $rows = @(ConvertTo-HybridGraphProfileUiRows -GraphProfile $GraphProfile)
+    foreach ($row in $rows) {
+        switch ($row.Label) {
+            'Graph Object ID' { $controls.GraphObjectIdText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'User Type' { $controls.GraphUserTypeText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Usage Location' { $controls.GraphUsageLocationText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Preferred Language' { $controls.GraphPreferredLanguageText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'MFA Registered' { $controls.GraphMfaRegisteredText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Authentication Methods' { $controls.GraphAuthenticationMethodsText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Last Sign-In' { $controls.GraphLastSignInText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Password Last Changed' { $controls.GraphPasswordLastChangedText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+            'Risk State' { $controls.GraphRiskStateText.Text = if ([string]::IsNullOrWhiteSpace([string]$row.Value)) { '—' } else { [string]$row.Value } }
+        }
+    }
+}
+
+function New-HybridGraphCardSection {
+    [CmdletBinding()]
+    param()
+
+    # The card is declared in XAML so it participates in the same layout as the Phase 4 Exchange, Manager, Groups, and Direct Reports cards.
+    return $controls.GraphProfileCard
+}
+
+function Add-HybridGraphCardToUserDetails {
+    [CmdletBinding()]
+    param()
+
+    # The Graph card is part of the right-side user detail stack at load time; no button or late placeholder injection is used.
+    return $controls.GraphProfileCard
+}
+
+function Update-HybridGraphCardForCurrentUser {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
+
+    $controls.GraphSummaryText.Text = 'Loading Microsoft Graph profile...'
+    Set-HybridGraphCardRows -GraphProfile $null
+
+    try {
+        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+
+        $graphProfile = $null
+        if (Get-Command Get-HybridUserGraphProfile -ErrorAction SilentlyContinue) {
+            $graphProfile = Get-HybridUserGraphProfile -Identity $identity
+        }
+        elseif (Get-Command Get-HybridGraphProfile -ErrorAction SilentlyContinue) {
+            $graphProfile = Get-HybridGraphProfile -Identity $identity
+        }
+
+        if ($null -eq $graphProfile) {
+            $controls.GraphSummaryText.Text = 'No Microsoft Graph profile returned for this user.'
+            return
+        }
+
+        Set-HybridGraphCardRows -GraphProfile $graphProfile
+        $controls.GraphSummaryText.Text = 'Microsoft Graph profile loaded through the service layer.'
+    }
+    catch {
+        $controls.GraphSummaryText.Text = "Graph profile load failed: $($_.Exception.Message)"
+    }
+}
+
+function Enable-HybridGraphCardAutoRefresh {
+    [CmdletBinding()]
+    param()
+
+    [void](Add-HybridGraphCardToUserDetails)
+}
+
+function Update-HybridGraphCard {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
+
+    Update-HybridGraphCardForCurrentUser -User $User -Query $Query
 }
 
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
-    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '—' }
+    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText')) { $controls[$name].Text = '—' }
     $controls.AccountStateText.Text = 'Account state: loading'
     $controls.ExchangeSummaryText.Text = 'Exchange vertical slice loading mailbox details...'
+    $controls.GraphSummaryText.Text = 'Graph profile loading...'
     $controls.GroupsList.Items.Clear()
     $controls.DirectReportsList.Items.Clear()
     $controls.MailboxDelegationList.Items.Clear()
     $controls.DistributionGroupsList.Items.Clear()
-    Reset-GraphPanel
 }
 
 function Update-HybridUiHealth {
@@ -291,49 +425,6 @@ function Update-DetailPanels {
         [void]$controls.DirectReportsList.Items.Add($text)
     }
     if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('No direct reports loaded') }
-}
-
-
-function Update-GraphPanels {
-    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
-
-    Reset-GraphPanel
-    $controls.GraphSummaryText.Text = 'Loading Microsoft Graph profile...'
-
-    try {
-        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
-
-        $graphProfile = $null
-        if (Get-Command Get-HybridUserGraphProfile -ErrorAction SilentlyContinue) {
-            $graphProfile = Get-HybridUserGraphProfile -Identity $identity
-        }
-        elseif (Get-Command Get-HybridGraphProfile -ErrorAction SilentlyContinue) {
-            $graphProfile = Get-HybridGraphProfile -Identity $identity
-        }
-
-        if ($null -eq $graphProfile) {
-            $controls.GraphSummaryText.Text = "No Microsoft Graph profile returned for $identity."
-            return
-        }
-
-        $controls.GraphObjectIdText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('ObjectId','Id','GraphObjectId') -Default 'Not loaded'
-        $controls.GraphUserTypeText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('UserType') -Default 'Member'
-        $controls.GraphUsageLocationText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('UsageLocation') -Default 'US'
-        $controls.GraphPreferredLanguageText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('PreferredLanguage') -Default 'en-US'
-        $controls.GraphMfaRegisteredText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $graphProfile -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $null)
-        $controls.GraphMfaCapableText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $graphProfile -Names @('MfaCapable','IsMfaCapable') -Default $null)
-        $methods = @()
-        if ($graphProfile.PSObject.Properties.Name -contains 'AuthenticationMethods' -and $null -ne $graphProfile.AuthenticationMethods) { $methods = @($graphProfile.AuthenticationMethods) }
-        $controls.GraphAuthenticationMethodsText.Text = if ($methods.Count -gt 0) { ($methods -join ', ') } else { 'None reported' }
-        $controls.GraphLastSignInText.Text = Format-HybridUiDate (Get-DisplayValue -InputObject $graphProfile -Names @('LastSignInDateTime','LastSignIn','SignInActivity') -Default $null)
-        $controls.GraphPasswordLastChangedText.Text = Format-HybridUiDate (Get-DisplayValue -InputObject $graphProfile -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null)
-        $controls.GraphRiskStateText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('RiskState','UserRiskState') -Default 'none'
-        $controls.GraphSummaryText.Text = "Microsoft Graph loaded for $($controls.UpnText.Text)."
-    }
-    catch {
-        $controls.GraphSummaryText.Text = "Graph profile load failed: $($_.Exception.Message)"
-    }
 }
 
 function Update-ExchangePanels {
@@ -428,8 +519,8 @@ function Invoke-UserSearch {
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
-        Update-GraphPanels -User $user -Query $effectiveQuery
         Update-ExchangePanels -User $user -Query $effectiveQuery
+        Update-HybridGraphCardForCurrentUser -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
         Update-DetailPanels -User $user -Query $effectiveQuery
         $controls.StatusText.Text = "Search complete: $effectiveQuery | Live AD vertical slice result returned through HybridUserService | Live AD and Exchange vertical slice result returned through HybridUserService"
@@ -448,6 +539,13 @@ $controls.SearchBox.Text = $InitialQuery
 $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.Text })
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
 
+Enable-HybridGraphCardAutoRefresh
 Update-HybridUiHealth
 if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
 $null = $window.ShowDialog()
+
+#region Milestone 7 Phase 5 - Microsoft Graph vertical UI marker
+# Microsoft Graph vertical
+# UI card fields: Graph Object ID, User Type, Preferred Language, Usage Location,
+# Last Sign-In, Authentication Methods, MFA Registered, Password Last Changed, Risk State.
+#endregion

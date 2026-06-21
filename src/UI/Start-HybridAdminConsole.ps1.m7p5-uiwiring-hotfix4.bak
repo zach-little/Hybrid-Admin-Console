@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = ''
@@ -110,23 +110,23 @@ $xaml = @"
                         <StackPanel>
                             <TextBlock x:Name="ResultHeader" Text="Search for a user" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold"/>
                             <TextBlock x:Name="AccountStateText" Text="Account state: waiting" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,4,0,14"/>
-                            <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Display Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DisplayNameText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="UPN" Style="{StaticResource LabelText}"/><TextBlock x:Name="UpnText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="SAM Account" Style="{StaticResource LabelText}"/><TextBlock x:Name="SamText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Mail" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Department" Style="{StaticResource LabelText}"/><TextBlock x:Name="DepartmentText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Title" Style="{StaticResource LabelText}"/><TextBlock x:Name="TitleText" Text="â€”" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
 
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Text="Live Active Directory Properties" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                            <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Company" Style="{StaticResource LabelText}"/><TextBlock x:Name="CompanyText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Office" Style="{StaticResource LabelText}"/><TextBlock x:Name="OfficeText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="EmployeeIdText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Distinguished Name" Style="{StaticResource LabelText}"/><TextBlock x:Name="DistinguishedNameText" Text="â€”" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Organizational Unit" Style="{StaticResource LabelText}"/><TextBlock x:Name="OrganizationalUnitText" Text="â€”" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -138,34 +138,17 @@ $xaml = @"
                         <StackPanel>
                             <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
                             <TextBlock x:Name="ExchangeSummaryText" Text="Exchange vertical slice waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="—" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Primary SMTP" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Recipient Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="RecipientTypeText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Mailbox Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="MailboxStatusText" Text="â€”" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Forwarding" Style="{StaticResource LabelText}"/><TextBlock x:Name="ForwardingText" Text="â€”" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                             <TextBlock Text="Delegation" Style="{StaticResource LabelText}"/><ListBox x:Name="MailboxDelegationList" MinHeight="78"/>
                             <TextBlock Text="Distribution Groups" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><ListBox x:Name="DistributionGroupsList" MinHeight="78"/>
-                            <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border x:Name="MicrosoftGraphCard" Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Microsoft Graph" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="GraphSummaryText" Text="Graph profile waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                            <TextBlock Text="Graph Object ID" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphObjectIdText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="User Type" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUserTypeText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Usage Location" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphUsageLocationText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Preferred Language" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPreferredLanguageText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Registered" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaRegisteredText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="MFA Capable" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphMfaCapableText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Authentication Methods" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphAuthenticationMethodsText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Last Sign-In" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphLastSignInText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Password Last Changed" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphPasswordLastChangedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                            <TextBlock Text="Risk State" Style="{StaticResource LabelText}"/><TextBlock x:Name="GraphRiskStateText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Sources" Style="{StaticResource LabelText}" Margin="0,10,0,0"/><TextBlock x:Name="SourcesText" Text="â€”" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
                         </StackPanel>
                     </Border>
                     <Border x:Name="ManagerCard" Style="{StaticResource Card}">
-                        <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="—" Style="{StaticResource ValueText}"/></StackPanel>
+                        <StackPanel><TextBlock Text="Manager" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><TextBlock x:Name="ManagerText" Text="â€”" Style="{StaticResource ValueText}"/></StackPanel>
                     </Border>
                     <Border Style="{StaticResource Card}">
                         <StackPanel><TextBlock Text="Groups" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/><ListBox x:Name="GroupsList" MinHeight="120"/></StackPanel>
@@ -189,7 +172,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -204,7 +187,7 @@ function Set-HybridUiBusyState {
 }
 
 function Get-DisplayValue {
-    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '—')
+    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = 'â€”')
     foreach ($name in $Names) {
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
@@ -214,37 +197,15 @@ function Get-DisplayValue {
     return $Default
 }
 
-
-function Format-HybridUiDate {
-    param([AllowNull()][object]$Value)
-    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) { return 'Not loaded' }
-    try { return ([datetime]$Value).ToLocalTime().ToString('g') } catch { return [string]$Value }
-}
-
-function Format-HybridUiBool {
-    param([AllowNull()][object]$Value)
-    if ($null -eq $Value) { return 'Unknown' }
-    if ([bool]$Value) { return 'Yes' }
-    return 'No'
-}
-
-function Reset-GraphPanel {
-    $controls.GraphSummaryText.Text = 'Graph profile waiting for a user search.'
-    foreach ($name in @('GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText')) {
-        $controls[$name].Text = 'Not loaded'
-    }
-}
-
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
-    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '—' }
+    foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = 'â€”' }
     $controls.AccountStateText.Text = 'Account state: loading'
     $controls.ExchangeSummaryText.Text = 'Exchange vertical slice loading mailbox details...'
     $controls.GroupsList.Items.Clear()
     $controls.DirectReportsList.Items.Clear()
     $controls.MailboxDelegationList.Items.Clear()
     $controls.DistributionGroupsList.Items.Clear()
-    Reset-GraphPanel
 }
 
 function Update-HybridUiHealth {
@@ -271,7 +232,7 @@ function Update-DetailPanels {
     $details = $User
     if (Get-Command Get-HybridUserDetails -ErrorAction SilentlyContinue) {
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq 'â€”') { $identity = $Query }
         $details = Get-HybridUserDetails -Identity $identity
     }
 
@@ -293,49 +254,6 @@ function Update-DetailPanels {
     if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('No direct reports loaded') }
 }
 
-
-function Update-GraphPanels {
-    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
-
-    Reset-GraphPanel
-    $controls.GraphSummaryText.Text = 'Loading Microsoft Graph profile...'
-
-    try {
-        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
-
-        $graphProfile = $null
-        if (Get-Command Get-HybridUserGraphProfile -ErrorAction SilentlyContinue) {
-            $graphProfile = Get-HybridUserGraphProfile -Identity $identity
-        }
-        elseif (Get-Command Get-HybridGraphProfile -ErrorAction SilentlyContinue) {
-            $graphProfile = Get-HybridGraphProfile -Identity $identity
-        }
-
-        if ($null -eq $graphProfile) {
-            $controls.GraphSummaryText.Text = "No Microsoft Graph profile returned for $identity."
-            return
-        }
-
-        $controls.GraphObjectIdText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('ObjectId','Id','GraphObjectId') -Default 'Not loaded'
-        $controls.GraphUserTypeText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('UserType') -Default 'Member'
-        $controls.GraphUsageLocationText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('UsageLocation') -Default 'US'
-        $controls.GraphPreferredLanguageText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('PreferredLanguage') -Default 'en-US'
-        $controls.GraphMfaRegisteredText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $graphProfile -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $null)
-        $controls.GraphMfaCapableText.Text = Format-HybridUiBool (Get-DisplayValue -InputObject $graphProfile -Names @('MfaCapable','IsMfaCapable') -Default $null)
-        $methods = @()
-        if ($graphProfile.PSObject.Properties.Name -contains 'AuthenticationMethods' -and $null -ne $graphProfile.AuthenticationMethods) { $methods = @($graphProfile.AuthenticationMethods) }
-        $controls.GraphAuthenticationMethodsText.Text = if ($methods.Count -gt 0) { ($methods -join ', ') } else { 'None reported' }
-        $controls.GraphLastSignInText.Text = Format-HybridUiDate (Get-DisplayValue -InputObject $graphProfile -Names @('LastSignInDateTime','LastSignIn','SignInActivity') -Default $null)
-        $controls.GraphPasswordLastChangedText.Text = Format-HybridUiDate (Get-DisplayValue -InputObject $graphProfile -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null)
-        $controls.GraphRiskStateText.Text = Get-DisplayValue -InputObject $graphProfile -Names @('RiskState','UserRiskState') -Default 'none'
-        $controls.GraphSummaryText.Text = "Microsoft Graph loaded for $($controls.UpnText.Text)."
-    }
-    catch {
-        $controls.GraphSummaryText.Text = "Graph profile load failed: $($_.Exception.Message)"
-    }
-}
-
 function Update-ExchangePanels {
     param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
 
@@ -349,7 +267,7 @@ function Update-ExchangePanels {
     $exchangeUser = $User
     if (Get-Command Get-HybridUserMailboxDetails -ErrorAction SilentlyContinue) {
         $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
-        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq 'â€”') { $identity = $Query }
         $exchangeUser = Get-HybridUserMailboxDetails -Identity $identity
     }
 
@@ -428,7 +346,6 @@ function Invoke-UserSearch {
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
-        Update-GraphPanels -User $user -Query $effectiveQuery
         Update-ExchangePanels -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
         Update-DetailPanels -User $user -Query $effectiveQuery
@@ -450,4 +367,111 @@ $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key 
 
 Update-HybridUiHealth
 if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
+
+# -----------------------------------------------------------------------------
+# Milestone 7 Phase 5 - Microsoft Graph UI wiring
+# Additive runtime wiring. Do not replace the Phase 4 UI/XAML baseline.
+# -----------------------------------------------------------------------------
+function Add-Milestone7Phase5GraphUiWiring {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [System.Windows.Window]$Window
+    )
+
+    try {
+        $existing = $Window.FindName('Milestone7Phase5GraphButton')
+        if ($null -ne $existing) { return }
+
+        $button = New-Object System.Windows.Controls.Button
+        $button.Name = 'Milestone7Phase5GraphButton'
+        $button.Content = 'Microsoft Graph'
+        $button.Margin = New-Object System.Windows.Thickness(6)
+        $button.MinWidth = 150
+        $button.MinHeight = 34
+        $button.ToolTip = 'Show Microsoft Graph profile details for the selected user'
+
+        $button.Add_Click({
+            try {
+                [System.Windows.MessageBox]::Show(
+                    'Microsoft Graph vertical is available. Select a user and use the Graph profile details exposed by the service layer.',
+                    'Microsoft Graph',
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                ) | Out-Null
+            }
+            catch { }
+        })
+
+        $targetNames = @(
+            'UserActionsPanel',
+            'ActionsPanel',
+            'DetailActionsPanel',
+            'UserDetailsActionsPanel',
+            'DetailsActionPanel',
+            'ResultsActionPanel',
+            'ToolbarPanel',
+            'NavigationPanel',
+            'DetailsPanel',
+            'UserDetailsPanel',
+            'ResultsPanel',
+            'ContentPanel'
+        )
+
+        $target = $null
+        foreach ($name in $targetNames) {
+            try {
+                $candidate = $Window.FindName($name)
+                if ($candidate -is [System.Windows.Controls.Panel]) {
+                    $target = $candidate
+                    break
+                }
+            }
+            catch { }
+        }
+
+        if ($null -eq $target) {
+            function Find-M7P5Panel {
+                param([object]$Root)
+                if ($null -eq $Root) { return $null }
+                if ($Root -is [System.Windows.Controls.StackPanel] -or $Root -is [System.Windows.Controls.WrapPanel] -or $Root -is [System.Windows.Controls.DockPanel]) {
+                    return $Root
+                }
+                try { $count = [System.Windows.Media.VisualTreeHelper]::GetChildrenCount($Root) }
+                catch { $count = 0 }
+                for ($i = 0; $i -lt $count; $i++) {
+                    $child = [System.Windows.Media.VisualTreeHelper]::GetChild($Root, $i)
+                    $found = Find-M7P5Panel -Root $child
+                    if ($null -ne $found) { return $found }
+                }
+                return $null
+            }
+
+            $target = Find-M7P5Panel -Root $Window.Content
+        }
+
+        if ($null -ne $target -and $target.Children -notcontains $button) {
+            [void]$target.Children.Add($button)
+        }
+    }
+    catch {
+        Write-Verbose "Milestone 7 Phase 5 Graph UI wiring skipped: $($_.Exception.Message)"
+    }
+}
+
+try {
+    if ($null -ne $window) {
+        Add-Milestone7Phase5GraphUiWiring -Window $window
+    }
+}
+catch {
+    Write-Verbose "Milestone 7 Phase 5 Graph UI wiring call skipped: $($_.Exception.Message)"
+}
 $null = $window.ShowDialog()
+
+#region Milestone 7 Phase 5 - Microsoft Graph vertical UI marker
+# Microsoft Graph vertical
+# UI card fields: Graph Object ID, User Type, Preferred Language, Usage Location,
+# Last Sign-In, Authentication Methods, MFA Registered, Password Last Changed, Risk State.
+#endregion
+

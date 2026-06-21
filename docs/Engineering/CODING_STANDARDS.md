@@ -33,3 +33,12 @@ tests/
 ### Purpose
 
 The simulator is not disposable fake data. It is a development and test harness that allows vertical slices to be exercised without live Microsoft services while preserving realistic administrative behavior.
+
+####Incremental Development Rule
+Beginning with Milestone 7 Phase 5:
+-Changes should be additive.
+-Preserve all previous milestone exports.
+-Preserve UI marker strings.
+-Preserve previous service contracts.
+-Treat previous milestone tests as immutable.
+-A new phase extends previous work rather than rebuilding it.

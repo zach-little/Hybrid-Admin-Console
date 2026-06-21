@@ -232,6 +232,59 @@ function Get-HybridDirectorySimulatorExchangeHealth {
     }
 }
 
+
+function New-HybridDirectorySimulatorGraphObjectId {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Identity.ToLowerInvariant())
+    $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+    $guidBytes = New-Object byte[] 16
+    [Array]::Copy($hash, 0, $guidBytes, 0, 16)
+    return ([guid]::new($guidBytes)).ToString()
+}
+
+function Get-HybridDirectorySimulatorGraphProfile {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    Initialize-HybridDirectorySimulatorRecords
+    $user = Get-HybridDirectorySimulatorUser -Identity $Identity
+    if ($null -eq $user) { return $null }
+
+    $sam = [string]$user.SamAccountName
+    $upn = [string]$user.UserPrincipalName
+    $methods = switch ($sam.ToLowerInvariant()) {
+        'amorgan' { @('password','microsoftAuthenticatorPush','softwareOath'); break }
+        'jlee' { @('password','sms'); break }
+        'treed' { @('password','fido2','microsoftAuthenticatorPush'); break }
+        default { @('password') }
+    }
+    $mfaRegistered = @($methods | Where-Object { $_ -ne 'password' }).Count -gt 0
+    $signInOffset = ([Math]::Abs($sam.GetHashCode()) % 5) + 1
+    $passwordOffset = ([Math]::Abs($upn.GetHashCode()) % 80) + 14
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.DirectorySimulator.GraphProfile'
+        ObjectId = New-HybridDirectorySimulatorGraphObjectId -Identity $upn
+        Id = New-HybridDirectorySimulatorGraphObjectId -Identity $upn
+        SamAccountName = $sam
+        DisplayName = [string]$user.DisplayName
+        UserPrincipalName = $upn
+        UserType = 'Member'
+        PreferredLanguage = 'en-US'
+        UsageLocation = 'US'
+        LastSignInDateTime = ([datetime]::UtcNow.Date.AddDays(-1 * $signInOffset).AddHours(13))
+        LastNonInteractiveSignInDateTime = ([datetime]::UtcNow.Date.AddDays(-1 * ($signInOffset + 1)).AddHours(4))
+        PasswordLastChangedDateTime = ([datetime]::UtcNow.Date.AddDays(-1 * $passwordOffset).AddHours(9))
+        AuthenticationMethods = @($methods)
+        MfaRegistered = [bool]$mfaRegistered
+        MfaCapable = [bool]$mfaRegistered
+        RiskState = 'none'
+        Source = 'DirectorySimulator.MicrosoftGraph'
+    }
+}
+
 function New-HybridDirectorySimulatorProviders {
     [CmdletBinding()]
     param()
@@ -250,6 +303,9 @@ function New-HybridDirectorySimulatorProviders {
     $graph = [pscustomobject]@{
         SearchUser = { param([string]$Query) Search-HybridDirectorySimulatorUser -Query $Query }.GetNewClosure()
         GetUser = { param([string]$Identity) Get-HybridDirectorySimulatorUser -Identity $Identity }.GetNewClosure()
+        GetGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
+        GetUserGraphProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
+        GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorGraphProfile -Identity $Identity }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.MicrosoftGraph' } }.GetNewClosure()
     }
 
@@ -285,6 +341,7 @@ function New-HybridDirectorySimulator {
 Export-ModuleMember -Function @(
     'New-HybridDirectorySimulator',
     'New-HybridDirectorySimulatorProviders',
+    'Get-HybridDirectorySimulatorGraphProfile',
     'Get-HybridDirectorySimulatorUser',
     'Search-HybridDirectorySimulatorUser',
     'Get-HybridDirectorySimulatorManager',

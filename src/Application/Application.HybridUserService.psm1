@@ -1,4 +1,4 @@
-#region Module Information
+﻿#region Module Information
 # Name: Application.HybridUserService
 # Purpose: Vertical-slice service layer for unified Hybrid.User search and enriched user details.
 # Dependencies: Provider services supplied by caller.
@@ -475,12 +475,52 @@ function Clear-HybridUserService {
     return $true
 }
 
+
+#region Milestone 7 Phase 5 - Microsoft Graph Profile Extension
+function Get-HybridUserGraphProfile {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    if (-not $script:HybridUserServiceState.Initialized) { throw 'Hybrid user service has not been initialized.' }
+    if ([string]::IsNullOrWhiteSpace($Identity)) { throw 'User identity cannot be empty.' }
+
+    $provider = $script:HybridUserServiceState.MicrosoftGraph
+    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetGraphProfile','GetUserGraphProfile','GetAuthenticationProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
+    if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }
+
+    $raw = $profile[0]
+    $methods = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethods','Methods') -Default @())
+    $graphProfile = [pscustomobject]@{
+        PSTypeName = 'Hybrid.GraphProfile'
+        ObjectId = [string](Get-HybridObjectValue -InputObject $raw -Names @('ObjectId','Id','GraphObjectId') -Default '')
+        UserPrincipalName = [string](Get-HybridObjectValue -InputObject $raw -Names @('UserPrincipalName','UPN') -Default $Identity)
+        DisplayName = [string](Get-HybridObjectValue -InputObject $raw -Names @('DisplayName','Name') -Default $Identity)
+        UserType = [string](Get-HybridObjectValue -InputObject $raw -Names @('UserType') -Default 'Member')
+        PreferredLanguage = [string](Get-HybridObjectValue -InputObject $raw -Names @('PreferredLanguage') -Default 'en-US')
+        UsageLocation = [string](Get-HybridObjectValue -InputObject $raw -Names @('UsageLocation') -Default 'US')
+        LastSignInDateTime = Get-HybridObjectValue -InputObject $raw -Names @('LastSignInDateTime','LastSignIn','SignInActivity') -Default $null
+        LastNonInteractiveSignInDateTime = Get-HybridObjectValue -InputObject $raw -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default $null
+        PasswordLastChangedDateTime = Get-HybridObjectValue -InputObject $raw -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null
+        AuthenticationMethods = @($methods)
+        MfaRegistered = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
+        MfaCapable = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaCapable','IsMfaCapable') -Default $false)
+        RiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('RiskState','UserRiskState') -Default 'none')
+        Source = [string](Get-HybridObjectValue -InputObject $raw -Names @('Source') -Default 'MicrosoftGraph')
+        RetrievedOn = [datetime]::UtcNow
+    }
+    $graphProfile.PSObject.TypeNames.Insert(0, 'Hybrid.GraphProfile.Milestone7Phase5')
+    return $graphProfile
+}
+#endregion
 Export-ModuleMember -Function @(
     'Initialize-HybridUserService',
     'Search-HybridUser',
     'Get-HybridUser',
     'Get-HybridUserDetails',
     'Get-HybridUserMailboxDetails',
+    'Get-HybridUserGraphProfile',
     'Get-HybridUserServiceHealth',
     'Clear-HybridUserService'
 )
+
+
