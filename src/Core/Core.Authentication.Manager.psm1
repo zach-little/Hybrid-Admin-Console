@@ -24,12 +24,31 @@ function New-HybridAuthenticationManagerCacheKey {
     [CmdletBinding()]
     param([Parameter(Mandatory)]$Request)
 
+    $command = Get-Command New-HybridAuthenticationCacheKey -ErrorAction SilentlyContinue
+
+    if ($null -ne $command) {
+        try {
+            if ($command.Parameters.ContainsKey('AuthenticationRequest')) {
+                $keyObject = New-HybridAuthenticationCacheKey -AuthenticationRequest $Request
+
+                if ($null -ne $keyObject -and $keyObject.PSObject.Properties.Name -contains 'Key') {
+                    return [string]$keyObject.Key
+                }
+
+                if ($null -ne $keyObject) {
+                    return [string]$keyObject
+                }
+            }
+        }
+        catch {
+            # Fall back to deterministic manager key below.
+        }
+    }
+
     $tenantContext = Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('TenantContext','Tenant')
     $cloudEnvironment = Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('CloudEnvironment','Cloud')
     $methodName = [string](Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('MethodName','AuthenticationMethod','Method') -Default 'Interactive')
     $scopes = @((Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('Scopes','RequiredScopes') -Default @()))
-
-    $command = Get-Command New-HybridAuthenticationCacheKey -ErrorAction SilentlyContinue
 
     if ($null -ne $command) {
         $params = @{}
@@ -74,19 +93,21 @@ function New-HybridAuthenticationManagerCacheKey {
             $params['RequiredScopes'] = $scopes
         }
 
-        try {
-            $keyObject = New-HybridAuthenticationCacheKey @params
+        if ($params.Count -gt 0) {
+            try {
+                $keyObject = New-HybridAuthenticationCacheKey @params
 
-            if ($null -ne $keyObject -and $keyObject.PSObject.Properties.Name -contains 'Key') {
-                return [string]$keyObject.Key
-            }
+                if ($null -ne $keyObject -and $keyObject.PSObject.Properties.Name -contains 'Key') {
+                    return [string]$keyObject.Key
+                }
 
-            if ($null -ne $keyObject) {
-                return [string]$keyObject
+                if ($null -ne $keyObject) {
+                    return [string]$keyObject
+                }
             }
-        }
-        catch {
-            # Fall back to deterministic manager key below.
+            catch {
+                # Fall back to deterministic manager key below.
+            }
         }
     }
 
@@ -150,6 +171,10 @@ function New-HybridAuthenticationManagerSession {
 
     $command = Get-Command New-HybridAuthenticationSession -ErrorAction Stop
     $params = @{}
+
+    if ($command.Parameters.ContainsKey('AuthenticationRequest')) {
+        $params['AuthenticationRequest'] = $Request
+    }
 
     if ($command.Parameters.ContainsKey('TenantContext')) {
         $params['TenantContext'] = $tenantContext

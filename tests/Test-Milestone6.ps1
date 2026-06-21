@@ -22,9 +22,23 @@ function New-TestAuthenticationRequest {
     )
 
     $command = Get-Command New-HybridAuthenticationRequest
-    $params = @{
-        TenantContext = $Tenant
-        MethodName    = $MethodName
+    $params = @{}
+
+    if ($command.Parameters.ContainsKey('TenantContext')) {
+        $params['TenantContext'] = $Tenant
+    }
+    elseif ($command.Parameters.ContainsKey('Tenant')) {
+        $params['Tenant'] = $Tenant
+    }
+
+    if ($command.Parameters.ContainsKey('MethodName')) {
+        $params['MethodName'] = $MethodName
+    }
+    elseif ($command.Parameters.ContainsKey('AuthenticationMethod')) {
+        $params['AuthenticationMethod'] = $MethodName
+    }
+    elseif ($command.Parameters.ContainsKey('Method')) {
+        $params['Method'] = $MethodName
     }
 
     if ($command.Parameters.ContainsKey('Scopes')) {
@@ -39,6 +53,49 @@ function New-TestAuthenticationRequest {
     }
 
     return New-HybridAuthenticationRequest @params
+}
+
+function New-TestAuthenticationCacheKey {
+    param([Parameter(Mandatory)]$Request)
+
+    $command = Get-Command New-HybridAuthenticationCacheKey
+
+    if ($command.Parameters.ContainsKey('AuthenticationRequest')) {
+        $keyObject = New-HybridAuthenticationCacheKey -AuthenticationRequest $Request
+        if ($keyObject.PSObject.Properties.Name -contains 'Key') {
+            return [string]$keyObject.Key
+        }
+        return [string]$keyObject
+    }
+
+    $params = @{}
+
+    if ($command.Parameters.ContainsKey('TenantContext')) {
+        $params['TenantContext'] = $Request.TenantContext
+    }
+    elseif ($command.Parameters.ContainsKey('Tenant')) {
+        $params['Tenant'] = $Request.TenantContext
+    }
+
+    if ($command.Parameters.ContainsKey('CloudEnvironment')) {
+        $params['CloudEnvironment'] = $Request.CloudEnvironment
+    }
+
+    if ($command.Parameters.ContainsKey('MethodName')) {
+        $params['MethodName'] = $Request.MethodName
+    }
+
+    if ($command.Parameters.ContainsKey('Scopes')) {
+        $params['Scopes'] = $Request.Scopes
+    }
+
+    $keyObject = New-HybridAuthenticationCacheKey @params
+
+    if ($keyObject.PSObject.Properties.Name -contains 'Key') {
+        return [string]$keyObject.Key
+    }
+
+    return [string]$keyObject
 }
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -78,19 +135,8 @@ Assert-Pass -Condition ($session1.AccessToken -like 'mock-token-*') -Message 'Au
 $session2 = Get-HybridAuthenticationSession -Request $request
 Assert-Pass -Condition ($session1.SessionId -eq $session2.SessionId) -Message 'Authentication manager returns cached session'
 
-$expired = New-HybridAuthenticationSession `
-    -TenantContext $tenant `
-    -CloudEnvironment $tenant.CloudEnvironment `
-    -MethodName 'Interactive' `
-    -AccessToken 'expired' `
-    -Scopes @('User.Read') `
-    -ExpiresOn (Get-Date).AddMinutes(-1)
-
-$cacheKey = (New-HybridAuthenticationCacheKey `
-    -TenantContext $tenant `
-    -CloudEnvironment $tenant.CloudEnvironment `
-    -MethodName 'Interactive' `
-    -Scopes @('User.Read')).Key
+$expired = New-HybridAuthenticationSession -AuthenticationRequest $request -AccessToken 'expired' -ExpiresOn (Get-Date).AddMinutes(-1)
+$cacheKey = New-TestAuthenticationCacheKey -Request $request
 
 Set-HybridCachedAuthenticationSession -CacheKey $cacheKey -Session $expired | Out-Null
 Assert-Pass -Condition (Test-HybridAuthenticationRefreshRequired -Session $expired) -Message 'Expired session requires refresh'
