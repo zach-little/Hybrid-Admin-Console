@@ -10,6 +10,8 @@ $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
 if (-not (Test-Path $serviceModule)) { throw "Application service module not found: $serviceModule" }
 Import-Module $serviceModule -Force
+$aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
+if (Test-Path $aggregationModule) { Import-Module $aggregationModule -Force }
 $simulatorModule = Join-Path $repoRoot 'src\Infrastructure\Mock\Infrastructure.DirectorySimulator.psm1'
 # Service-backed vertical slice / service-backed vertical slice marker.
 # Legacy Phase 3 UI interaction marker retained for cumulative tests:
@@ -63,9 +65,11 @@ if ($Mock) {
         -ActiveDirectoryProvider $simulatorProviders.ActiveDirectory `
         -MicrosoftGraphProvider $simulatorProviders.MicrosoftGraph `
         -ExchangeOnlineProvider $simulatorProviders.ExchangeOnline | Out-Null
+    if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
 }
 else {
     Initialize-HybridUserService | Out-Null
+    if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
 }
 
 Add-Type -AssemblyName PresentationFramework
@@ -134,6 +138,17 @@ $xaml = @"
 
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
+                    <Border x:Name="AggregationStatusCard" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Profile Aggregation" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="AggregationSummaryText" Text="Aggregation waiting for a user search." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
+                            <TextBlock Text="Identity" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationIdentityText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Verticals Loaded" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationVerticalsText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationStatusText" Text="Not loaded" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Retrieved" Style="{StaticResource LabelText}"/><TextBlock x:Name="AggregationRetrievedText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                        </StackPanel>
+                    </Border>
+
                     <Border x:Name="ExchangeMailboxCard" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Text="Exchange Mailbox" Foreground="#F8FAFC" FontSize="18" FontWeight="SemiBold"/>
@@ -203,7 +218,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
@@ -242,6 +257,60 @@ function Format-HybridUiBool {
     return 'No'
 }
 
+function Reset-AggregationPanel {
+    if ($controls.ContainsKey('AggregationSummaryText') -and $null -ne $controls.AggregationSummaryText) {
+        $controls.AggregationSummaryText.Text = 'Aggregation waiting for a user search.'
+        $controls.AggregationIdentityText.Text = 'Not loaded'
+        $controls.AggregationVerticalsText.Text = 'Not loaded'
+        $controls.AggregationStatusText.Text = 'Not loaded'
+        $controls.AggregationRetrievedText.Text = 'Not loaded'
+    }
+}
+
+function Update-AggregationPanel {
+    param([Parameter(Mandatory=$true)][object]$User, [Parameter(Mandatory=$true)][string]$Query)
+
+    if (-not $controls.ContainsKey('AggregationSummaryText') -or $null -eq $controls.AggregationSummaryText) { return }
+
+    Reset-AggregationPanel
+    $controls.AggregationSummaryText.Text = 'Loading aggregate user profile...'
+
+    try {
+        if (-not (Get-Command Get-HybridUserAggregateProfile -ErrorAction SilentlyContinue)) {
+            $controls.AggregationSummaryText.Text = 'Aggregation service unavailable.'
+            return
+        }
+
+        $identity = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','Mail','SamAccountName','Identity') -Default $Query
+        if ([string]::IsNullOrWhiteSpace($identity) -or $identity -eq '—') { $identity = $Query }
+
+        $aggregate = Get-HybridUserAggregateProfile -Identity $identity
+        if ($null -eq $aggregate) {
+            $controls.AggregationSummaryText.Text = "No aggregate profile returned for $identity."
+            return
+        }
+
+        $loaded = Get-DisplayValue -InputObject $aggregate -Names @('LoadedVerticalCount') -Default '0'
+        $total = Get-DisplayValue -InputObject $aggregate -Names @('TotalVerticalCount') -Default '0'
+        $statusText = 'No vertical status returned'
+        if ($aggregate.PSObject.Properties.Name -contains 'Verticals' -and $null -ne $aggregate.Verticals) {
+            $statusText = (@($aggregate.Verticals) | ForEach-Object {
+                $state = if ($_.Loaded) { 'Loaded' } else { 'Unavailable' }
+                "{0}: {1}" -f $_.Name, $state
+            }) -join ' | '
+        }
+
+        $controls.AggregationIdentityText.Text = Get-DisplayValue -InputObject $aggregate -Names @('UserPrincipalName','Identity') -Default $identity
+        $controls.AggregationVerticalsText.Text = "$loaded / $total"
+        $controls.AggregationStatusText.Text = $statusText
+        $controls.AggregationRetrievedText.Text = Format-HybridUiDate (Get-DisplayValue -InputObject $aggregate -Names @('RetrievedOn') -Default $null)
+        $controls.AggregationSummaryText.Text = "Aggregation loaded for $($controls.UpnText.Text)."
+    }
+    catch {
+        $controls.AggregationSummaryText.Text = "Aggregation load failed: $($_.Exception.Message)"
+    }
+}
+
 function Reset-GraphPanel {
     $controls.GraphSummaryText.Text = 'Graph profile waiting for a user search.'
     foreach ($name in @('GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText')) {
@@ -266,6 +335,7 @@ function Reset-UserDisplay {
     $controls.DirectReportsList.Items.Clear()
     $controls.MailboxDelegationList.Items.Clear()
     $controls.DistributionGroupsList.Items.Clear()
+    Reset-AggregationPanel
     Reset-GraphPanel
     Reset-AuthenticationPanel
 }
@@ -494,12 +564,13 @@ function Invoke-UserSearch {
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
+        Update-AggregationPanel -User $user -Query $effectiveQuery
         Update-GraphPanels -User $user -Query $effectiveQuery
         Update-AuthenticationPanels -User $user -Query $effectiveQuery
         Update-ExchangePanels -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
         Update-DetailPanels -User $user -Query $effectiveQuery
-        $controls.StatusText.Text = "Search complete: $effectiveQuery | Live AD vertical slice result returned through HybridUserService | Live AD and Exchange vertical slice result returned through HybridUserService"
+        $controls.StatusText.Text = "Search complete: $effectiveQuery | Aggregated profile loaded through HybridUserAggregationService"
         Update-HybridUiHealth
     }
     catch {

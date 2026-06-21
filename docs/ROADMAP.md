@@ -1,36 +1,48 @@
-# Hybrid Admin Console Roadmap
+# Current Status
 
-## Current Status
+## Current Version
 
-**Current Version:** 0.7.0-dev  
-**Current Branch:** `feature/milestone7-service-layer`  
-**Current Milestone:** Milestone 7 - Hybrid Service Layer  
-**Current Phase:** Phase 6 - Authentication Vertical
+v0.7.7
 
-## Milestone 7 - Hybrid Service Layer
+## Completed
 
-| Phase | Description | Status |
-| --- | --- | --- |
-| Phase 1 | Service Layer Foundation | Complete |
-| Phase 2 | Active Directory Vertical | Complete |
-| Phase 3 | Entra ID Vertical | Complete |
-| Phase 4 | Exchange Vertical | Complete / Stable Baseline |
-| Phase 5 | Microsoft Graph Vertical | Complete |
-| Phase 6 | Authentication Vertical | In Progress |
-| Phase 7 | Aggregation and Orchestration | Pending |
+- ✅ Milestone 1 — Foundation
+- ✅ Milestone 2 — Domain Model
+- ✅ Milestone 3 — Provider Architecture
+- ✅ Milestone 4 — Active Directory Provider
+- ✅ Milestone 5 — Microsoft Graph Foundation
+- ✅ Milestone 6 — Authentication Infrastructure
+- ✅ Milestone 7 — Service Layer & Vertical Integration
 
-## Phase 5 Goal
+---
 
-Expose Microsoft Graph user profile and authentication posture data through the same vertical-slice pattern used by the earlier Milestone 7 phases.
+# Milestone 8 — Platform Expansion
 
-## Engineering Rules
+The Hybrid Admin Console now has a complete service-oriented architecture.
 
-- Previous milestone functionality must not regress.
-- Each phase must include UI, service layer, provider or simulator data, infrastructure, tests, and documentation.
-- Directory Simulator is the canonical simulated enterprise provider.
-- Every new feature must be visible in the UI.
-- Cumulative milestone tests must pass before the phase is considered stable.
+Future work focuses on expanding capabilities rather than restructuring existing code.
 
-## Phase 6 Goal
+Planned verticals include:
 
-Expose authentication posture as a live dashboard card through service-layer and provider abstractions. The card loads automatically when a user is searched and is backed by the Directory Simulator in mock mode.
+- Device Management
+- Licensing
+- Teams
+- SharePoint
+- Security
+- Compliance
+- Exchange Enhancements
+- Azure Resource Management
+
+Each new capability will be implemented as an additional service-backed UI card using the established provider architecture.
+
+---
+
+# Future
+
+Milestone 9 — Background Refresh
+
+Milestone 10 — Performance Optimization
+
+Milestone 11 — Plugin Architecture
+
+Milestone 12 — Production Readiness
