@@ -7,12 +7,22 @@ param(
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$runtimeModule = Join-Path $repoRoot 'src\Core\Core.Runtime.psm1'
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
-if (-not (Test-Path $serviceModule)) { throw "Application service module not found: $serviceModule" }
-Import-Module $serviceModule -Force
 $aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
-if (Test-Path $aggregationModule) { Import-Module $aggregationModule -Force }
 $simulatorModule = Join-Path $repoRoot 'src\Infrastructure\Mock\Infrastructure.DirectorySimulator.psm1'
+
+$script:HybridRuntime = $null
+if (Test-Path $runtimeModule) {
+    Import-Module $runtimeModule -Force -Global
+    $profileName = if ($Mock) { 'Simulation' } else { 'Simulation' }
+    $script:HybridRuntime = Initialize-HybridRuntime -ProfileName $profileName -RootPath $repoRoot
+}
+else {
+    if (-not (Test-Path $serviceModule)) { throw "Application service module not found: $serviceModule" }
+    Import-Module $serviceModule -Force
+    if (Test-Path $aggregationModule) { Import-Module $aggregationModule -Force }
+}
 # Service-backed vertical slice / service-backed vertical slice marker.
 # Legacy Phase 3 UI interaction marker retained for cumulative tests:
 # SearchUser = { param([string]$Query) @(New-HybridMockUserRecord -Query $Query) }
@@ -57,19 +67,21 @@ function New-HybridMockUserRecord {
     }
 }
 
-if ($Mock) {
-    if (-not (Test-Path $simulatorModule)) { throw "Directory simulator module not found: $simulatorModule" }
-    Import-Module $simulatorModule -Force
-    $simulatorProviders = New-HybridDirectorySimulatorProviders
-    Initialize-HybridUserService `
-        -ActiveDirectoryProvider $simulatorProviders.ActiveDirectory `
-        -MicrosoftGraphProvider $simulatorProviders.MicrosoftGraph `
-        -ExchangeOnlineProvider $simulatorProviders.ExchangeOnline | Out-Null
-    if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
-}
-else {
-    Initialize-HybridUserService | Out-Null
-    if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
+if ($null -eq $script:HybridRuntime) {
+    if ($Mock) {
+        if (-not (Test-Path $simulatorModule)) { throw "Directory simulator module not found: $simulatorModule" }
+        Import-Module $simulatorModule -Force
+        $simulatorProviders = New-HybridDirectorySimulatorProviders
+        Initialize-HybridUserService `
+            -ActiveDirectoryProvider $simulatorProviders.ActiveDirectory `
+            -MicrosoftGraphProvider $simulatorProviders.MicrosoftGraph `
+            -ExchangeOnlineProvider $simulatorProviders.ExchangeOnline | Out-Null
+        if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
+    }
+    else {
+        Initialize-HybridUserService | Out-Null
+        if (Get-Command Initialize-HybridUserAggregationService -ErrorAction SilentlyContinue) { Initialize-HybridUserAggregationService | Out-Null }
+    }
 }
 
 Add-Type -AssemblyName PresentationFramework
@@ -85,7 +97,37 @@ $xaml = @"
         <Style x:Key="LabelText" TargetType="TextBlock"><Setter Property="Foreground" Value="#94A3B8"/><Setter Property="FontSize" Value="12"/></Style>
         <Style x:Key="ValueText" TargetType="TextBlock"><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="FontSize" Value="15"/><Setter Property="Margin" Value="0,2,0,10"/></Style>
     </Window.Resources>
-    <Grid Margin="22">
+    <Grid>
+        <Grid x:Name="StartupView" Margin="34">
+            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Border Grid.Row="1" Style="{StaticResource Card}" MaxWidth="760" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Hybrid Admin Platform" Foreground="#E5E7EB" FontSize="34" FontWeight="SemiBold"/>
+                    <TextBlock Text="Runtime startup shell" Foreground="#38BDF8" FontSize="13" Margin="0,2,0,20"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                            <TextBlock Text="Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Runtime Profile" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProfileText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="—" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="—" Style="{StaticResource ValueText}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Provider Summary" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeProviderSummaryText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Startup Diagnostics" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeDiagnosticsText" Text="—" TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                            <TextBlock Text="Status" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Style="{StaticResource ValueText}"/>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button x:Name="LaunchConsoleButton" Content="Launch Hybrid Admin Console" Height="40" MinWidth="220" Margin="0,0,10,0"/>
+                        <Button x:Name="EditRuntimeProfileButton" Content="Edit Runtime Profile" Height="40" MinWidth="160" IsEnabled="False" Margin="0,0,10,0"/>
+                        <Button x:Name="ExitButton" Content="Exit" Height="40" MinWidth="90"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="ConsoleView" Margin="22" Visibility="Collapsed">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
@@ -210,6 +252,7 @@ $xaml = @"
             <ProgressBar x:Name="SearchProgressIndicator" Height="8" IsIndeterminate="False" Visibility="Collapsed"/>
             <TextBlock x:Name="StatusText" Text="Ready." Foreground="#CBD5E1" Margin="0,14,0,0"/>
         </Grid>
+        </Grid>
     </Grid>
 </Window>
 "@
@@ -218,11 +261,71 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 $script:IsSearchBusy = $false
 $script:CurrentSearchQuery = $null
 $script:SelectedHybridUser = $null
+
+function Get-HybridRuntimeDisplayValue {
+    param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '—')
+    foreach ($name in $Names) {
+        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
+            $value = $InputObject.$name
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
+        }
+    }
+    return $Default
+}
+
+function Update-HybridStartupView {
+    $runtime = $script:HybridRuntime
+    if ($null -eq $runtime -and (Get-Command Get-HybridRuntime -ErrorAction SilentlyContinue)) { $runtime = Get-HybridRuntime }
+
+    if ($null -eq $runtime) {
+        $controls.RuntimeVersionText.Text = 'v0.8.0-dev'
+        $controls.RuntimeProfileText.Text = 'Legacy startup'
+        $controls.RuntimeCloudText.Text = 'Unknown'
+        $controls.RuntimeModeText.Text = if ($Mock) { 'Simulation' } else { 'Legacy' }
+        $controls.RuntimeProviderSummaryText.Text = 'Runtime bootstrap unavailable; legacy startup path active.'
+        $controls.RuntimeDiagnosticsText.Text = 'Diagnostics unavailable.'
+        $controls.RuntimeStatusText.Text = 'Ready to launch legacy console.'
+        return
+    }
+
+    $controls.RuntimeVersionText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('Version') -Default 'v0.8.0-dev'
+    $controls.RuntimeProfileText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime.Profile -Names @('ProfileName','Name') -Default 'Simulation'
+    $controls.RuntimeCloudText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('CloudEnvironment') -Default 'Commercial'
+    $controls.RuntimeModeText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('RuntimeMode','Mode') -Default 'Simulation'
+
+    $providerSummary = 'No providers registered.'
+    if ($null -ne $runtime.ProviderRegistry) {
+        $providerSummary = (@($runtime.ProviderRegistry.Keys | Sort-Object) | ForEach-Object {
+            $provider = $runtime.ProviderRegistry[$_]
+            '{0}: {1}/{2}' -f $_, $provider.Mode, $provider.Status
+        }) -join ' | '
+    }
+    $controls.RuntimeProviderSummaryText.Text = $providerSummary
+
+    $diagSummary = 'Diagnostics unavailable.'
+    if ($null -ne $runtime.Diagnostics -and $null -ne $runtime.Diagnostics.Summary) {
+        $summary = $runtime.Diagnostics.Summary
+        $diagSummary = 'Status={0} | Passed={1} | Warnings={2} | Errors={3} | Deferred={4}' -f $summary.OverallStatus, $summary.Passed, $summary.Warnings, $summary.Errors, $summary.Deferred
+    }
+    elseif ($null -ne $runtime.Diagnostics) {
+        $diagSummary = 'Status={0}' -f (Get-HybridRuntimeDisplayValue -InputObject $runtime.Diagnostics -Names @('OverallStatus','Status') -Default 'Initialized')
+    }
+    $controls.RuntimeDiagnosticsText.Text = $diagSummary
+    $controls.RuntimeStatusText.Text = 'Runtime initialized. Launch the console when ready.'
+}
+
+function Show-HybridConsoleView {
+    $controls.StartupView.Visibility = 'Collapsed'
+    $controls.ConsoleView.Visibility = 'Visible'
+    $controls.StatusText.Text = 'Ready.'
+    Update-HybridUiHealth
+    if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
+}
 
 function Set-HybridUiBusyState {
     param([bool]$Busy)
@@ -585,7 +688,8 @@ function Invoke-UserSearch {
 $controls.SearchBox.Text = $InitialQuery
 $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.Text })
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
+$controls.LaunchConsoleButton.Add_Click({ Show-HybridConsoleView })
+$controls.ExitButton.Add_Click({ $window.Close() })
 
-Update-HybridUiHealth
-if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
+Update-HybridStartupView
 $null = $window.ShowDialog()

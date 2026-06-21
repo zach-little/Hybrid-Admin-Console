@@ -2,7 +2,7 @@
 # Name: Core.Runtime
 # Purpose: Runtime bootstrap engine for profile-driven Hybrid Admin Console startup.
 # Dependencies: Core.RuntimeProfile, Core.ServiceRegistry, provider/application modules loaded on demand.
-# Exports: Initialize-HybridRuntime, Get-HybridRuntime, Reset-HybridRuntime, Get-HybridRuntimeProviderRegistration, Get-HybridRuntimeProviderModeSummary
+# Exports: Initialize-HybridRuntime, Get-HybridRuntime, Reset-HybridRuntime, Get-HybridRuntimeProviderRegistration, Get-HybridRuntimeProviderModeSummary, Get-HybridRuntimeDiagnostics, Test-HybridRuntimeDiagnostics
 #endregion
 
 Set-StrictMode -Version Latest
@@ -103,6 +103,123 @@ function New-HybridRuntimeBootstrapRecord {
         TimestampUtc = [datetime]::UtcNow
     }
 }
+
+
+function New-HybridRuntimeDiagnosticCheck {
+    param(
+        [Parameter(Mandatory=$true)][string]$Name,
+        [string]$Category = 'General',
+        [string]$Target = '',
+        [string]$Severity = 'Info',
+        [string]$Status = 'Passed',
+        [string]$Message = '',
+        [hashtable]$Data = @{}
+    )
+
+    New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeDiagnosticCheck' -Properties @{
+        Name = $Name
+        Category = $Category
+        Target = $Target
+        Severity = $Severity
+        Status = $Status
+        Message = $Message
+        Data = $Data
+        TimestampUtc = [datetime]::UtcNow
+    }
+}
+
+function New-HybridRuntimeDiagnosticSummary {
+    param([Parameter(Mandatory=$true)][object[]]$Checks)
+
+    $errorCount = @($Checks | Where-Object { [string]$_.Severity -eq 'Error' -or [string]$_.Status -eq 'Failed' }).Count
+    $warningCount = @($Checks | Where-Object { [string]$_.Severity -eq 'Warning' -and [string]$_.Status -ne 'Failed' }).Count
+    $passedCount = @($Checks | Where-Object { [string]$_.Status -eq 'Passed' }).Count
+    $deferredCount = @($Checks | Where-Object { [string]$_.Status -eq 'Deferred' }).Count
+    $skippedCount = @($Checks | Where-Object { [string]$_.Status -eq 'Skipped' }).Count
+
+    $overallStatus = 'Healthy'
+    if ($errorCount -gt 0) { $overallStatus = 'Failed' }
+    elseif ($warningCount -gt 0 -or $deferredCount -gt 0) { $overallStatus = 'Warning' }
+
+    New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeDiagnosticSummary' -Properties @{
+        OverallStatus = $overallStatus
+        TotalChecks = @($Checks).Count
+        Passed = $passedCount
+        Warnings = $warningCount
+        Errors = $errorCount
+        Deferred = $deferredCount
+        Skipped = $skippedCount
+        HasErrors = ($errorCount -gt 0)
+        HasWarnings = ($warningCount -gt 0 -or $deferredCount -gt 0)
+        CreatedUtc = [datetime]::UtcNow
+    }
+}
+
+function Invoke-HybridRuntimeDiagnosticsInternal {
+    param([Parameter(Mandatory=$true)][object]$Runtime)
+
+    $checks = New-Object System.Collections.Generic.List[object]
+
+    if ($null -ne $Runtime.Profile) {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'RuntimeProfileLoaded' -Category 'Profile' -Target ([string]$Runtime.Profile.ProfileName) -Severity 'Info' -Status 'Passed' -Message 'Runtime profile loaded successfully.')) | Out-Null
+    }
+    else {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'RuntimeProfileLoaded' -Category 'Profile' -Target 'RuntimeProfile' -Severity 'Error' -Status 'Failed' -Message 'Runtime profile was not loaded.')) | Out-Null
+    }
+
+    if (@('Simulation','Live','Hybrid') -contains [string]$Runtime.RuntimeMode) {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'RuntimeModeSupported' -Category 'Core' -Target ([string]$Runtime.RuntimeMode) -Severity 'Info' -Status 'Passed' -Message 'Runtime mode is supported.')) | Out-Null
+    }
+    else {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'RuntimeModeSupported' -Category 'Core' -Target ([string]$Runtime.RuntimeMode) -Severity 'Error' -Status 'Failed' -Message 'Runtime mode is not supported.')) | Out-Null
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Runtime.CloudEnvironment)) {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'CloudEnvironmentDeclared' -Category 'Profile' -Target ([string]$Runtime.CloudEnvironment) -Severity 'Info' -Status 'Passed' -Message 'Runtime cloud environment is declared.')) | Out-Null
+    }
+    else {
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'CloudEnvironmentDeclared' -Category 'Profile' -Target 'CloudEnvironment' -Severity 'Warning' -Status 'Skipped' -Message 'Runtime cloud environment is not declared.')) | Out-Null
+    }
+
+    $authStatus = 'Deferred'
+    if ($null -ne $Runtime.Authentication -and $Runtime.Authentication.ContainsKey('Status')) { $authStatus = [string]$Runtime.Authentication.Status }
+    $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'AuthenticationBootstrap' -Category 'Authentication' -Target 'Authentication' -Severity 'Info' -Status $authStatus -Message 'Authentication remains deferred during runtime bootstrap.')) | Out-Null
+
+    foreach ($providerName in @($Runtime.ProviderRegistry.Keys | Sort-Object)) {
+        $provider = $Runtime.ProviderRegistry[$providerName]
+        $severity = 'Info'
+        $status = [string]$provider.Status
+        $message = [string]$provider.Message
+        if ($status -eq 'Failed') { $severity = 'Error' }
+        elseif ($status -eq 'Deferred') { $severity = 'Warning' }
+        elseif ($status -eq 'Skipped') { $severity = 'Info' }
+        if ([string]::IsNullOrWhiteSpace($message)) { $message = "Provider $providerName has status $status." }
+        $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'ProviderRegistration' -Category 'Provider' -Target $providerName -Severity $severity -Status $status -Message $message -Data @{ Mode = [string]$provider.Mode; Required = [bool]$provider.Required; Authentication = [string]$provider.Authentication })) | Out-Null
+    }
+
+    foreach ($serviceName in @('HybridUser','GraphProfile','AuthenticationProfile','UserAggregation')) {
+        if ($Runtime.ServiceRegistry.ContainsKey($serviceName) -and $null -ne $Runtime.ServiceRegistry[$serviceName]) {
+            $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'ServiceRegistration' -Category 'Service' -Target $serviceName -Severity 'Info' -Status 'Passed' -Message "Application service '$serviceName' is registered.")) | Out-Null
+        }
+        else {
+            $checks.Add((New-HybridRuntimeDiagnosticCheck -Name 'ServiceRegistration' -Category 'Service' -Target $serviceName -Severity 'Error' -Status 'Failed' -Message "Application service '$serviceName' is not registered.")) | Out-Null
+        }
+    }
+
+    $checkArray = [object[]]$checks.ToArray()
+    $summary = New-HybridRuntimeDiagnosticSummary -Checks $checkArray
+    $report = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeDiagnosticReport' -Properties @{
+        OverallStatus = $summary.OverallStatus
+        Summary = $summary
+        Checks = $checkArray
+        HasErrors = $summary.HasErrors
+        HasWarnings = $summary.HasWarnings
+        GeneratedUtc = [datetime]::UtcNow
+    }
+
+    return $report
+}
+
 
 function Register-HybridRuntimeProviderRecord {
     param(
@@ -266,7 +383,7 @@ function Register-HybridRuntimeDeferredProvider {
         [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
     )
 
-    $message = 'Provider registration deferred. Phase 2 does not perform live authentication or connectivity checks.'
+    $message = 'Provider registration deferred. Runtime bootstrap does not perform live authentication or connectivity checks.'
     Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name ([string]$ProviderSettings.Name) -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Deferred' -Service $null -Message $message | Out-Null
     $Records.Add((New-HybridRuntimeBootstrapRecord -Name ([string]$ProviderSettings.Name) -Kind 'Provider' -Status 'Deferred' -Message $message)) | Out-Null
 }
@@ -333,8 +450,13 @@ function Initialize-HybridRuntime {
     $serviceRegistry = @{}
     $diagnostics = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeDiagnostics' -Properties @{
         Status = 'Initializing'
+        OverallStatus = 'Initializing'
+        Summary = $null
+        Checks = $null
         Records = $null
         Errors = $null
+        HasErrors = $false
+        HasWarnings = $false
     }
 
     $context = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeContext' -Properties @{
@@ -346,7 +468,7 @@ function Initialize-HybridRuntime {
         RuntimeMode = ''
         Mode = ''
         CloudEnvironment = ''
-        Authentication = @{ Initialized = $false; Status = 'Deferred'; Message = 'Authentication is not invoked during Phase 2 bootstrap.' }
+        Authentication = @{ Initialized = $false; Status = 'Deferred'; Message = 'Authentication is not invoked during runtime bootstrap.' }
         ProviderRegistry = $providerRegistry
         Providers = $providerRegistry
         ServiceRegistry = $serviceRegistry
@@ -415,7 +537,13 @@ function Initialize-HybridRuntime {
         Add-HybridRuntimeMember -InputObject $context -Name InitializedUtc -Value ([datetime]::UtcNow)
         Add-HybridRuntimeMember -InputObject $context -Name DurationMs -Value $elapsed
         Add-HybridRuntimeMember -InputObject $context -Name ProviderModes -Value (New-HybridRuntimeProviderModeSummary -ProviderRegistry $providerRegistry)
+        $diagnosticReport = Invoke-HybridRuntimeDiagnosticsInternal -Runtime $context
         $diagnostics.Status = 'Initialized'
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name OverallStatus -Value ([string]$diagnosticReport.OverallStatus)
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name Summary -Value $diagnosticReport.Summary
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name Checks -Value ([object[]]$diagnosticReport.Checks)
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name HasErrors -Value ([bool]$diagnosticReport.HasErrors)
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name HasWarnings -Value ([bool]$diagnosticReport.HasWarnings)
         Add-HybridRuntimeMember -InputObject $diagnostics -Name Records -Value ([object[]]$records.ToArray())
         $script:HybridRuntimeState.Runtime = $context
         Write-HybridRuntimeLog -Message "Hybrid runtime initialized with profile '$($profile.ProfileName)' in $elapsed ms."
@@ -423,6 +551,8 @@ function Initialize-HybridRuntime {
     }
     catch {
         $diagnostics.Status = 'Failed'
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name OverallStatus -Value 'Failed'
+        Add-HybridRuntimeMember -InputObject $diagnostics -Name HasErrors -Value $true
         Add-HybridRuntimeMember -InputObject $diagnostics -Name Errors -Value ([object[]]@($_.Exception.Message))
         Add-HybridRuntimeMember -InputObject $diagnostics -Name Records -Value ([object[]]$records.ToArray())
         Write-HybridRuntimeLog -Level Error -Message 'Hybrid runtime initialization failed.' -Exception $_.Exception
@@ -472,4 +602,29 @@ function Get-HybridRuntimeProviderModeSummary {
     return New-HybridRuntimeProviderModeSummary -ProviderRegistry $Runtime.ProviderRegistry
 }
 
-Export-ModuleMember -Function Initialize-HybridRuntime, Get-HybridRuntime, Reset-HybridRuntime, Get-HybridRuntimeProviderRegistration, Get-HybridRuntimeProviderModeSummary
+
+function Get-HybridRuntimeDiagnostics {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Runtime = $null)
+
+    if ($null -eq $Runtime) { $Runtime = Get-HybridRuntime }
+    if ($null -eq $Runtime.Diagnostics) { throw 'Runtime diagnostics are not available.' }
+    return $Runtime.Diagnostics
+}
+
+function Test-HybridRuntimeDiagnostics {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Runtime = $null)
+
+    $diagnostics = Get-HybridRuntimeDiagnostics -Runtime $Runtime
+    return New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeDiagnosticResult' -Properties @{
+        IsHealthy = (-not [bool]$diagnostics.HasErrors)
+        OverallStatus = [string]$diagnostics.OverallStatus
+        HasErrors = [bool]$diagnostics.HasErrors
+        HasWarnings = [bool]$diagnostics.HasWarnings
+        Summary = $diagnostics.Summary
+        CheckedUtc = [datetime]::UtcNow
+    }
+}
+
+Export-ModuleMember -Function Initialize-HybridRuntime, Get-HybridRuntime, Reset-HybridRuntime, Get-HybridRuntimeProviderRegistration, Get-HybridRuntimeProviderModeSummary, Get-HybridRuntimeDiagnostics, Test-HybridRuntimeDiagnostics

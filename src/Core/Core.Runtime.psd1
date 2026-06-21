@@ -5,9 +5,9 @@
     Author = 'Hybrid Administration Platform'
     CompanyName = 'Hybrid Administration Platform'
     Copyright = '(c) Hybrid Administration Platform. All rights reserved.'
-    Description = 'Runtime bootstrap engine for profile-driven Hybrid Admin Console startup.'
+    Description = 'Runtime bootstrap engine and startup diagnostics for profile-driven Hybrid Admin Console startup.'
     PowerShellVersion = '5.1'
-    FunctionsToExport = @('Initialize-HybridRuntime','Get-HybridRuntime','Reset-HybridRuntime','Get-HybridRuntimeProviderRegistration','Get-HybridRuntimeProviderModeSummary')
+    FunctionsToExport = @('Initialize-HybridRuntime','Get-HybridRuntime','Reset-HybridRuntime','Get-HybridRuntimeProviderRegistration','Get-HybridRuntimeProviderModeSummary','Get-HybridRuntimeDiagnostics','Test-HybridRuntimeDiagnostics')
     CmdletsToExport = @()
     VariablesToExport = '*'
     AliasesToExport = @()
