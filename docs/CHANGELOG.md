@@ -1,70 +1,59 @@
 # Changelog
 
-## 0.5.0
+## Version 0.6.0 – Microsoft 365 Platform Foundation
 
 ### Added
 
-- Added `Core.CloudEnvironment` for sovereign cloud endpoint registration and resolution.
-- Added built-in Microsoft Commercial, GCC High, and DoD cloud environments.
-- Added `Core.TenantContext` for tenant identity metadata.
-- Added tenant default domain resolution.
-- Added tenant cloud environment resolution.
-- Added `Core.OrganizationContext` for organization-wide runtime state.
-- Added organization singleton context registration.
-- Added organization provider registration helpers.
-- Added organization capability registration helpers.
-- Added `Core.Authentication` framework shell.
-- Added authentication policy contracts.
-- Added authentication method registration.
-- Added explicit rejection of Device Code Flow.
-- Added authentication request contracts.
-- Added authentication session contracts.
-- Added token descriptor contracts.
-- Added authentication result contracts.
-- Added authentication cache key and cache entry contracts.
-- Added authentication session state helpers.
-- Added shared HTTP response objects.
-- Added standardized HTTP error objects.
-- Added HTTP retry policy contracts.
-- Added retry delay calculation.
-- Added shared HTTP request objects.
-- Added shared HTTP pipeline execution.
-- Added HTTP pipeline diagnostics.
-- Added HTTP pagination state.
-- Added bearer token injection through the HTTP pipeline.
-- Added correlation ID and User-Agent injection through the HTTP pipeline.
-- Added Microsoft Graph client foundation.
-- Added Microsoft Graph provider foundation.
-- Added Microsoft Graph provider health reporting.
-- Added Microsoft Graph provider capability reporting.
-- Added Graph user wrappers.
-- Added Graph group wrappers.
-- Added Graph organization wrapper.
-- Added Graph user, group, and organization conversion contracts.
-- Added Graph endpoint builder.
-- Added Graph resource URI builder.
-- Added Graph OData query builder.
-- Added Graph error translator.
-- Added Graph request builders.
-- Added Graph diagnostics objects.
-- Added Graph batch request and response contracts.
-- Extended Milestone 5 tests through Phase 5.6.1.
-- Added project development workflow standards to documentation.
-- Added changed-files-only phase ZIP packaging standard.
-- Added standard validation command requirements.
+#### Authentication Platform
+
+* Added platform authentication manager.
+* Added authentication session abstraction.
+* Added authentication request model.
+* Added authentication cache with session refresh support.
+* Added authentication adapter registration framework.
+* Added Interactive MSAL authentication adapter.
+* Added App-only MSAL authentication adapter.
+* Established provider-independent authentication contract.
+
+#### Microsoft Graph Provider
+
+* Added Microsoft Graph provider foundation.
+* Added Microsoft Graph provider context.
+* Added Microsoft Graph provider service abstraction.
+* Added provider health reporting.
+* Added Graph user search operation.
+* Added Graph user retrieval operation.
+* Added canonical `Hybrid.User` conversion pipeline.
+
+#### Exchange Online Provider
+
+* Added Exchange Online provider foundation.
+* Added Exchange Online provider context.
+* Added Exchange Online provider service abstraction.
+* Added mailbox search operation.
+* Added mailbox retrieval operation.
+* Added provider health reporting.
+* Integrated Exchange provider with the platform authentication manager.
 
 ### Changed
 
-- Updated Version 0.5 documentation to reflect completed cloud foundation work.
-- Updated roadmap to mark Version 0.5 complete and Version 0.6 as the next planned release.
-- Updated project status to reflect the completed Microsoft cloud foundation.
-- Updated engineering documentation to describe the cloud foundation, HTTP pipeline, Graph foundation, and provider lifecycle.
-- Standardized phase validation commands to include `Unblock-File`, module unloading, and milestone test execution.
+* Authentication is now fully centralized through the Authentication Manager.
+* Providers no longer perform authentication directly.
+* Microsoft 365 providers now consume platform authentication sessions.
+* Standardized provider contracts across Active Directory, Microsoft Graph, and Exchange Online.
+* Improved provider health reporting consistency.
+* Standardized platform object type names.
+* Improved session lifecycle management and cache behavior.
 
-### Notes
+### Testing
 
-- Version 0.5 intentionally does not perform live Microsoft authentication.
-- Version 0.5 intentionally does not require Microsoft Graph, MSAL, or internet access for tests.
-- Microsoft Graph functionality is foundation-level only; expanded live Graph features begin in Version 0.6.
-- Device Code Flow remains intentionally unsupported.
-- `Project_Status.md`, `ROADMAP.md`, and `VERSION.md` are updated only during finalization phases.
+Milestone 6 completed successfully.
+
+Completed validation:
+
+* Phase 1 – Authentication Manager
+* Phase 2 – Live-capable MSAL Adapters
+* Phase 3 – Microsoft Graph Provider Foundation
+* Phase 4 – Exchange Online Provider Foundation
+
+All milestone validation tests passed.
