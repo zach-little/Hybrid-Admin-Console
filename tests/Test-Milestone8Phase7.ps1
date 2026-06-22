@@ -36,7 +36,7 @@ $layout = Get-HybridDeploymentLayout -RepositoryRoot $root
 Assert-Pass -Condition ($null -ne $layout) -Message 'Deployment layout object is returned'
 Assert-Pass -Condition ($layout.PSTypeName -eq 'Hybrid.DeploymentLayout') -Message 'Deployment layout exposes canonical type marker'
 Assert-Pass -Condition ($layout.TypeName -eq 'Hybrid.DeploymentLayout') -Message 'Deployment layout has canonical type name'
-Assert-Pass -Condition ($layout.Version -eq 'v0.8.0-dev') -Message 'Deployment layout reports current development version'
+Assert-Pass -Condition ($layout.Version -eq 'v0.8.1') -Message 'Deployment layout reports current development version'
 Assert-Pass -Condition (Test-Path -LiteralPath $layout.Source -PathType Container) -Message 'Deployment layout resolves source root'
 Assert-Pass -Condition (Test-Path -LiteralPath $layout.EntryPoint -PathType Leaf) -Message 'Deployment layout resolves UI entry point'
 Assert-Pass -Condition ($layout.RuntimeProfiles -like '*profiles*Runtime*') -Message 'Deployment layout resolves runtime profile folder'

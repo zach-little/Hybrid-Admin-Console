@@ -6,7 +6,7 @@ Complete.
 
 ## Version
 
-v0.8.0-dev
+v0.8.1
 
 ## Completed Phases
 

@@ -29,7 +29,7 @@ $runtime = Initialize-HybridRuntime -ProfileName 'Simulation' -RootPath $repoRoo
 Assert-Pass -Condition ($null -ne $runtime) -Message 'Runtime bootstrap returned a context'
 Assert-Pass -Condition ($runtime.PSObject.Properties.Name -contains 'PSTypeName') -Message 'Runtime context exposes canonical type marker'
 Assert-Pass -Condition ($runtime.PSTypeName -eq 'Hybrid.RuntimeContext') -Message 'Runtime context has canonical type name'
-Assert-Pass -Condition ($runtime.Version -eq 'v0.8.0-dev') -Message 'Runtime reports current development version'
+Assert-Pass -Condition ($runtime.Version -eq 'v0.8.1') -Message 'Runtime reports current development version'
 Assert-Pass -Condition ($runtime.Profile.ProfileName -eq 'Simulation') -Message 'Runtime profile loaded by bootstrap engine'
 Assert-Pass -Condition ($runtime.RuntimeMode -eq 'Simulation') -Message 'Runtime mode exposed on context'
 Assert-Pass -Condition ($runtime.CloudEnvironment -eq 'Commercial') -Message 'Cloud environment exposed on context'

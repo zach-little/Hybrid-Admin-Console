@@ -1,0 +1,17 @@
+{
+  "ThemeName": "HAP Dark",
+  "AccentColor": "#38BDF8",
+  "BackgroundColor": "#0B1220",
+  "BackgroundAltColor": "#08111E",
+  "SurfaceColor": "#111827",
+  "SurfaceAltColor": "#152033",
+  "PanelColor": "#0F172A",
+  "BorderColor": "#26364F",
+  "ForegroundColor": "#F8FAFC",
+  "TextColor": "#E5E7EB",
+  "MutedTextColor": "#94A3B8",
+  "SubtleTextColor": "#CBD5E1",
+  "SuccessColor": "#22C55E",
+  "WarningColor": "#FACC15",
+  "ErrorColor": "#F87171"
+}

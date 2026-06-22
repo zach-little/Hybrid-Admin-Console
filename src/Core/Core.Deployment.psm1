@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$script:HybridDeploymentVersion = 'v0.8.0-dev'
+$script:HybridDeploymentVersion = 'v0.8.1'
 
 function Add-HybridDeploymentTypeMetadata {
     param(

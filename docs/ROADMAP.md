@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.0
+v0.8.1
 
 ---
 
@@ -16,6 +16,7 @@ v0.8.0
 - ✅ Milestone 6 — Authentication Infrastructure
 - ✅ Milestone 7 — Service Layer & Vertical Integration
 - ✅ Milestone 8 — Runtime Platform
+- ✅ Milestone 8.1 — Runtime Platform Hardening
 
 ---
 

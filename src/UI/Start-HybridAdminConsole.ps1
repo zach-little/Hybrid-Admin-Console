@@ -1,7 +1,8 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
-    [string]$InitialQuery = ''
+    [string]$InitialQuery = '',
+    [string]$Profile = ''
 )
 
 Set-StrictMode -Version Latest
@@ -16,13 +17,42 @@ $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserServ
 $aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
 $profileManagerModule = Join-Path $repoRoot 'src\Application\Application.RuntimeProfileManager.psm1'
 $simulatorModule = Join-Path $repoRoot 'src\Infrastructure\Mock\Infrastructure.DirectorySimulator.psm1'
+$uiThemeModule = Join-Path $repoRoot 'src\UI\UI.Theme.psm1'
+$uiRuntimeHomeModule = Join-Path $repoRoot 'src\UI\UI.RuntimeHome.psm1'
+$uiRuntimeLaunchModule = Join-Path $repoRoot 'src\UI\UI.RuntimeLaunch.psm1'
+$uiRuntimeProfileManagerModule = Join-Path $repoRoot 'src\UI\UI.RuntimeProfileManager.psm1'
+$uiRuntimeProfileWizardModule = Join-Path $repoRoot 'src\UI\UI.RuntimeProfileWizard.psm1'
+$uiUserDashboardModule = Join-Path $repoRoot 'src\UI\UI.UserDashboard.psm1'
+$uiStatusBarModule = Join-Path $repoRoot 'src\UI\UI.StatusBar.psm1'
+
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName System.Windows.Forms
+
+foreach ($uiModule in @($uiThemeModule,$uiRuntimeHomeModule,$uiRuntimeLaunchModule,$uiRuntimeProfileManagerModule,$uiRuntimeProfileWizardModule,$uiUserDashboardModule,$uiStatusBarModule)) {
+    if (Test-Path $uiModule) { Import-Module $uiModule -Force -Global }
+}
+
+$script:HybridUiTheme = if (Get-Command Resolve-HybridUiTheme -ErrorAction SilentlyContinue) {
+    Resolve-HybridUiTheme -RepositoryRoot $repoRoot -ProfileName $Profile
+}
+else { $null }
 
 $script:HybridRuntime = $null
 if (Test-Path $profileManagerModule) { Import-Module $profileManagerModule -Force -Global }
 if (Test-Path $runtimeModule) {
     Import-Module $runtimeModule -Force -Global
-    $profileName = if ($Mock) { 'Simulation' } else { 'Simulation' }
-    $script:HybridRuntime = Initialize-HybridRuntime -ProfileName $profileName -RootPath $repoRoot
+    $profileName = if (-not [string]::IsNullOrWhiteSpace($Profile)) { $Profile } elseif ($Mock) { 'Simulation' } else { 'Simulation' }
+    try {
+        $script:HybridRuntime = Initialize-HybridRuntime -ProfileName $profileName -RootPath $repoRoot
+    }
+    catch {
+        if (-not [string]::Equals($profileName, 'Simulation', [System.StringComparison]::OrdinalIgnoreCase)) {
+            $script:HybridRuntime = Initialize-HybridRuntime -ProfileName 'Simulation' -RootPath $repoRoot
+        }
+        else { throw }
+    }
 }
 else {
     if (-not (Test-Path $serviceModule)) { throw "Application service module not found: $serviceModule" }
@@ -98,7 +128,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hybrid Admin Console" Height="980" Width="1600" MinHeight="900" MinWidth="1360" WindowStartupLocation="CenterScreen" Background="#0B1220">
+        Title="Hybrid Admin Platform" Height="900" Width="1480" MinHeight="720" MinWidth="1180" WindowStartupLocation="CenterScreen" Background="#0B1220">
     <Window.Resources>
         <LinearGradientBrush x:Key="ShellBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#0B1220" Offset="0"/>
@@ -151,7 +181,7 @@ $xaml = @"
 
         <Grid x:Name="StartupRegion" Grid.Row="0" Background="{StaticResource ShellBackgroundBrush}">
             <!-- Milestone 8 Final UI Polish: Runtime Home mirrors the polished admin-console concept with fixed footer actions. -->
-            <Grid x:Name="StartupView" Margin="22">
+            <Grid x:Name="StartupView" Margin="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -171,7 +201,7 @@ $xaml = @"
 
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="460"/>
+                        <ColumnDefinition Width="0.38*" MinWidth="360" MaxWidth="440"/>
                         <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
@@ -276,14 +306,14 @@ $xaml = @"
                                             <StackPanel Margin="0,0,12,12"><TextBlock Text="Cloud" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Foreground="#A78BFA" FontWeight="SemiBold"/></StackPanel>
                                             <StackPanel Margin="0,0,12,12"><TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Foreground="#22C55E" FontWeight="SemiBold"/></StackPanel>
                                             <StackPanel Margin="0,0,12,0"><TextBlock Text="Schema" Style="{StaticResource LabelText}"/><TextBlock Text="1.0" Foreground="#CBD5E1"/></StackPanel>
-                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="HAP Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="v0.8.0-dev" Foreground="#CBD5E1"/></StackPanel>
+                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="HAP Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="v0.8.1" Foreground="#CBD5E1"/></StackPanel>
                                         </UniformGrid>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Margin="18,0,0,0">
                                         <TextBlock Text="COMPATIBILITY" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
                                         <TextBlock Text="Compatible" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,12,0,6"/>
                                         <TextBlock Text="Min Supported" Style="{StaticResource LabelText}"/><TextBlock Text="v0.7.0" Foreground="#CBD5E1" Margin="0,2,0,8"/>
-                                        <TextBlock Text="Max Tested" Style="{StaticResource LabelText}"/><TextBlock Text="v0.8.0-dev" Foreground="#CBD5E1"/>
+                                        <TextBlock Text="Max Tested" Style="{StaticResource LabelText}"/><TextBlock Text="v0.8.1" Foreground="#CBD5E1"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -323,7 +353,7 @@ $xaml = @"
                                 <Border Grid.Row="1" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="18">
                                     <StackPanel>
                                         <TextBlock Text="BOOTSTRAP PLAN PREVIEW" Style="{StaticResource SectionTitle}"/>
-                                        <UniformGrid Columns="6" Margin="0,10,0,0">
+                                        <UniformGrid Columns="3" Margin="0,10,0,0">
                                             <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="1" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Validate Profile" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
                                             <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="2" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Run Diagnostics" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
                                             <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="3" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Build Context" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
@@ -341,9 +371,9 @@ $xaml = @"
                 <Border x:Name="RuntimeActionFooter" Grid.Row="2" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="14" Margin="0,16,0,0">
                     <!-- Fixed action footer: buttons remain visible regardless of profile-card scrolling. -->
                     <!-- Phase 8 Final UI polish: action buttons are large, styled, single-row command tiles. -->
-                    <UniformGrid Columns="9" HorizontalAlignment="Stretch">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
                         <Button x:Name="LaunchConsoleButton" Style="{StaticResource LaunchActionButton}">
-                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
                         <Button x:Name="NewRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="New Profile" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+N" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
@@ -369,7 +399,7 @@ $xaml = @"
                         <Button x:Name="ExitButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Exit" Foreground="#E5E7EB" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Alt+F4" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                    </UniformGrid>
+                    </WrapPanel></ScrollViewer>
                 </Border>
             </Grid>
         </Grid>
@@ -387,7 +417,7 @@ $xaml = @"
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
@@ -685,6 +715,10 @@ $xaml = @"
 </Window>
 "@
 
+
+if ($null -ne $script:HybridUiTheme -and (Get-Command Set-HybridUiThemeOnXaml -ErrorAction SilentlyContinue)) {
+    $xaml = Set-HybridUiThemeOnXaml -Xaml $xaml -Theme $script:HybridUiTheme
+}
 $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
@@ -765,10 +799,13 @@ $script:SelectedRuntimeProfileSummary = $null
 function Get-HybridRuntimeProfileListLabel {
     param([Parameter(Mandatory)][object]$Profile)
 
+    if (Get-Command Get-HybridRuntimeProfileDisplayLabel -ErrorAction SilentlyContinue) {
+        return Get-HybridRuntimeProfileDisplayLabel -Profile $Profile
+    }
+
     $prefix = '  '
     if ($Profile.IsLastUsed) { $prefix = '> ' }
     elseif ($Profile.IsDefault) { $prefix = '* ' }
-
     $status = if ($Profile.IsValid) { 'Ready' } else { 'Invalid' }
     return ('{0}{1}  [{2} / {3} / {4}]' -f $prefix, $Profile.ProfileName, $Profile.CloudEnvironment, $Profile.RuntimeMode, $status)
 }
@@ -819,6 +856,9 @@ function Initialize-HybridRuntimeProfileList {
     if (Get-Command Get-HybridRuntimeProfileSelection -ErrorAction SilentlyContinue) {
         $selection = Get-HybridRuntimeProfileSelection -RepositoryRoot $repoRoot
     }
+    if (Get-Command Select-HybridRuntimeProfileSummary -ErrorAction SilentlyContinue) {
+        $selection = Select-HybridRuntimeProfileSummary -Profiles $script:RuntimeProfileSummaries -PreferredSelection $selection -PreferredProfileName $Profile
+    }
     if ($null -eq $selection) { $selection = $script:RuntimeProfileSummaries[0] }
 
     $selectedIndex = 0
@@ -844,24 +884,13 @@ function Select-HybridRuntimeProfileFromList {
 function Set-HybridLaunchButtonLabel {
     param([object]$Profile)
     if ($null -eq $controls.LaunchConsoleButton) { return }
+    if (Get-Command Set-HybridLaunchButtonProfileLabel -ErrorAction SilentlyContinue) {
+        Set-HybridLaunchButtonProfileLabel -Button $controls.LaunchConsoleButton -Profile $Profile
+        return
+    }
     $name = if ($null -eq $Profile -or [string]::IsNullOrWhiteSpace([string]$Profile.ProfileName)) { 'Console' } else { [string]$Profile.ProfileName }
-    $label = $name
-    if ($label.Length -gt 22) { $label = $label.Substring(0,19) + '...' }
-    $line1 = if ($name -eq 'Console') { 'Launch Console' } else { "Launch $label" }
-    $content = $controls.LaunchConsoleButton.Content
-    if ($content -is [System.Windows.Controls.StackPanel] -and $content.Children.Count -ge 2) {
-        $content.Children[0].Text = $line1
-        $content.Children[1].Text = 'Enter'
-    }
-    else {
-        $controls.LaunchConsoleButton.Content = "$line1`nEnter"
-    }
-    if ($name -eq 'Console') {
-        $controls.LaunchConsoleButton.ToolTip = 'Launch Hybrid Admin Console'
-    }
-    else {
-        $controls.LaunchConsoleButton.ToolTip = "Launch $name"
-    }
+    $controls.LaunchConsoleButton.Content = if ($name -eq 'Console') { 'Launch Console' } else { "Launch $name" }
+    $controls.LaunchConsoleButton.ToolTip = if ($name -eq 'Console') { 'Launch Hybrid Admin Console' } else { "Launch $name" }
 }
 
 function Update-HybridStartupView {
@@ -870,7 +899,7 @@ function Update-HybridStartupView {
 
     $selectedProfile = $script:SelectedRuntimeProfileSummary
     if ($null -ne $selectedProfile) {
-        $controls.RuntimeVersionText.Text = 'v0.8.0-dev'
+        $controls.RuntimeVersionText.Text = 'v0.8.1'
         $controls.RuntimeProfileText.Text = $selectedProfile.ProfileName
         $controls.RuntimeCloudText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.CloudEnvironment)) { '-' } else { $selectedProfile.CloudEnvironment }
         $controls.RuntimeModeText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.RuntimeMode)) { '-' } else { $selectedProfile.RuntimeMode }
@@ -889,7 +918,7 @@ function Update-HybridStartupView {
     }
 
     if ($null -eq $runtime) {
-        $controls.RuntimeVersionText.Text = 'v0.8.0-dev'
+        $controls.RuntimeVersionText.Text = 'v0.8.1'
         $controls.RuntimeProfileText.Text = 'Legacy startup'
         $controls.RuntimeCloudText.Text = 'Unknown'
         $controls.RuntimeModeText.Text = if ($Mock) { 'Simulation' } else { 'Legacy' }
@@ -900,7 +929,7 @@ function Update-HybridStartupView {
         return
     }
 
-    $controls.RuntimeVersionText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('Version') -Default 'v0.8.0-dev'
+    $controls.RuntimeVersionText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('Version') -Default 'v0.8.1'
     $controls.RuntimeProfileText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime.Profile -Names @('ProfileName','Name') -Default 'Simulation'
     $controls.RuntimeCloudText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('CloudEnvironment') -Default 'Commercial'
     $controls.RuntimeModeText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('RuntimeMode','Mode') -Default 'Simulation'
@@ -940,8 +969,8 @@ function Update-HybridPersistentRuntimeStatus {
         if ($controls.StatusHealthText) { $controls.StatusHealthText.Text = '-' }
         return
     }
-    $auth = if ($profile.RuntimeMode -eq 'Simulation') { 'None' } else { 'Delegated (Required)' }
-    $controls.ShellStatusText.Text = ('Profile: {0}   Cloud: {1}   Mode: {2}   Auth: {3}   Health: {4}' -f $profile.ProfileName, $profile.CloudEnvironment, $profile.RuntimeMode, $auth, $profile.HealthLabel)
+    $auth = if (Get-Command Get-HybridRuntimeProfileAuthLabel -ErrorAction SilentlyContinue) { Get-HybridRuntimeProfileAuthLabel -Profile $profile } elseif ($profile.RuntimeMode -eq 'Simulation') { 'None' } else { 'Delegated (Required)' }
+    $controls.ShellStatusText.Text = if (Get-Command Format-HybridRuntimeStatusLine -ErrorAction SilentlyContinue) { Format-HybridRuntimeStatusLine -Profile $profile } else { ('Profile: {0}   Cloud: {1}   Mode: {2}   Auth: {3}   Health: {4}' -f $profile.ProfileName, $profile.CloudEnvironment, $profile.RuntimeMode, $auth, $profile.HealthLabel) }
     if ($controls.StatusProfileText) { $controls.StatusProfileText.Text = $profile.ProfileName }
     if ($controls.StatusCloudText) { $controls.StatusCloudText.Text = $profile.CloudEnvironment }
     if ($controls.StatusModeText) { $controls.StatusModeText.Text = $profile.RuntimeMode }
@@ -1738,3 +1767,4 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
+

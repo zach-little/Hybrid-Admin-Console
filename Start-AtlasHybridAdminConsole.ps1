@@ -1,40 +1,34 @@
 <#
 .SYNOPSIS
-Bootstrap launcher for the Hybrid Administration Platform using the Atlas profile by default.
+Primary launcher for the Hybrid Administration Platform runtime/profile UI.
 #>
 [CmdletBinding()]
 param(
-    [string]$Profile = 'Atlas',
+    [string]$Profile = 'Simulation',
     [switch]$NoNet,
     [switch]$HapDebug,
-    [switch]$ConsoleOnly
+    [switch]$ConsoleOnly,
+    [string]$InitialQuery = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Source = Join-Path $Root 'src'
+$UiEntryPoint = Join-Path $Root 'src\UI\Start-HybridAdminConsole.ps1'
 
-# Load only the minimal bootstrap dependency first.
-Import-Module (Join-Path $Source 'Core\Core.Paths.psm1') -Force -Global
-Import-Module (Join-Path $Source 'Core\Core.ModuleLoader.psm1') -Force -Global
+if (-not (Test-Path -LiteralPath $UiEntryPoint -PathType Leaf)) {
+    throw "HAP UI entry point not found: $UiEntryPoint"
+}
 
-$Context = New-HybridHostContext
-Initialize-HybridPaths -Context $Context -RootPath $Root | Out-Null
+if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
+    $arguments = @('-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',('"{0}"' -f $UiEntryPoint),'-Profile',('"{0}"' -f $Profile))
+    if ($NoNet) { $arguments += '-Mock' }
+    if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { $arguments += @('-InitialQuery',('"{0}"' -f $InitialQuery)) }
+    Start-Process -FilePath 'powershell.exe' -ArgumentList ($arguments -join ' ') -Wait
+    return
+}
 
-# Import everything else in deterministic framework order.
-Import-HybridModuleTree -SourcePath $Source -Refresh -Global | Out-Null
-
-Initialize-HybridEnvironment -Context $Context -NoNet:$NoNet | Out-Null
-Initialize-HybridLogging -Context $Context -Level $(if ($HapDebug) { 'Debug' } else { 'Information' }) | Out-Null
-Initialize-HybridCache -Context $Context | Out-Null
-Initialize-HybridServiceRegistry -Context $Context | Out-Null
-Initialize-HybridPluginRegistry -Context $Context | Out-Null
-Initialize-HybridConfiguration -Context $Context -ProfileName $Profile | Out-Null
-Initialize-HybridTheme -Context $Context | Out-Null
-Initialize-HybridApplicationServices -Context $Context | Out-Null
-Import-HybridPlugins -Context $Context -PluginPath (Get-HybridPath -Context $Context -Name Plugins) | Out-Null
-
-Write-HybridLog -Level Information -Module 'Bootstrap' -Message 'Hybrid Administration Platform bootstrap complete.' | Out-Null
-Show-HybridShell -Context $Context -ConsoleOnly:$ConsoleOnly
+$uiParameters = @{ Profile = $Profile; InitialQuery = $InitialQuery }
+if ($NoNet) { $uiParameters.Mock = $true }
+& $UiEntryPoint @uiParameters

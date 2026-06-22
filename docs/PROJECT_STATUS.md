@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.0
+v0.8.1
 
 ---
 
@@ -48,4 +48,10 @@ The application now launches through a validated Runtime Profile rather than dir
 
 Stable
 
-Ready for Milestone 9 development.
+Milestone 8.1 Runtime Platform Hardening complete. Ready for Milestone 9 planning after validation.
+
+---
+
+## Milestone 8.1 Summary
+
+Runtime Platform hardening completed launcher alignment, UI module decomposition, responsive layout improvements, launch button wrapping, stronger validation coverage, and dynamic theme support for organization-approved color palettes.

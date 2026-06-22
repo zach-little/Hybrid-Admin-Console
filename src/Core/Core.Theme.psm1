@@ -18,11 +18,18 @@ function Initialize-HybridTheme {
     $branding = if ($Context.Configuration) { $Context.Configuration.Branding } else { $null }
     $theme = [pscustomobject]@{
         PSTypeName = 'Hybrid.Theme'
-        Name       = if ($branding -and $branding.ThemeName) { $branding.ThemeName } else { 'Default Dark' }
-        Accent     = if ($branding -and $branding.AccentColor) { $branding.AccentColor } else { '#20D5FF' }
-        Background = if ($branding -and $branding.BackgroundColor) { $branding.BackgroundColor } else { '#0B1220' }
-        Foreground = if ($branding -and $branding.ForegroundColor) { $branding.ForegroundColor } else { '#F4F7FB' }
-        LogoPath   = if ($branding -and $branding.LogoPath) { $branding.LogoPath } else { $null }
+        Name          = if ($branding -and $branding.ThemeName) { $branding.ThemeName } else { 'Default Dark' }
+        Accent        = if ($branding -and $branding.AccentColor) { $branding.AccentColor } else { '#20D5FF' }
+        AccentColor   = if ($branding -and $branding.AccentColor) { $branding.AccentColor } else { '#20D5FF' }
+        Background    = if ($branding -and $branding.BackgroundColor) { $branding.BackgroundColor } else { '#0B1220' }
+        BackgroundColor = if ($branding -and $branding.BackgroundColor) { $branding.BackgroundColor } else { '#0B1220' }
+        Foreground    = if ($branding -and $branding.ForegroundColor) { $branding.ForegroundColor } else { '#F4F7FB' }
+        ForegroundColor = if ($branding -and $branding.ForegroundColor) { $branding.ForegroundColor } else { '#F4F7FB' }
+        SurfaceColor  = if ($branding -and $branding.SurfaceColor) { $branding.SurfaceColor } else { '#111827' }
+        PanelColor    = if ($branding -and $branding.PanelColor) { $branding.PanelColor } else { '#0F172A' }
+        BorderColor   = if ($branding -and $branding.BorderColor) { $branding.BorderColor } else { '#26364F' }
+        LogoPath      = if ($branding -and $branding.LogoPath) { $branding.LogoPath } else { $null }
+        IconPath      = if ($branding -and $branding.IconPath) { $branding.IconPath } else { $null }
     }
     $script:State.Theme = $theme
     $Context.Theme = $theme
