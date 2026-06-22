@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -381,6 +381,9 @@ $xaml = @"
                         <Button x:Name="EditRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}" IsEnabled="True">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Edit Profile" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+E" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
+                        <Button x:Name="ManageRuntimeThemeButton" Style="{StaticResource RuntimeActionButton}" IsEnabled="True">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Branding &amp; Theme" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Colors" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        </Button>
                         <Button x:Name="DuplicateRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Duplicate" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+D" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
@@ -417,7 +420,7 @@ $xaml = @"
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
@@ -574,6 +577,79 @@ $xaml = @"
                         <TextBlock Text="The dashboard will open after validation and runtime initialization complete." Foreground="#94A3B8" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Grid>
+                <Grid x:Name="RuntimeThemeEditorView" Width="920" MinHeight="640" Visibility="Collapsed">
+                    <!-- Milestone 8.2 BrandingThemeEditor: profile-scoped brand package and theme editor. -->
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Branding &amp; Theme" Foreground="#F8FAFC" FontSize="26" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="ThemeEditorSubtitleText" Text="Customize the selected runtime profile brand package without editing JSON by hand." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button x:Name="ThemeEditorCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
+                    </Grid>
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="0.9*"/></Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="18">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="Brand Package" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Package Name" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemePackageNameTextBox" Text="Branding" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Window Title" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemeWindowTitleTextBox" Text="Hybrid Admin Platform" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Organization Display Name" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemeOrganizationNameTextBox" Text="" Height="34" Margin="0,4,0,16"/>
+                                    <TextBlock Text="Colors" Style="{StaticResource SectionTitle}"/>
+                                    <UniformGrid Columns="2" Rows="5">
+                                        <StackPanel Margin="0,0,10,10"><TextBlock Text="Accent" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeAccentColorTextBox" Text="#38BDF8" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,10"><TextBlock Text="Background" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeBackgroundColorTextBox" Text="#0B1220" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,10,10"><TextBlock Text="Surface" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeSurfaceColorTextBox" Text="#111827" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,10"><TextBlock Text="Panel" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemePanelColorTextBox" Text="#0F172A" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,10,10"><TextBlock Text="Border" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeBorderColorTextBox" Text="#26364F" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,10"><TextBlock Text="Foreground" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeForegroundColorTextBox" Text="#F8FAFC" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,10,10"><TextBlock Text="Text" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeTextColorTextBox" Text="#E5E7EB" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,10"><TextBlock Text="Muted Text" Style="{StaticResource LabelText}"/><TextBox x:Name="ThemeMutedTextColorTextBox" Text="#94A3B8" Height="34" Margin="0,4,0,0"/></StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock Text="Brand Assets" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
+                                    <TextBlock Text="Logo Path" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemeLogoPathTextBox" Text="logo.png" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Icon Path" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemeIconPathTextBox" Text="icon.ico" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Splash Path" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="ThemeSplashPathTextBox" Text="splash.png" Height="34" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                        <Border Grid.Column="2" x:Name="ThemePreviewShell" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="14" Padding="18">
+                            <StackPanel>
+                                <TextBlock Text="Live Theme Preview" Style="{StaticResource SectionTitle}"/>
+                                <Border x:Name="ThemePreviewWindow" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <TextBlock x:Name="ThemePreviewTitleText" Text="Hybrid Admin Platform" Foreground="#F8FAFC" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="ThemePreviewAccentText" Text="Runtime profile branding package" Foreground="#38BDF8" Margin="0,4,0,14" TextWrapping="Wrap"/>
+                                        <Border x:Name="ThemePreviewCard" Background="#0F172A" BorderBrush="#26364F" BorderThickness="1" CornerRadius="10" Padding="14">
+                                            <StackPanel>
+                                                <TextBlock Text="Dashboard Card" Foreground="#E5E7EB" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="ThemePreviewMutedText" Text="Colors are saved to profiles\&lt;Organization&gt;\Branding\theme.json." Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="10" Padding="12">
+                                    <TextBlock x:Name="ThemeEditorStatusText" Text="Select Save Theme to create or update the profile brand package." Foreground="#CBD5E1" TextWrapping="Wrap"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <Grid Grid.Row="2" Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Button x:Name="ThemeEditorCancelButton" Grid.Column="0" Content="Cancel" Height="38" MinWidth="90"/>
+                        <TextBlock x:Name="ThemeEditorPathText" Grid.Column="1" Text="" Foreground="#94A3B8" VerticalAlignment="Center" TextWrapping="Wrap" Margin="14,0"/>
+                        <Button x:Name="ThemeEditorPreviewButton" Grid.Column="2" Content="Preview" Height="38" MinWidth="100" Margin="0,0,10,0"/>
+                        <Button x:Name="ThemeEditorSaveButton" Grid.Column="3" Content="Save Theme" Height="38" MinWidth="120"/>
+                    </Grid>
+                </Grid>
                 <Grid x:Name="RuntimeProfileWizardView" Width="860" MinHeight="560">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -715,15 +791,15 @@ $xaml = @"
 </Window>
 "@
 
-
-if ($null -ne $script:HybridUiTheme -and (Get-Command Set-HybridUiThemeOnXaml -ErrorAction SilentlyContinue)) {
-    $xaml = Set-HybridUiThemeOnXaml -Xaml $xaml -Theme $script:HybridUiTheme
+if ($null -ne $script:HybridUiTheme -and (Get-Command Set-HybridUiThemeToXaml -ErrorAction SilentlyContinue)) {
+    $xaml = Set-HybridUiThemeToXaml -Xaml $xaml -Theme $script:HybridUiTheme
 }
+
 $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1092,6 +1168,100 @@ function Show-HybridConsoleView {
     if (-not [string]::IsNullOrWhiteSpace($InitialQuery)) { Invoke-UserSearch -Query $InitialQuery }
 }
 
+
+
+function Get-HybridSelectedRuntimeThemeOrganizationName {
+    if ($null -ne $script:SelectedRuntimeProfileSummary -and -not [string]::IsNullOrWhiteSpace([string]$script:SelectedRuntimeProfileSummary.Organization)) { return [string]$script:SelectedRuntimeProfileSummary.Organization }
+    if ($null -ne $script:SelectedRuntimeProfileSummary -and -not [string]::IsNullOrWhiteSpace([string]$script:SelectedRuntimeProfileSummary.ProfileName)) { return [string]$script:SelectedRuntimeProfileSummary.ProfileName }
+    return 'Default'
+}
+
+function Get-HybridRuntimeThemeEditorObject {
+    return [pscustomobject]@{
+        PSTypeName        = 'Hybrid.UI.Theme.EditorValue'
+        Name              = $controls.ThemePackageNameTextBox.Text
+        WindowTitle       = $controls.ThemeWindowTitleTextBox.Text
+        OrganizationName  = $controls.ThemeOrganizationNameTextBox.Text
+        AccentColor       = $controls.ThemeAccentColorTextBox.Text
+        BackgroundColor   = $controls.ThemeBackgroundColorTextBox.Text
+        SurfaceColor      = $controls.ThemeSurfaceColorTextBox.Text
+        PanelColor        = $controls.ThemePanelColorTextBox.Text
+        BorderColor       = $controls.ThemeBorderColorTextBox.Text
+        ForegroundColor   = $controls.ThemeForegroundColorTextBox.Text
+        TextColor         = $controls.ThemeTextColorTextBox.Text
+        MutedTextColor    = $controls.ThemeMutedTextColorTextBox.Text
+        LogoPath          = $controls.ThemeLogoPathTextBox.Text
+        IconPath          = $controls.ThemeIconPathTextBox.Text
+        SplashPath        = $controls.ThemeSplashPathTextBox.Text
+    }
+}
+
+function Update-HybridRuntimeThemePreview {
+    if ($null -eq $controls.ThemePreviewWindow) { return }
+    $theme = Get-HybridRuntimeThemeEditorObject
+    $controls.ThemePreviewWindow.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.BackgroundColor)
+    $controls.ThemePreviewWindow.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.BorderColor)
+    $controls.ThemePreviewCard.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.PanelColor)
+    $controls.ThemePreviewCard.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.BorderColor)
+    $controls.ThemePreviewTitleText.Text = if ([string]::IsNullOrWhiteSpace($theme.WindowTitle)) { 'Hybrid Admin Platform' } else { $theme.WindowTitle }
+    $controls.ThemePreviewTitleText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.ForegroundColor)
+    $controls.ThemePreviewAccentText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.AccentColor)
+    $controls.ThemePreviewMutedText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.MutedTextColor)
+}
+
+function Show-HybridRuntimeThemeEditor {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { $controls.StatusText.Text = 'Select a runtime profile before editing branding.'; return }
+    $controls.OverlayRegion.Visibility = 'Visible'
+    $controls.LaunchProgressView.Visibility = 'Collapsed'
+    $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'
+    $controls.RuntimeThemeEditorView.Visibility = 'Visible'
+
+    $profileName = [string]$script:SelectedRuntimeProfileSummary.ProfileName
+    $profilePath = [string]$script:SelectedRuntimeProfileSummary.Path
+    $theme = if (Get-Command Resolve-HybridUiTheme -ErrorAction SilentlyContinue) { Resolve-HybridUiTheme -RepositoryRoot $repoRoot -ProfileName $profileName -ProfilePath $profilePath } else { $script:HybridUiTheme }
+    $organizationName = Get-HybridSelectedRuntimeThemeOrganizationName
+    $controls.ThemePackageNameTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.BrandPackageName)) { [string]$theme.BrandPackageName } else { 'Branding' }
+    $controls.ThemeWindowTitleTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.WindowTitle)) { [string]$theme.WindowTitle } else { 'Hybrid Admin Platform' }
+    $controls.ThemeOrganizationNameTextBox.Text = $organizationName
+    $controls.ThemeAccentColorTextBox.Text = [string]$theme.AccentColor
+    $controls.ThemeBackgroundColorTextBox.Text = [string]$theme.BackgroundColor
+    $controls.ThemeSurfaceColorTextBox.Text = [string]$theme.SurfaceColor
+    $controls.ThemePanelColorTextBox.Text = [string]$theme.PanelColor
+    $controls.ThemeBorderColorTextBox.Text = [string]$theme.BorderColor
+    $controls.ThemeForegroundColorTextBox.Text = [string]$theme.ForegroundColor
+    $controls.ThemeTextColorTextBox.Text = [string]$theme.TextColor
+    $controls.ThemeMutedTextColorTextBox.Text = [string]$theme.MutedTextColor
+    $controls.ThemeLogoPathTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.LogoPath)) { [string]$theme.LogoPath } else { 'logo.png' }
+    $controls.ThemeIconPathTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.IconPath)) { [string]$theme.IconPath } else { 'icon.ico' }
+    $controls.ThemeSplashPathTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.SplashPath)) { [string]$theme.SplashPath } else { 'splash.png' }
+    $controls.ThemeEditorPathText.Text = ('Brand package: profiles\{0}\{1}' -f $organizationName, $controls.ThemePackageNameTextBox.Text)
+    $controls.ThemeEditorStatusText.Text = 'Theme editor loaded. Save writes theme.json to the profile brand package.'
+    Update-HybridRuntimeThemePreview
+}
+
+function Hide-HybridRuntimeThemeEditor {
+    $controls.RuntimeThemeEditorView.Visibility = 'Collapsed'
+    if ($controls.RuntimeProfileWizardView.Visibility -ne 'Visible' -and $controls.LaunchProgressView.Visibility -ne 'Visible') { $controls.OverlayRegion.Visibility = 'Collapsed' }
+}
+
+function Save-HybridRuntimeThemePackage {
+    if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
+    try {
+        $theme = Get-HybridRuntimeThemeEditorObject
+        $organizationName = if ([string]::IsNullOrWhiteSpace($theme.OrganizationName)) { Get-HybridSelectedRuntimeThemeOrganizationName } else { [string]$theme.OrganizationName }
+        $packageName = if ([string]::IsNullOrWhiteSpace($controls.ThemePackageNameTextBox.Text)) { 'Branding' } else { $controls.ThemePackageNameTextBox.Text }
+        if (-not (Get-Command New-HybridUiBrandPackage -ErrorAction SilentlyContinue)) { throw 'Theme module command New-HybridUiBrandPackage is not available.' }
+        $brandPackage = New-HybridUiBrandPackage -RepositoryRoot $repoRoot -OrganizationName $organizationName -PackageName $packageName -Theme $theme
+        $profileJson = Get-Content -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Raw | ConvertFrom-Json
+        if ($profileJson.PSObject.Properties.Name -notcontains 'Branding') { $profileJson | Add-Member -NotePropertyName Branding -NotePropertyValue ([pscustomobject]@{}) -Force }
+        $profileJson.Branding = [pscustomobject]@{ Package = $packageName; PackagePath = ('profiles\{0}\{1}' -f ($organizationName -replace '[\\/:*?"<>|]', '-'), ($packageName -replace '[\\/:*?"<>|]', '-')) }
+        $profileJson | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Encoding UTF8
+        $controls.ThemeEditorStatusText.Text = ('Saved theme: {0}' -f $brandPackage.ThemePath)
+        $controls.ThemeEditorPathText.Text = ('Brand package: {0}' -f $brandPackage.PackagePath)
+        Initialize-HybridRuntimeProfileList
+    }
+    catch { $controls.ThemeEditorStatusText.Text = ('Theme save failed: {0}' -f $_.Exception.Message) }
+}
 
 $script:HybridRuntimeProfileWizardStep = 0
 $script:HybridRuntimeProfileWizardStepCount = 6
@@ -1748,6 +1918,7 @@ $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
 $controls.LaunchConsoleButton.Add_Click({ Invoke-HybridRuntimeProfileLaunch })
 $controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForSelectedProfile })
+$controls.ManageRuntimeThemeButton.Add_Click({ Show-HybridRuntimeThemeEditor })
 $controls.NewRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForNew })
 $controls.RefreshRuntimeProfilesButton.Add_Click({ Initialize-HybridRuntimeProfileList })
 if ($controls.DuplicateRuntimeProfileButton) { $controls.DuplicateRuntimeProfileButton.Add_Click({ Copy-HybridSelectedRuntimeProfile }) }
@@ -1757,6 +1928,10 @@ if ($controls.ImportRuntimeProfileButton) { $controls.ImportRuntimeProfileButton
 if ($controls.SetDefaultRuntimeProfileButton) { $controls.SetDefaultRuntimeProfileButton.Add_Click({ Set-HybridSelectedRuntimeProfileDefault }) }
 $controls.RuntimeProfileListBox.Add_SelectionChanged({ Select-HybridRuntimeProfileFromList })
 $controls.WizardCancelButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
+$controls.ThemeEditorCloseButton.Add_Click({ Hide-HybridRuntimeThemeEditor })
+$controls.ThemeEditorCancelButton.Add_Click({ Hide-HybridRuntimeThemeEditor })
+$controls.ThemeEditorPreviewButton.Add_Click({ Update-HybridRuntimeThemePreview })
+$controls.ThemeEditorSaveButton.Add_Click({ Save-HybridRuntimeThemePackage })
 $controls.WizardCloseButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
 $controls.WizardBackButton.Add_Click({ Move-HybridRuntimeProfileWizardBack })
 $controls.WizardNextButton.Add_Click({ Move-HybridRuntimeProfileWizardNext })
@@ -1767,4 +1942,3 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
-

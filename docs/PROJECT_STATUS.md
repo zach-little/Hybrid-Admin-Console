@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.1
+v0.8.2
 
 ---
 
@@ -55,3 +55,10 @@ Milestone 8.1 Runtime Platform Hardening complete. Ready for Milestone 9 plannin
 ## Milestone 8.1 Summary
 
 Runtime Platform hardening completed launcher alignment, UI module decomposition, responsive layout improvements, launch button wrapping, stronger validation coverage, and dynamic theme support for organization-approved color palettes.
+
+## Current Status Update
+
+- ✅ Milestone 8.1 — Runtime Platform Hardening
+- ✅ Milestone 8.2 — Branding & Theme System
+
+The Runtime Platform now includes profile-aware brand packages and dynamic theme resolution.

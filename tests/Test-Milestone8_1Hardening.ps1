@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Assert-Pass {
@@ -38,7 +38,7 @@ Assert-Pass -Condition ($uiText -match 'UI\.RuntimeProfileManager\.psm1') -Messa
 Assert-Pass -Condition ($uiText -match 'UI\.RuntimeProfileWizard\.psm1') -Message 'Runtime UI imports profile wizard module'
 Assert-Pass -Condition ($uiText -match 'UI\.UserDashboard\.psm1') -Message 'Runtime UI imports dashboard helper module'
 Assert-Pass -Condition ($uiText -match 'UI\.StatusBar\.psm1') -Message 'Runtime UI imports status bar helper module'
-Assert-Pass -Condition ($uiText -match 'Set-HybridUiThemeOnXaml') -Message 'Runtime UI applies resolved theme to XAML before load'
+Assert-Pass -Condition ($uiText -match 'Set-HybridUiThemeToXaml') -Message 'Runtime UI sets resolved theme on XAML before load'
 Assert-Pass -Condition ($uiText -match 'Height="900"') -Message 'Runtime UI default height reduced for safer display fit'
 Assert-Pass -Condition ($uiText -match 'Width="1480"') -Message 'Runtime UI default width reduced for safer display fit'
 Assert-Pass -Condition ($uiText -match 'MinHeight="720"') -Message 'Runtime UI minimum height relaxed for RDP and smaller screens'
@@ -58,7 +58,7 @@ Assert-Pass -Condition ($themeText -match 'Resolve-HybridUiTheme') -Message 'The
 Assert-Pass -Condition ($themeText -match 'RuntimeProfile\.Branding') -Message 'Theme module supports runtime profile branding overrides'
 Assert-Pass -Condition ($themeText -match 'profiles\\\{0\}\\branding\.json') -Message 'Theme module supports organization branding files'
 Assert-Pass -Condition ($themeText -match 'assets\\themes\\hap\.theme\.json') -Message 'Theme module supports repository-level theme override'
-Assert-Pass -Condition ($themeText -match 'Set-HybridUiThemeOnXaml') -Message 'Theme module can apply theme tokens to XAML'
+Assert-Pass -Condition ($themeText -match 'Set-HybridUiThemeToXaml') -Message 'Theme module can set theme tokens on XAML'
 Assert-Pass -Condition (Test-Path (Join-Path $root 'assets\themes\hap.theme.example.json')) -Message 'Theme example file exists'
 
 $coreThemeText = Get-Content -LiteralPath $coreThemeModule -Raw
@@ -66,8 +66,8 @@ Assert-Pass -Condition ($coreThemeText -match 'SurfaceColor') -Message 'Core the
 Assert-Pass -Condition ($coreThemeText -match 'PanelColor') -Message 'Core theme model exposes panel color'
 Assert-Pass -Condition ($coreThemeText -match 'BorderColor') -Message 'Core theme model exposes border color'
 
-Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.1'") -Message 'Runtime context reports hardening version'
-Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.1") -Message 'Runtime profile manager reports hardening version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.2'") -Message 'Runtime context reports branding/theme version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.2") -Message 'Runtime profile manager reports branding/theme version'
 
 Import-Module $themeModule -Force
 $theme = Resolve-HybridUiTheme -RepositoryRoot $root -ProfileName 'Simulation'
@@ -75,7 +75,7 @@ Assert-Pass -Condition ($theme.PSTypeName -eq 'Hybrid.UI.Theme') -Message 'Resol
 Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($theme.AccentColor)) -Message 'Resolved UI theme includes accent color'
 Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($theme.BackgroundColor)) -Message 'Resolved UI theme includes background color'
 $sampleXaml = '<Border Background="#0B1220" BorderBrush="#38BDF8" />'
-$themedXaml = Set-HybridUiThemeOnXaml -Xaml $sampleXaml -Theme $theme
+$themedXaml = Set-HybridUiThemeToXaml -Xaml $sampleXaml -Theme $theme
 Assert-Pass -Condition ($themedXaml -notmatch '#38BDF8' -or $theme.AccentColor -eq '#38BDF8') -Message 'Theme token application is functional'
 
 Import-Module $profileManagerModule -Force

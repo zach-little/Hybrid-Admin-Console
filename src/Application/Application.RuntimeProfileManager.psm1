@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$script:HybridRuntimeProfileManagerVersion = 'v0.8.1'
+$script:HybridRuntimeProfileManagerVersion = 'v0.8.2'
 
 function Add-HybridRuntimeProfileManagerTypeMetadata {
     param(

@@ -1,20 +1,13 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 function New-HybridUiThemeObject {
     [CmdletBinding()]
     param([Parameter(Mandatory)][hashtable]$Properties)
 
     $typeName = 'Hybrid.UI.Theme'
-    if ($Properties.ContainsKey('PSTypeName') -and -not [string]::IsNullOrWhiteSpace([string]$Properties.PSTypeName)) {
-        $typeName = [string]$Properties.PSTypeName
-    }
-
+    if ($Properties.ContainsKey('PSTypeName') -and -not [string]::IsNullOrWhiteSpace([string]$Properties.PSTypeName)) { $typeName = [string]$Properties.PSTypeName }
     $objectProperties = [ordered]@{}
-    foreach ($key in $Properties.Keys) {
-        if ($key -eq 'PSTypeName') { continue }
-        $objectProperties[$key] = $Properties[$key]
-    }
-
+    foreach ($key in $Properties.Keys) { if ($key -ne 'PSTypeName') { $objectProperties[$key] = $Properties[$key] } }
     $theme = [pscustomobject]$objectProperties
     $theme.PSObject.TypeNames.Insert(0, $typeName)
     $theme | Add-Member -MemberType NoteProperty -Name 'PSTypeName' -Value $typeName -Force
@@ -28,6 +21,9 @@ function Get-HybridUiThemeDefault {
     return New-HybridUiThemeObject -Properties @{
         PSTypeName              = 'Hybrid.UI.Theme'
         Name                    = 'HAP Dark'
+        WindowTitle             = 'Hybrid Admin Platform'
+        OrganizationName        = 'Hybrid Admin Platform'
+        BrandPackageName        = ''
         AccentColor             = '#38BDF8'
         AccentMutedColor        = '#0F2A44'
         BackgroundColor         = '#0B1220'
@@ -50,8 +46,21 @@ function Get-HybridUiThemeDefault {
         PurpleMutedColor        = '#312E81'
         LogoPath                = $null
         IconPath                = $null
+        SplashPath              = $null
+        ThemeFilePath           = $null
+        BrandingPackagePath     = $null
         Source                  = 'Default'
     }
+}
+
+function ConvertTo-HybridUiThemeHashtable {
+    [CmdletBinding()]
+    param([AllowNull()][object]$InputObject)
+
+    $result = @{}
+    if ($null -eq $InputObject) { return $result }
+    foreach ($property in $InputObject.PSObject.Properties) { $result[$property.Name] = $property.Value }
+    return $result
 }
 
 function Merge-HybridUiThemeObject {
@@ -63,35 +72,32 @@ function Merge-HybridUiThemeObject {
     )
 
     if ($null -eq $Override) { return $BaseTheme }
-
     $theme = $BaseTheme.PSObject.Copy()
+
     foreach ($property in $Override.PSObject.Properties) {
         if ($null -eq $property.Value) { continue }
-        if ([string]::IsNullOrWhiteSpace([string]$property.Value)) { continue }
+        if (($property.Value -is [string]) -and [string]::IsNullOrWhiteSpace([string]$property.Value)) { continue }
 
         $targetName = switch -Regex ($property.Name) {
             '^ThemeName$' { 'Name'; break }
+            '^DisplayName$' { 'OrganizationName'; break }
             '^Accent$' { 'AccentColor'; break }
             '^Background$' { 'BackgroundColor'; break }
             '^Foreground$' { 'ForegroundColor'; break }
+            '^PrimaryColor$' { 'AccentColor'; break }
+            '^Surface$' { 'SurfaceColor'; break }
+            '^Panel$' { 'PanelColor'; break }
+            '^Border$' { 'BorderColor'; break }
             default { $property.Name; break }
         }
 
-        if ($theme.PSObject.Properties.Match($targetName).Count -gt 0) {
-            $theme.$targetName = $property.Value
-        }
-        else {
-            $theme | Add-Member -MemberType NoteProperty -Name $targetName -Value $property.Value -Force
-        }
+        if ($theme.PSObject.Properties.Match($targetName).Count -gt 0) { $theme.$targetName = $property.Value }
+        else { $theme | Add-Member -MemberType NoteProperty -Name $targetName -Value $property.Value -Force }
     }
 
     $theme.Source = $Source
-    if ($theme.PSObject.Properties.Match('PSTypeName').Count -eq 0) {
-        $theme | Add-Member -MemberType NoteProperty -Name 'PSTypeName' -Value 'Hybrid.UI.Theme' -Force
-    }
-    if ($theme.PSObject.TypeNames[0] -ne 'Hybrid.UI.Theme') {
-        $theme.PSObject.TypeNames.Insert(0, 'Hybrid.UI.Theme')
-    }
+    if ($theme.PSObject.Properties.Match('PSTypeName').Count -eq 0) { $theme | Add-Member -MemberType NoteProperty -Name 'PSTypeName' -Value 'Hybrid.UI.Theme' -Force }
+    if ($theme.PSObject.TypeNames[0] -ne 'Hybrid.UI.Theme') { $theme.PSObject.TypeNames.Insert(0, 'Hybrid.UI.Theme') }
     return $theme
 }
 
@@ -100,13 +106,45 @@ function Import-HybridUiThemeJson {
     param([Parameter(Mandatory)][string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-    try {
-        return Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    try { return Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop }
+    catch { Write-Verbose "Unable to read UI theme file '$Path': $($_.Exception.Message)"; return $null }
+}
+
+function Resolve-HybridUiRelativePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RootPath,
+        [AllowNull()][string]$Path
+    )
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+    if ([System.IO.Path]::IsPathRooted($Path)) { return $Path }
+    return (Join-Path $RootPath $Path)
+}
+
+function Get-HybridUiBrandingPackagePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [AllowNull()][object]$RuntimeProfile,
+        [string]$ProfileName = ''
+    )
+
+    if ($null -eq $RuntimeProfile) { return $null }
+    $branding = $RuntimeProfile.PSObject.Properties['Branding']
+    $packageName = 'Branding'
+    if ($null -ne $branding -and $branding.Value.PSObject.Properties['Package']) { $packageName = [string]$branding.Value.Package }
+    if ([string]::IsNullOrWhiteSpace($packageName)) { $packageName = 'Branding' }
+
+    if ($null -ne $branding -and $branding.Value.PSObject.Properties['PackagePath']) {
+        $explicitPath = Resolve-HybridUiRelativePath -RootPath $RepositoryRoot -Path ([string]$branding.Value.PackagePath)
+        if (-not [string]::IsNullOrWhiteSpace($explicitPath)) { return $explicitPath }
     }
-    catch {
-        Write-Verbose "Unable to read UI theme file '$Path': $($_.Exception.Message)"
-        return $null
-    }
+
+    $org = $RuntimeProfile.PSObject.Properties['Organization']
+    $orgName = if ($null -ne $org -and -not [string]::IsNullOrWhiteSpace([string]$org.Value)) { [string]$org.Value } else { $ProfileName }
+    if ([string]::IsNullOrWhiteSpace($orgName)) { return $null }
+    $safeOrg = $orgName -replace '[\\/:*?"<>|]', '-'
+    return (Join-Path $RepositoryRoot (Join-Path (Join-Path 'profiles' $safeOrg) $packageName))
 }
 
 function Resolve-HybridUiTheme {
@@ -120,32 +158,58 @@ function Resolve-HybridUiTheme {
     $root = if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) { (Get-Location).Path } else { (Resolve-Path -Path $RepositoryRoot).Path }
     $theme = Get-HybridUiThemeDefault
 
+    $globalThemePath = Join-Path $root 'assets\themes\hap.theme.json'
+    $globalTheme = Import-HybridUiThemeJson -Path $globalThemePath
+    if ($null -ne $globalTheme) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $globalTheme -Source 'assets/themes/hap.theme.json' }
+
     $runtimeProfile = $null
+    $runtimeProfilePath = ''
     if (-not [string]::IsNullOrWhiteSpace($ProfilePath) -and (Test-Path -LiteralPath $ProfilePath -PathType Leaf)) {
+        $runtimeProfilePath = $ProfilePath
         $runtimeProfile = Import-HybridUiThemeJson -Path $ProfilePath
     }
     elseif (-not [string]::IsNullOrWhiteSpace($ProfileName)) {
         $candidate = Join-Path $root ('profiles\Runtime\{0}.json' -f (($ProfileName -replace '[\\/:*?"<>|]', '-')))
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) { $runtimeProfile = Import-HybridUiThemeJson -Path $candidate }
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) { $runtimeProfilePath = $candidate; $runtimeProfile = Import-HybridUiThemeJson -Path $candidate }
     }
 
     if ($null -ne $runtimeProfile) {
-        $brandingProperty = $runtimeProfile.PSObject.Properties['Branding']
-        $themeProperty = $runtimeProfile.PSObject.Properties['Theme']
-        if ($null -ne $brandingProperty) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $brandingProperty.Value -Source 'RuntimeProfile.Branding' }
-        elseif ($null -ne $themeProperty) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $themeProperty.Value -Source 'RuntimeProfile.Theme' }
-
         $org = $runtimeProfile.PSObject.Properties['Organization']
         if ($null -ne $org -and -not [string]::IsNullOrWhiteSpace([string]$org.Value)) {
-            $orgBranding = Join-Path $root ('profiles\{0}\branding.json' -f ([string]$org.Value))
+            $orgName = [string]$org.Value
+            $orgBranding = Join-Path $root ('profiles\{0}\branding.json' -f ($orgName -replace '[\\/:*?"<>|]', '-'))
             $orgTheme = Import-HybridUiThemeJson -Path $orgBranding
-            if ($null -ne $orgTheme) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $orgTheme -Source "Organization.Branding:$($org.Value)" }
+            if ($null -ne $orgTheme) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $orgTheme -Source "Organization.Branding:$orgName" }
         }
-    }
 
-    $globalThemePath = Join-Path $root 'assets\themes\hap.theme.json'
-    $globalTheme = Import-HybridUiThemeJson -Path $globalThemePath
-    if ($null -ne $globalTheme) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $globalTheme -Source 'assets/themes/hap.theme.json' }
+        $packagePath = Get-HybridUiBrandingPackagePath -RepositoryRoot $root -RuntimeProfile $runtimeProfile -ProfileName $ProfileName
+        if (-not [string]::IsNullOrWhiteSpace($packagePath)) {
+            $packageTheme = Import-HybridUiThemeJson -Path (Join-Path $packagePath 'theme.json')
+            if ($null -ne $packageTheme) {
+                $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $packageTheme -Source "BrandPackage:$packagePath"
+                $theme.BrandingPackagePath = $packagePath
+                $theme.ThemeFilePath = Join-Path $packagePath 'theme.json'
+            }
+            foreach ($asset in @(@('LogoPath','logo.png'),@('IconPath','icon.ico'),@('SplashPath','splash.png'))) {
+                $propertyName = $asset[0]
+                $assetPath = Join-Path $packagePath $asset[1]
+                if ((Test-Path -LiteralPath $assetPath -PathType Leaf) -and [string]::IsNullOrWhiteSpace([string]$theme.$propertyName)) { $theme.$propertyName = $assetPath }
+            }
+        }
+
+        $brandingProperty = $runtimeProfile.PSObject.Properties['Branding']
+        $themeProperty = $runtimeProfile.PSObject.Properties['Theme']
+        if ($null -ne $brandingProperty) {
+            $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $brandingProperty.Value -Source 'RuntimeProfile.Branding'
+            if ($brandingProperty.Value.PSObject.Properties['Theme']) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $brandingProperty.Value.Theme -Source 'RuntimeProfile.Branding.Theme' }
+            if ($brandingProperty.Value.PSObject.Properties['ThemeFile']) {
+                $themeFile = Resolve-HybridUiRelativePath -RootPath (Split-Path -Parent $runtimeProfilePath) -Path ([string]$brandingProperty.Value.ThemeFile)
+                $themeFromFile = Import-HybridUiThemeJson -Path $themeFile
+                if ($null -ne $themeFromFile) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $themeFromFile -Source "RuntimeProfile.Branding.ThemeFile:$themeFile"; $theme.ThemeFilePath = $themeFile }
+            }
+        }
+        elseif ($null -ne $themeProperty) { $theme = Merge-HybridUiThemeObject -BaseTheme $theme -Override $themeProperty.Value -Source 'RuntimeProfile.Theme' }
+    }
 
     return $theme
 }
@@ -157,6 +221,7 @@ function ConvertTo-HybridUiThemeTokenMap {
     return @{
         '#38BDF8' = [string]$Theme.AccentColor
         '#20D5FF' = [string]$Theme.AccentColor
+        '#0F2A44' = [string]$Theme.AccentMutedColor
         '#0B1220' = [string]$Theme.BackgroundColor
         '#08111E' = [string]$Theme.BackgroundAltColor
         '#101826' = [string]$Theme.PanelColor
@@ -180,7 +245,7 @@ function ConvertTo-HybridUiThemeTokenMap {
     }
 }
 
-function Set-HybridUiThemeOnXaml {
+function Set-HybridUiThemeToXaml {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Xaml,
@@ -190,27 +255,59 @@ function Set-HybridUiThemeOnXaml {
     $result = $Xaml
     $tokens = ConvertTo-HybridUiThemeTokenMap -Theme $Theme
     foreach ($key in ($tokens.Keys | Sort-Object Length -Descending)) {
-        if (-not [string]::IsNullOrWhiteSpace([string]$tokens[$key])) {
-            $result = $result.Replace($key, [string]$tokens[$key])
-        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$tokens[$key])) { $result = $result.Replace($key, [string]$tokens[$key]) }
     }
+    if (-not [string]::IsNullOrWhiteSpace([string]$Theme.WindowTitle)) { $result = $result.Replace('Title="Hybrid Admin Platform"', ('Title="{0}"' -f [System.Security.SecurityElement]::Escape([string]$Theme.WindowTitle))) }
     return $result
 }
 
-
-function Apply-HybridUiThemeToXaml {
+function New-HybridUiBrandPackage {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$Xaml,
-        [Parameter(Mandatory)][object]$Theme
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][string]$OrganizationName,
+        [string]$PackageName = 'Branding',
+        [AllowNull()][object]$Theme
     )
 
-    return Set-HybridUiThemeOnXaml -Xaml $Xaml -Theme $Theme
+    $root = (Resolve-Path -Path $RepositoryRoot).Path
+    $safeOrg = $OrganizationName -replace '[\\/:*?"<>|]', '-'
+    $safePackage = if ([string]::IsNullOrWhiteSpace($PackageName)) { 'Branding' } else { $PackageName -replace '[\\/:*?"<>|]', '-' }
+    $packagePath = Join-Path $root (Join-Path (Join-Path 'profiles' $safeOrg) $safePackage)
+    if (-not (Test-Path -LiteralPath $packagePath -PathType Container)) { New-Item -Path $packagePath -ItemType Directory -Force | Out-Null }
+    $themePath = Join-Path $packagePath 'theme.json'
+    $themeObject = if ($null -eq $Theme) { Get-HybridUiThemeDefault } else { $Theme }
+    [ordered]@{
+        Name = [string]$themeObject.Name
+        WindowTitle = [string]$themeObject.WindowTitle
+        OrganizationName = $OrganizationName
+        AccentColor = [string]$themeObject.AccentColor
+        BackgroundColor = [string]$themeObject.BackgroundColor
+        SurfaceColor = [string]$themeObject.SurfaceColor
+        PanelColor = [string]$themeObject.PanelColor
+        BorderColor = [string]$themeObject.BorderColor
+        ForegroundColor = [string]$themeObject.ForegroundColor
+        TextColor = [string]$themeObject.TextColor
+        MutedTextColor = [string]$themeObject.MutedTextColor
+        LogoPath = 'logo.png'
+        IconPath = 'icon.ico'
+        SplashPath = 'splash.png'
+    } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $themePath -Encoding UTF8
+
+    return [pscustomobject]@{
+        PSTypeName = 'Hybrid.UI.BrandPackage'
+        OrganizationName = $OrganizationName
+        PackageName = $safePackage
+        PackagePath = $packagePath
+        ThemePath = $themePath
+    }
 }
 
 Export-ModuleMember -Function @(
     'Get-HybridUiThemeDefault',
     'Resolve-HybridUiTheme',
     'ConvertTo-HybridUiThemeTokenMap',
-    'Set-HybridUiThemeOnXaml'
+    'Set-HybridUiThemeToXaml',
+    'Get-HybridUiBrandingPackagePath',
+    'New-HybridUiBrandPackage'
 )

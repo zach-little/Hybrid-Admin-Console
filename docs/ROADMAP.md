@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.1
+v0.8.2
 
 ---
 
@@ -66,3 +66,11 @@ Focus:
 - Enterprise deployment
 - Code signing
 - Documentation completion
+
+## Milestone 8.2 — Branding & Theme System ✅
+
+HAP now supports runtime-profile-aware brand packages, dynamic theme tokens, and a Branding & Theme editor in the runtime profile experience.
+
+## Next
+
+Milestone 9 — Background Runtime Services
