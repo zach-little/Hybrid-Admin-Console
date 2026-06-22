@@ -1,59 +1,25 @@
 # Changelog
 
-## Version 0.6.0 – Microsoft 365 Platform Foundation
+## v0.8.0
 
-### Added
+- Completed Milestone 8 Runtime Platform.
+- Added Runtime Profile Foundation.
+- Added Runtime Bootstrap Engine.
+- Added Runtime Provider Modes.
+- Added Startup Diagnostics Engine.
+- Added Startup Shell and dashboard layout foundation.
+- Added Runtime Profile Wizard and improved multi-step UX.
+- Added Deployment and Packaging support.
+- Added Runtime Profile Manager with discovery, cards, profile operations, launch workflow, and persistent status.
+- Maintained no Device Code authentication policy.
 
-#### Authentication Platform
+## v0.8.0-dev - Final Brand Polish
 
-* Added platform authentication manager.
-* Added authentication session abstraction.
-* Added authentication request model.
-* Added authentication cache with session refresh support.
-* Added authentication adapter registration framework.
-* Added Interactive MSAL authentication adapter.
-* Added App-only MSAL authentication adapter.
-* Established provider-independent authentication contract.
+- Added the HAP application icon asset and wired it into the Runtime Home, main console header, summary tile, and window icon.
+- Refined Runtime Home footer button sizing, selected profile highlighting, dynamic Launch profile labeling, and colorized runtime status values.
 
-#### Microsoft Graph Provider
+## Milestone 8 Final Icon Startup Fix
 
-* Added Microsoft Graph provider foundation.
-* Added Microsoft Graph provider context.
-* Added Microsoft Graph provider service abstraction.
-* Added provider health reporting.
-* Added Graph user search operation.
-* Added Graph user retrieval operation.
-* Added canonical `Hybrid.User` conversion pipeline.
-
-#### Exchange Online Provider
-
-* Added Exchange Online provider foundation.
-* Added Exchange Online provider context.
-* Added Exchange Online provider service abstraction.
-* Added mailbox search operation.
-* Added mailbox retrieval operation.
-* Added provider health reporting.
-* Integrated Exchange provider with the platform authentication manager.
-
-### Changed
-
-* Authentication is now fully centralized through the Authentication Manager.
-* Providers no longer perform authentication directly.
-* Microsoft 365 providers now consume platform authentication sessions.
-* Standardized provider contracts across Active Directory, Microsoft Graph, and Exchange Online.
-* Improved provider health reporting consistency.
-* Standardized platform object type names.
-* Improved session lifecycle management and cache behavior.
-
-### Testing
-
-Milestone 6 completed successfully.
-
-Completed validation:
-
-* Phase 1 – Authentication Manager
-* Phase 2 – Live-capable MSAL Adapters
-* Phase 3 – Microsoft Graph Provider Foundation
-* Phase 4 – Exchange Online Provider Foundation
-
-All milestone validation tests passed.
+- Fixed WPF startup failure caused by declaring a PNG file as the `Window.Icon` in XAML.
+- Centralized HAP brand asset resolution.
+- Uses PNG branding inside the UI and ICO branding for the native window/taskbar icon.

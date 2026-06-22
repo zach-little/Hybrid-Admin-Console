@@ -1,79 +1,51 @@
-# Hybrid Admin Console
+# Project Status
 
-Version
+## Current Version
 
-v0.7.7
-
-Status
-
-Stable Development Build
-
-Current Branch
-
-feature/milestone7-service-layer
-
-Milestone
-
-Milestone 7 Complete
+v0.8.0
 
 ---
 
-## Completed
+## Completed Milestones
 
-### Foundation
-
-✓ Dependency Injection
-
-✓ Provider Registration
-
-✓ Service Registration
-
-✓ Domain Models
-
-✓ Directory Simulator
+- ✅ Milestone 1 — Foundation
+- ✅ Milestone 2 — Domain Model
+- ✅ Milestone 3 — Provider Architecture
+- ✅ Milestone 4 — Active Directory Provider
+- ✅ Milestone 5 — Microsoft 365 Cloud Foundation
+- ✅ Milestone 6 — Authentication Infrastructure
+- ✅ Milestone 7 — Service Layer & Vertical Integration
+- ✅ Milestone 8 — Runtime Platform
 
 ---
 
-### Vertical Services
+## Milestone 8 Summary
 
-✓ Active Directory
+The Runtime Platform introduces a production-quality startup experience that separates application configuration from application execution.
 
-✓ Exchange
+Major capabilities include:
 
-✓ Microsoft Graph
+- Runtime Profiles
+- Runtime Bootstrap Engine
+- Runtime Provider Modes (Live / Simulation / Hybrid)
+- Startup Diagnostics
+- Deployment Validation
+- Runtime Profile Wizard
+- Runtime Profile Manager
+- Runtime Home Dashboard
+- Runtime Summary
+- Runtime Status
+- Launch Workflow
+- Deployment Packaging
+- Runtime Branding
+- HAP application icon integration
 
-✓ Authentication
-
-✓ Aggregation Layer
-
----
-
-### User Interface
-
-✓ Dashboard
-
-✓ Detail Cards
-
-✓ Exchange Card
-
-✓ Microsoft Graph Card
-
-✓ Authentication Card
-
-✓ Aggregation Card
+The application now launches through a validated Runtime Profile rather than directly into the console, providing a significantly more polished and extensible architecture.
 
 ---
 
-### Testing
+## Current Status
 
-All cumulative milestone tests passing.
+Stable
 
-No known regressions.
-
----
-
-## Next
-
-Milestone 8
-
-Platform Expansion
+Ready for Milestone 9 development.

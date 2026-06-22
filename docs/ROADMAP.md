@@ -1,28 +1,40 @@
-# Current Status
+# Roadmap
 
 ## Current Version
 
-v0.7.7
+v0.8.0
 
-## Completed
+---
+
+# Completed
 
 - ✅ Milestone 1 — Foundation
 - ✅ Milestone 2 — Domain Model
 - ✅ Milestone 3 — Provider Architecture
 - ✅ Milestone 4 — Active Directory Provider
-- ✅ Milestone 5 — Microsoft Graph Foundation
+- ✅ Milestone 5 — Microsoft 365 Cloud Foundation
 - ✅ Milestone 6 — Authentication Infrastructure
 - ✅ Milestone 7 — Service Layer & Vertical Integration
+- ✅ Milestone 8 — Runtime Platform
 
 ---
 
-# Milestone 8 — Platform Expansion
+# Milestone 9 — Background Runtime Services
 
-The Hybrid Admin Console now has a complete service-oriented architecture.
+Focus:
 
-Future work focuses on expanding capabilities rather than restructuring existing code.
+- Background refresh engine
+- Runtime event bus
+- Provider refresh scheduling
+- Automatic cache invalidation
+- Live provider reconnection
+- Runtime notifications
+- Status synchronization
+- Long-running task framework
 
-Planned verticals include:
+---
+
+# Milestone 10 — Enterprise Features
 
 - Device Management
 - Licensing
@@ -33,16 +45,23 @@ Planned verticals include:
 - Exchange Enhancements
 - Azure Resource Management
 
-Each new capability will be implemented as an additional service-backed UI card using the established provider architecture.
+---
+
+# Milestone 11 — Extensibility
+
+- Plugin SDK
+- Third-party providers
+- Extension discovery
+- Provider marketplace
+- Runtime extension loading
 
 ---
 
-# Future
+# Milestone 12 — Production Release
 
-Milestone 9 — Background Refresh
-
-Milestone 10 — Performance Optimization
-
-Milestone 11 — Plugin Architecture
-
-Milestone 12 — Production Readiness
+- Installer
+- Auto-update
+- Telemetry (optional)
+- Enterprise deployment
+- Code signing
+- Documentation completion
