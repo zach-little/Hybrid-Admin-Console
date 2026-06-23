@@ -72,60 +72,20 @@ function Invoke-HybridServiceOperation {
         [object[]]$Arguments = @()
     )
 
-    if ($null -eq $Service) {
-        Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message 'Skipped provider operation because service was null.' -Level WARN -Data ([pscustomobject]@{
-            OperationNames = $OperationNames
-        })
-        return @()
-    }
+    if ($null -eq $Service) { return @() }
 
     foreach ($operationName in $OperationNames) {
         if ($Service.PSObject.Properties.Name -contains $operationName) {
             $operation = $Service.$operationName
             if ($operation -is [scriptblock]) {
-                try {
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Invoking $operationName."
-                    $result = @(& $operation @Arguments)
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Completed $operationName. Returned $($result.Count) item(s)." -Level SUCCESS
-                    return @($result)
-                }
-                catch {
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Failed $operationName - $($_.Exception.Message)" -Level ERROR -Data ([pscustomobject]@{
-                        Operation = $operationName
-                        Arguments = @($Arguments)
-                        ExceptionType = $_.Exception.GetType().FullName
-                        FullyQualifiedErrorId = $_.FullyQualifiedErrorId
-                        ScriptStackTrace = $_.ScriptStackTrace
-                    })
-                    throw
-                }
+                return @(& $operation @Arguments)
             }
             if ($null -ne $operation -and $operation.PSObject.Methods.Name -contains 'Invoke') {
-                try {
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Invoking $operationName."
-                    $result = @($operation.Invoke($Arguments))
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Completed $operationName. Returned $($result.Count) item(s)." -Level SUCCESS
-                    return @($result)
-                }
-                catch {
-                    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "Failed $operationName - $($_.Exception.Message)" -Level ERROR -Data ([pscustomobject]@{
-                        Operation = $operationName
-                        Arguments = @($Arguments)
-                        ExceptionType = $_.Exception.GetType().FullName
-                        FullyQualifiedErrorId = $_.FullyQualifiedErrorId
-                        ScriptStackTrace = $_.ScriptStackTrace
-                    })
-                    throw
-                }
+                return @($operation.Invoke($Arguments))
             }
         }
     }
 
-    Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message 'No matching provider operation found.' -Level WARN -Data ([pscustomobject]@{
-        RequestedOperations = $OperationNames
-        ServiceTypeNames = @($Service.PSObject.TypeNames)
-        ServiceProperties = @($Service.PSObject.Properties.Name)
-    })
     return @()
 }
 
@@ -409,11 +369,6 @@ function Search-HybridUser {
         $script:HybridUserServiceState.LastQuery = $Query
         $adUsers = Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('SearchUser','SearchADUser','Search') -Arguments @($Query)
         $graphUsers = Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('SearchUser','SearchGraphUser','Search') -Arguments @($Query)
-        Write-HybridUserHydrationDiagnostic -Stage 'Search' -Message "Search providers returned AD=$(@($adUsers).Count), Graph=$(@($graphUsers).Count) for query '$Query'." -Level INFO -Data ([pscustomobject]@{
-            Query = $Query
-            ActiveDirectoryResultCount = @($adUsers).Count
-            MicrosoftGraphResultCount = @($graphUsers).Count
-        })
 
         $primary = @($graphUsers | Select-Object -First 1)
         if ($primary.Count -eq 0) { $primary = @($adUsers | Select-Object -First 1) }
@@ -448,12 +403,6 @@ function Get-HybridUser {
     $adUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) | Select-Object -First 1)
     $graphUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
     $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) | Select-Object -First 1)
-    Write-HybridUserHydrationDiagnostic -Stage 'BaseHydration' -Message "Base hydration results AD=$(@($adUser).Count), Graph=$(@($graphUser).Count), Exchange=$(@($mailbox).Count) for identity '$Identity'." -Level INFO -Data ([pscustomobject]@{
-        Identity = $Identity
-        ActiveDirectoryResultCount = @($adUser).Count
-        MicrosoftGraphResultCount = @($graphUser).Count
-        ExchangeMailboxResultCount = @($mailbox).Count
-    })
 
     $adHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ActiveDirectory
     $graphHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.MicrosoftGraph
@@ -640,8 +589,6 @@ Export-ModuleMember -Function @(
     'Get-HybridUserServiceHealth',
     'Clear-HybridUserService'
 )
-
-
 
 
 

@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -420,7 +420,7 @@ $xaml = @"
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
@@ -1695,56 +1695,6 @@ function Reset-AuthenticationPanel {
     if ($controls.ContainsKey('AuthMethodsList') -and $null -ne $controls.AuthMethodsList) { $controls.AuthMethodsList.Items.Clear() }
 }
 
-function Write-HybridUiHydrationDiagnostic {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)][string]$Stage,
-        [Parameter(Mandatory=$true)][string]$Message,
-        [ValidateSet('INFO','WARN','ERROR','SUCCESS')][string]$Level = 'INFO',
-        [AllowNull()][object]$Data = $null
-    )
-
-    try {
-        $logRoot = Join-Path $script:RepositoryRoot 'logs'
-        if (-not (Test-Path -LiteralPath $logRoot)) { New-Item -Path $logRoot -ItemType Directory -Force | Out-Null }
-        $logPath = Join-Path $logRoot 'hydration-diagnostics.log'
-        $line = '[{0:u}] [{1}] [{2}] {3}' -f ([datetime]::UtcNow), $Level, $Stage, $Message
-        Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
-        if ($null -ne $Data) {
-            Add-Content -LiteralPath $logPath -Value ('    Data: ' + ($Data | ConvertTo-Json -Depth 6 -Compress)) -Encoding UTF8
-        }
-    }
-    catch { }
-}
-
-function Invoke-HybridUiHydrationStage {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)][string]$Stage,
-        [Parameter(Mandatory=$true)][scriptblock]$Action,
-        [AllowNull()][scriptblock]$OnFailure = $null
-    )
-
-    Write-HybridUiHydrationDiagnostic -Stage $Stage -Message 'Starting.'
-    try {
-        & $Action
-        Write-HybridUiHydrationDiagnostic -Stage $Stage -Message 'Completed.' -Level SUCCESS
-        return $true
-    }
-    catch {
-        $message = $_.Exception.Message
-        Write-HybridUiHydrationDiagnostic -Stage $Stage -Message $message -Level ERROR -Data ([pscustomobject]@{
-            ExceptionType = $_.Exception.GetType().FullName
-            FullyQualifiedErrorId = $_.FullyQualifiedErrorId
-            ScriptStackTrace = $_.ScriptStackTrace
-        })
-        if ($null -ne $OnFailure) {
-            try { & $OnFailure $_ } catch { }
-        }
-        return $false
-    }
-}
-
 function Reset-UserDisplay {
     $controls.ResultHeader.Text = 'Searching...'
     foreach ($name in @('DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','OrganizationalUnitText','ManagerText','RecipientTypeText','MailboxStatusText','ForwardingText','ExchangeSummaryText')) { $controls[$name].Text = '-' }
@@ -2001,69 +1951,18 @@ function Invoke-UserSearch {
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
-        Write-HybridUiHydrationDiagnostic -Stage 'Search' -Message "Base user selected for hydration: $effectiveQuery" -Level SUCCESS -Data ([pscustomobject]@{
-            DisplayName = $controls.DisplayNameText.Text
-            UserPrincipalName = $controls.UpnText.Text
-            SamAccountName = $controls.SamText.Text
-        })
-
-        [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action {
-            Update-DetailPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.ManagerText.Text = "AD details failed: $($ErrorRecord.Exception.Message)"
-            $controls.OrganizationalUnitText.Text = 'Unavailable'
-            if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('Groups unavailable') }
-            if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
-        })
-
-        [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action {
-            Update-AggregationPanel -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
-            $controls.AggregationStatusText.Text = 'Failed'
-        })
-
-        [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action {
-            Update-GraphPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)"
-        })
-
-        [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action {
-            Update-AuthenticationPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)"
-        })
-
-        [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action {
-            Update-ExchangePanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.ExchangeSummaryText.Text = "Exchange mailbox load failed: $($ErrorRecord.Exception.Message)"
-            $controls.RecipientTypeText.Text = 'Unavailable'
-            $controls.MailboxStatusText.Text = 'Unavailable'
-            $controls.ForwardingText.Text = 'Unavailable'
-            if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Mailbox delegations unavailable') }
-            if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
-        })
-
+        Update-AggregationPanel -User $user -Query $effectiveQuery
+        Update-GraphPanels -User $user -Query $effectiveQuery
+        Update-AuthenticationPanels -User $user -Query $effectiveQuery
+        Update-ExchangePanels -User $user -Query $effectiveQuery
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
-        $controls.StatusText.Text = "Search complete: $effectiveQuery | See logs\\hydration-diagnostics.log for provider details"
+        Update-DetailPanels -User $user -Query $effectiveQuery
+        $controls.StatusText.Text = "Search complete: $effectiveQuery | Aggregated profile loaded through HybridUserAggregationService"
         Update-HybridUiHealth
     }
     catch {
         $controls.ResultHeader.Text = 'Search failed'
         $controls.StatusText.Text = $_.Exception.Message
-        Write-HybridUiHydrationDiagnostic -Stage 'Search' -Message $_.Exception.Message -Level ERROR -Data ([pscustomobject]@{
-            Query = $effectiveQuery
-            ExceptionType = $_.Exception.GetType().FullName
-            FullyQualifiedErrorId = $_.FullyQualifiedErrorId
-            ScriptStackTrace = $_.ScriptStackTrace
-        })
     }
     finally {
         Set-HybridUiBusyState -Busy $false
@@ -2099,4 +1998,3 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
-
