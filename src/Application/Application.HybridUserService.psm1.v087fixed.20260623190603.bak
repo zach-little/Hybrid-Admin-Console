@@ -1,4 +1,4 @@
-#region Module Information
+﻿#region Module Information
 # Name: Application.HybridUserService
 # Purpose: Vertical-slice service layer for unified Hybrid.User search and enriched user details.
 # Dependencies: Provider services supplied by caller.
@@ -63,84 +63,6 @@ function Get-HybridObjectValue {
 
     return $Default
 }
-
-function Get-HybridActiveDirectoryStableIdentity {
-    [CmdletBinding()]
-    param(
-        [AllowNull()][object]$User,
-        [AllowNull()][object]$ActiveDirectoryUser
-    )
-
-    $candidateSources = @($ActiveDirectoryUser, $User)
-
-    foreach ($source in $candidateSources) {
-        $candidate = Get-HybridObjectValue -InputObject $source -Names @('DistinguishedName','DN') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $attributes = Get-HybridObjectValue -InputObject $source -Names @('Attributes') -Default $null
-        $candidate = Get-HybridObjectValue -InputObject $attributes -Names @('DistinguishedName','DN') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $source -Names @('ObjectGuid','ObjectGUID','Guid','Id') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $attributes -Names @('ObjectGuid','ObjectGUID','Guid') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $source -Names @('ObjectSid','SID','Sid') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $attributes -Names @('ObjectSid','SID','Sid') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $source -Names @('SamAccountName','SAMAccountName','sAMAccountName') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-
-        $candidate = Get-HybridObjectValue -InputObject $attributes -Names @('SamAccountName','SAMAccountName','sAMAccountName') -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) { return [string]$candidate }
-    }
-
-    $fallback = Get-HybridObjectValue -InputObject $User -Names @('UserPrincipalName','Identity','Mail') -Default $null
-    if (-not [string]::IsNullOrWhiteSpace([string]$fallback)) { return [string]$fallback }
-
-    return ''
-}
-
-function Add-HybridUserActiveDirectoryIdentityMetadata {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)][object]$User,
-        [AllowNull()][object]$ActiveDirectoryUser
-    )
-
-    $stableIdentity = Get-HybridActiveDirectoryStableIdentity -User $User -ActiveDirectoryUser $ActiveDirectoryUser
-    $distinguishedName = [string](Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('DistinguishedName','DN') -Default (Get-HybridObjectValue -InputObject $User -Names @('DistinguishedName','DN') -Default ''))
-    $samAccountName = [string](Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('SamAccountName','SAMAccountName','sAMAccountName') -Default (Get-HybridObjectValue -InputObject $User -Names @('SamAccountName','SAMAccountName','sAMAccountName') -Default ''))
-
-    if ($User.PSObject.Properties.Name -notcontains 'ActiveDirectoryIdentity') {
-        Add-Member -InputObject $User -NotePropertyName ActiveDirectoryIdentity -NotePropertyValue $stableIdentity
-    }
-    else {
-        $User.ActiveDirectoryIdentity = $stableIdentity
-    }
-
-    if ($User.PSObject.Properties.Name -notcontains 'ActiveDirectoryDistinguishedName') {
-        Add-Member -InputObject $User -NotePropertyName ActiveDirectoryDistinguishedName -NotePropertyValue $distinguishedName
-    }
-    else {
-        $User.ActiveDirectoryDistinguishedName = $distinguishedName
-    }
-
-    if ($User.PSObject.Properties.Name -notcontains 'ActiveDirectorySamAccountName') {
-        Add-Member -InputObject $User -NotePropertyName ActiveDirectorySamAccountName -NotePropertyValue $samAccountName
-    }
-    else {
-        $User.ActiveDirectorySamAccountName = $samAccountName
-    }
-
-    return $User
-}
-
 
 function Invoke-HybridServiceOperation {
     [CmdletBinding()]
@@ -312,10 +234,6 @@ function New-HybridCompositeUser {
     if ($null -eq $mail) { $mail = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Mail','EmailAddress') -Default $null }
 
     $distinguishedName = [string](Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('DistinguishedName','DN') -Default '')
-    if ([string]::IsNullOrWhiteSpace($distinguishedName)) {
-        $activeDirectoryAttributes = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Attributes') -Default $null
-        $distinguishedName = [string](Get-HybridObjectValue -InputObject $activeDirectoryAttributes -Names @('DistinguishedName','DN') -Default '')
-    }
     $manager = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Manager') -Default $null
 
     $user = [pscustomobject]@{
@@ -333,9 +251,6 @@ function New-HybridCompositeUser {
         Manager               = $manager
         ManagerDisplayName    = ConvertTo-HybridDisplayNameFromDn -DistinguishedName ([string]$manager)
         DistinguishedName     = $distinguishedName
-        ActiveDirectoryIdentity = Get-HybridActiveDirectoryStableIdentity -User $null -ActiveDirectoryUser $ActiveDirectoryUser
-        ActiveDirectoryDistinguishedName = $distinguishedName
-        ActiveDirectorySamAccountName = [string](Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('SamAccountName','SAMAccountName','sAMAccountName') -Default '')
         OrganizationalUnit    = ConvertTo-HybridUserOrganizationalUnit -DistinguishedName $distinguishedName
         Enabled               = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Enabled','AccountEnabled') -Default $null
         LockedOut             = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('LockedOut','IsLockedOut') -Default $null
@@ -357,51 +272,24 @@ function New-HybridCompositeUser {
     }
 
     $user.PSObject.TypeNames.Insert(0, 'Hybrid.User.VerticalSlice')
-    Add-HybridUserActiveDirectoryIdentityMetadata -User $user -ActiveDirectoryUser $ActiveDirectoryUser | Out-Null
     return $user
 }
-
 
 function Add-HybridUserDetails {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][object]$User)
 
-    $adIdentity = Get-HybridActiveDirectoryStableIdentity -User $User -ActiveDirectoryUser $null
-    if ([string]::IsNullOrWhiteSpace($adIdentity)) {
-        throw 'Unable to resolve a stable Active Directory identity for detail hydration.'
-    }
+    $identityCandidates = @(
+        (Get-HybridObjectValue -InputObject $User -Names @('UserPrincipalName') -Default $null),
+        (Get-HybridObjectValue -InputObject $User -Names @('SamAccountName') -Default $null),
+        (Get-HybridObjectValue -InputObject $User -Names @('Identity') -Default $null)
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
 
-    Write-HybridUserHydrationDiagnostic -Stage 'ActiveDirectoryDetails' -Message "Using stable Active Directory identity '$adIdentity' for detail hydration." -Level INFO -Data ([pscustomobject]@{
-        InputIdentity = Get-HybridObjectValue -InputObject $User -Names @('Identity','UserPrincipalName','Mail') -Default ''
-        ActiveDirectoryIdentity = $adIdentity
-        DistinguishedName = Get-HybridObjectValue -InputObject $User -Names @('DistinguishedName','ActiveDirectoryDistinguishedName') -Default ''
-        SamAccountName = Get-HybridObjectValue -InputObject $User -Names @('SamAccountName','ActiveDirectorySamAccountName') -Default ''
-    })
+    $identity = [string]($identityCandidates | Select-Object -First 1)
 
-    $groups = @()
-    $directReports = @()
-    $managerObject = $null
-
-    try {
-        $groups = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserGroups','GetGroups','GetADUserGroups') -Arguments @($adIdentity))
-    }
-    catch {
-        Write-HybridUserHydrationDiagnostic -Stage 'ActiveDirectoryDetails' -Message "Group hydration failed for stable AD identity '$adIdentity' - $($_.Exception.Message)" -Level ERROR
-    }
-
-    try {
-        $directReports = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserDirectReports','GetDirectReports','GetADUserDirectReports') -Arguments @($adIdentity))
-    }
-    catch {
-        Write-HybridUserHydrationDiagnostic -Stage 'ActiveDirectoryDetails' -Message "Direct report hydration failed for stable AD identity '$adIdentity' - $($_.Exception.Message)" -Level ERROR
-    }
-
-    try {
-        $managerObject = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserManager','GetManager','GetADUserManager') -Arguments @($adIdentity) | Select-Object -First 1)
-    }
-    catch {
-        Write-HybridUserHydrationDiagnostic -Stage 'ActiveDirectoryDetails' -Message "Manager hydration failed for stable AD identity '$adIdentity' - $($_.Exception.Message)" -Level ERROR
-    }
+    $groups = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserGroups','GetGroups','GetADUserGroups') -Arguments @($identity))
+    $directReports = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserDirectReports','GetDirectReports','GetADUserDirectReports') -Arguments @($identity))
+    $managerObject = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUserManager','GetManager','GetADUserManager') -Arguments @($identity) | Select-Object -First 1)
 
     if ($User.PSObject.Properties.Name -notcontains 'Groups') { Add-Member -InputObject $User -NotePropertyName Groups -NotePropertyValue @() }
     if ($User.PSObject.Properties.Name -notcontains 'DirectReports') { Add-Member -InputObject $User -NotePropertyName DirectReports -NotePropertyValue @() }
