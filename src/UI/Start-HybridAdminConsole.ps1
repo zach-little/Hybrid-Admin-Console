@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -326,9 +326,9 @@ $xaml = @"
                                         <StackPanel>
                                             <TextBlock Text="PROVIDERS" Style="{StaticResource SectionTitle}"/>
                                             <TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
-                                            <TextBlock Text="Active Directory        Ready" Foreground="#22C55E" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Microsoft Graph         Deferred" Foreground="#FACC15" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Exchange Online         Deferred" Foreground="#FACC15"/>
+                                            <TextBlock x:Name="RuntimeActiveDirectoryStatusText" Text="Active Directory        Validated on launch" Foreground="#FACC15" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                            <TextBlock x:Name="RuntimeMicrosoftGraphStatusText" Text="Microsoft Graph         Deferred" Foreground="#FACC15" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                            <TextBlock x:Name="RuntimeExchangeOnlineStatusText" Text="Exchange Online         Deferred" Foreground="#FACC15" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,14">
@@ -420,7 +420,7 @@ $xaml = @"
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation • Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
@@ -799,7 +799,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeActiveDirectoryStatusText','RuntimeMicrosoftGraphStatusText','RuntimeExchangeOnlineStatusText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -969,6 +969,170 @@ function Set-HybridLaunchButtonLabel {
     $controls.LaunchConsoleButton.ToolTip = if ($name -eq 'Console') { 'Launch Hybrid Admin Console' } else { "Launch $name" }
 }
 
+function Get-HybridUiObjectValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory=$true)][string[]]$Names,
+        [object]$Default = $null
+    )
+
+    if ($null -eq $InputObject) { return $Default }
+    foreach ($name in $Names) {
+        if ($InputObject.PSObject.Properties.Name -contains $name) {
+            $value = $InputObject.$name
+            if ($null -ne $value) { return $value }
+        }
+    }
+    return $Default
+}
+
+function Get-HybridActiveDirectoryUiReadiness {
+    [CmdletBinding()]
+    param()
+
+    $result = [pscustomobject]@{
+        PSTypeName  = 'Hybrid.UI.ActiveDirectoryReadiness'
+        Provider    = 'ActiveDirectory'
+        State       = 'Unavailable'
+        IsReady     = $false
+        IsDetected  = $false
+        Detail      = 'Active Directory provider has not reported runtime readiness.'
+        Source      = 'None'
+    }
+
+    try {
+        if (Get-Command Get-HybridADProviderHealth -ErrorAction SilentlyContinue) {
+            $health = Get-HybridADProviderHealth
+            $available = [bool](Get-HybridUiObjectValue -InputObject $health -Names @('Available','ProviderAvailable') -Default $false)
+            $connected = [bool](Get-HybridUiObjectValue -InputObject $health -Names @('Connected','ProviderConnected') -Default $false)
+            $initialized = [bool](Get-HybridUiObjectValue -InputObject $health -Names @('Initialized') -Default $false)
+            $lastError = Get-HybridUiObjectValue -InputObject $health -Names @('LastError','ErrorMessage') -Default $null
+
+            $result.Source = 'ProviderHealth'
+            if ($available -and $connected) {
+                $result.State = 'Connected'
+                $result.IsReady = $true
+                $result.IsDetected = $true
+                $result.Detail = 'Active Directory provider is connected in this console session.'
+                return $result
+            }
+
+            if ($available) {
+                $result.State = 'Available'
+                $result.IsReady = $true
+                $result.IsDetected = $true
+                $result.Detail = 'Active Directory provider is available in this console session.'
+                return $result
+            }
+
+            if ($initialized) {
+                $result.State = 'Unavailable'
+                $result.Detail = if ($lastError) { "Active Directory provider initialized but is unavailable: $lastError" } else { 'Active Directory provider initialized but is unavailable in this console session.' }
+                return $result
+            }
+        }
+
+        if (Get-Command Test-HybridActiveDirectoryProviderAvailable -ErrorAction SilentlyContinue) {
+            $detected = [bool](Test-HybridActiveDirectoryProviderAvailable)
+            if ($detected) {
+                $result.State = 'DetectedNotRegistered'
+                $result.IsDetected = $true
+                $result.Source = 'ModuleAvailability'
+                $result.Detail = 'Active Directory module is detected, but the live AD provider is not connected/registered for this console session.'
+                return $result
+            }
+        }
+    }
+    catch {
+        $result.State = 'Error'
+        $result.Detail = "Active Directory readiness check failed: $($_.Exception.Message)"
+        $result.Source = 'Exception'
+        return $result
+    }
+
+    return $result
+}
+
+function Set-HybridActiveDirectoryProviderStatusText {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][object]$Readiness)
+
+    if (-not $controls.ContainsKey('ProviderStatusText') -or $null -eq $controls.ProviderStatusText) { return }
+
+    switch ([string]$Readiness.State) {
+        'Connected' {
+            $controls.ProviderStatusText.Text = 'Provider health: AD connected'
+            if ($controls.ContainsKey('ProviderDot') -and $null -ne $controls.ProviderDot) { $controls.ProviderDot.Fill = '#22C55E' }
+        }
+        'Available' {
+            $controls.ProviderStatusText.Text = 'Provider health: AD available'
+            if ($controls.ContainsKey('ProviderDot') -and $null -ne $controls.ProviderDot) { $controls.ProviderDot.Fill = '#22C55E' }
+        }
+        'DetectedNotRegistered' {
+            $controls.ProviderStatusText.Text = 'Provider health: AD detected, not connected to this console session'
+            if ($controls.ContainsKey('ProviderDot') -and $null -ne $controls.ProviderDot) { $controls.ProviderDot.Fill = '#FACC15' }
+        }
+        'Error' {
+            $controls.ProviderStatusText.Text = 'Provider health: AD readiness error'
+            if ($controls.ContainsKey('ProviderDot') -and $null -ne $controls.ProviderDot) { $controls.ProviderDot.Fill = '#EF4444' }
+        }
+        default {
+            $controls.ProviderStatusText.Text = 'Provider health: AD unavailable'
+            if ($controls.ContainsKey('ProviderDot') -and $null -ne $controls.ProviderDot) { $controls.ProviderDot.Fill = '#F97316' }
+        }
+    }
+}
+
+function Update-HybridRuntimeProviderStatus {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Profile = $null)
+
+    if (-not $controls.ContainsKey('RuntimeActiveDirectoryStatusText') -or $null -eq $controls.RuntimeActiveDirectoryStatusText) { return }
+
+    $enabledProviders = @()
+    if ($null -ne $Profile -and $Profile.PSObject.Properties.Name -contains 'EnabledProviders') {
+        $enabledProviders = @($Profile.EnabledProviders)
+    }
+
+    $adEnabled = ($enabledProviders.Count -eq 0 -or @($enabledProviders | Where-Object { [string]$_ -eq 'ActiveDirectory' }).Count -gt 0)
+    if (-not $adEnabled) {
+        $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Disabled by profile'
+        $controls.RuntimeActiveDirectoryStatusText.Foreground = '#94A3B8'
+        return
+    }
+
+    $readiness = Get-HybridActiveDirectoryUiReadiness
+    switch ([string]$readiness.State) {
+        'Connected' {
+            $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Connected'
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = '#22C55E'
+        }
+        'Available' {
+            $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Available'
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = '#22C55E'
+        }
+        'DetectedNotRegistered' {
+            $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Detected / not connected'
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = '#FACC15'
+        }
+        'Error' {
+            $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Readiness error'
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = '#EF4444'
+        }
+        default {
+            $controls.RuntimeActiveDirectoryStatusText.Text = 'Active Directory        Unavailable'
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = '#F97316'
+        }
+    }
+
+    if ($controls.ContainsKey('RuntimeDiagnosticsText') -and $null -ne $controls.RuntimeDiagnosticsText) {
+        $existing = [string]$controls.RuntimeDiagnosticsText.Text
+        if ($existing -notmatch 'AD readiness:') {
+            $controls.RuntimeDiagnosticsText.Text = ($existing.TrimEnd() + ' AD readiness: ' + [string]$readiness.Detail).Trim()
+        }
+    }
+}
+
 function Update-HybridStartupView {
     $runtime = $script:HybridRuntime
     if ($null -eq $runtime -and (Get-Command Get-HybridRuntime -ErrorAction SilentlyContinue)) { $runtime = Get-HybridRuntime }
@@ -981,6 +1145,7 @@ function Update-HybridStartupView {
         $controls.RuntimeModeText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.RuntimeMode)) { '-' } else { $selectedProfile.RuntimeMode }
         $providers = if ($selectedProfile.EnabledProviderCount -gt 0) { (@($selectedProfile.EnabledProviders) -join ', ') } else { 'No enabled providers declared.' }
         $controls.RuntimeProviderSummaryText.Text = ('{0} enabled provider(s): {1}' -f $selectedProfile.EnabledProviderCount, $providers)
+        Update-HybridRuntimeProviderStatus -Profile $selectedProfile
         $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { 'Profile metadata is valid. Full runtime diagnostics run during launch.' } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
         $profileBadges = @()
         if ($selectedProfile.IsDefault) { $profileBadges += 'Default' }
@@ -1018,6 +1183,7 @@ function Update-HybridStartupView {
         }) -join ' | '
     }
     $controls.RuntimeProviderSummaryText.Text = $providerSummary
+    Update-HybridRuntimeProviderStatus -Profile $null
 
     $diagSummary = 'Diagnostics unavailable.'
     if ($null -ne $runtime.Diagnostics -and $null -ne $runtime.Diagnostics.Summary) {
@@ -1673,11 +1839,8 @@ function Reset-UserDisplay {
 
 function Update-HybridUiHealth {
     try {
-        $health = Get-HybridUserServiceHealth
-        $adAvailable = $false
-        if ($null -ne $health.Providers -and $health.Providers.ContainsKey('ActiveDirectory')) { $adAvailable = [bool]$health.Providers.ActiveDirectory }
-        $controls.ProviderStatusText.Text = if ($adAvailable) { 'Provider health: AD connected' } else { 'Provider health: AD unavailable' }
-        $controls.ProviderDot.Fill = if ($adAvailable) { '#22C55E' } else { '#F97316' }
+        $readiness = Get-HybridActiveDirectoryUiReadiness
+        Set-HybridActiveDirectoryProviderStatusText -Readiness $readiness
     }
     catch {
         $controls.ProviderStatusText.Text = 'Provider health: error'
@@ -1942,3 +2105,4 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
+
