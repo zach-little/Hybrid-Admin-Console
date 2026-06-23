@@ -1,3 +1,10 @@
+## v0.8.5 — Active Directory Service Runtime Binding Hotfix
+
+- Aligns launch-page AD status with registered provider health.
+- Initializes live AD through the service/provider path instead of leaving it deferred.
+- Adds persistent runtime and AD diagnostic logs.
+- Fixes strict-mode theme and legacy service locator noise.
+
 
 ## v0.8.2 — Milestone 8.2 Branding & Theme System
 
@@ -10,14 +17,6 @@
 - Added Milestone 8.2 branding/theme validation tests.
 
 # Changelog
-
-## v0.8.3 — Active Directory Runtime Readiness Hotfix
-
-- Added an Active Directory runtime readiness helper that imports and validates the ActiveDirectory module in the current console session.
-- Updated AD command invocation to run readiness validation before live AD operations.
-- Updated AD provider health to re-check runtime readiness after launch.
-- Added structured ActiveDirectoryRuntimeUnavailable errors for clearer live-environment diagnostics.
-- Added Milestone 8.3 AD runtime readiness validation tests.
 
 ## v0.8.2 - Runtime Platform Hardening
 

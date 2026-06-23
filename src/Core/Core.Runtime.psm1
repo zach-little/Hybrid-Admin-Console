@@ -87,6 +87,32 @@ function Write-HybridRuntimeLog {
     }
 }
 
+
+function Write-HybridRuntimePersistentDiagnostic {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$RootPath,
+        [string]$Level = 'Information',
+        [string]$Message = '',
+        [AllowNull()][object]$Data = $null
+    )
+
+    try {
+        $logRoot = Join-Path $RootPath 'logs'
+        if (-not (Test-Path -LiteralPath $logRoot)) { New-Item -Path $logRoot -ItemType Directory -Force | Out-Null }
+        $logPath = Join-Path $logRoot 'runtime-diagnostics.log'
+        $entry = [ordered]@{
+            TimestampUtc = ([datetime]::UtcNow.ToString('o'))
+            Level = $Level
+            Component = 'Core.Runtime'
+            Message = $Message
+            Data = $Data
+        }
+        ($entry | ConvertTo-Json -Depth 10 -Compress) | Add-Content -LiteralPath $logPath -Encoding UTF8
+    }
+    catch { }
+}
+
 function New-HybridRuntimeBootstrapRecord {
     param(
         [string]$Name,
@@ -376,6 +402,53 @@ function Initialize-HybridRuntimeSimulationProviders {
     return $providers
 }
 
+
+function Initialize-HybridRuntimeLiveActiveDirectoryProvider {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$RootPath,
+        [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
+        [Parameter(Mandatory=$true)][object]$ProviderSettings,
+        [Parameter(Mandatory=$true)][object]$Context,
+        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
+    )
+
+    $providerName = [string]$ProviderSettings.Name
+    $diagnosticPath = Join-Path (Join-Path $RootPath 'logs') 'ad-runtime-diagnostics.log'
+    try {
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.ProviderBase.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Domain\Hybrid.Models.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Infrastructure\Infrastructure.ActiveDirectory.psm1' -Required | Out-Null
+
+        $service = Initialize-HybridActiveDirectoryProvider -Context $Context -RuntimeDiagnosticsPath $diagnosticPath
+        $health = $null
+        if ($null -ne $service) {
+            $health = @(& $service.GetHealth | Select-Object -First 1)
+        }
+        if ($health -is [array]) { $health = $health | Select-Object -First 1 }
+
+        $status = 'Unavailable'
+        $message = 'Active Directory provider initialized, but live connectivity is unavailable. Review logs\ad-runtime-diagnostics.log.'
+        if ($null -ne $health -and [bool]$health.Available -and [bool]$health.Connected) {
+            $status = 'Connected'
+            $message = 'Active Directory provider connected using the current HAP runtime session.'
+        }
+        elseif ($null -ne $health -and $health.PSObject.Properties.Name -contains 'LastError' -and -not [string]::IsNullOrWhiteSpace([string]$health.LastError)) {
+            $message = 'Active Directory provider unavailable: ' + [string]$health.LastError
+        }
+
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status $status -Service $service -Message $message | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status $status -Message $message)) | Out-Null
+        Write-HybridRuntimePersistentDiagnostic -RootPath $RootPath -Level $(if ($status -eq 'Connected') { 'Information' } else { 'Warning' }) -Message 'Live Active Directory runtime binding completed.' -Data @{ Status = $status; Message = $message; Health = $health }
+    }
+    catch {
+        $message = 'Active Directory provider failed during runtime binding: ' + $_.Exception.Message
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Failed' -Service $null -Message $message | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Failed' -Message $message)) | Out-Null
+        Write-HybridRuntimePersistentDiagnostic -RootPath $RootPath -Level Error -Message $message -Data @{ Error = $_.Exception.Message; Provider = $providerName }
+    }
+}
+
 function Register-HybridRuntimeDeferredProvider {
     param(
         [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
@@ -460,7 +533,7 @@ function Initialize-HybridRuntime {
     }
 
     $context = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeContext' -Properties @{
-        Version = 'v0.8.3'
+        Version = 'v0.8.5'
         RootPath = $resolvedRoot
         Paths = @{ Root = $resolvedRoot }
         Profile = $null
@@ -525,6 +598,9 @@ function Initialize-HybridRuntime {
                     Register-HybridRuntimeProviderRecord -Registry $providerRegistry -Name ([string]$provider.Name) -Mode 'Simulation' -Enabled $true -Required ([bool]$provider.Required) -Authentication ([string]$provider.Authentication) -Status 'Failed' -Service $null -Message 'Simulation provider requested but DirectorySimulator is not enabled.' | Out-Null
                     $records.Add((New-HybridRuntimeBootstrapRecord -Name ([string]$provider.Name) -Kind 'Provider' -Status 'Failed' -Message 'Simulation provider requested but DirectorySimulator is not enabled.')) | Out-Null
                 }
+            }
+            elseif ([string]$provider.Name -eq 'ActiveDirectory' -and [string]$provider.Mode -eq 'Live') {
+                Initialize-HybridRuntimeLiveActiveDirectoryProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Context $context -Records $records
             }
             else {
                 Register-HybridRuntimeDeferredProvider -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records
