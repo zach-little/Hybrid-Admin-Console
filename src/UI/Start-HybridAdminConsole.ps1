@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -1614,7 +1614,7 @@ function Get-DisplayValue {
                 $value = $attributes[$name]
                 if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
             }
-            elseif ($attributes.PSObject.Properties.Name -contains $name) {
+            elseif ($null -ne $attributes -and $attributes.PSObject.Properties.Name -contains $name) {
                 $value = $attributes.$name
                 if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
             }
@@ -1654,9 +1654,7 @@ function Resolve-HybridUserOrganizationalUnit {
     if ([string]::IsNullOrWhiteSpace($dn) -or $dn -eq '-') { return '-' }
 
     $ouParts = @($dn.Split(',') | Where-Object { $_ -like 'OU=*' })
-    if ($ouParts.Count -gt 0) {
-        return (($ouParts | ForEach-Object { $_.Substring(3) }) -join ' / ')
-    }
+    if ($ouParts.Count -gt 0) { return (($ouParts | ForEach-Object { $_.Substring(3) }) -join ' / ') }
 
     return '-'
 }
@@ -2047,8 +2045,7 @@ function Invoke-UserSearch {
         $controls.CompanyText.Text = Get-DisplayValue -InputObject $user -Names @('Company')
         $controls.OfficeText.Text = Get-DisplayValue -InputObject $user -Names @('Office')
         $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $user -Names @('EmployeeId','EmployeeID')
-        $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $user
-        $controls.OrganizationalUnitText.Text = Resolve-HybridUserOrganizationalUnit -User $user
+        $controls.DistinguishedNameText.Text = Get-DisplayValue -InputObject $user -Names @('DistinguishedName')
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
