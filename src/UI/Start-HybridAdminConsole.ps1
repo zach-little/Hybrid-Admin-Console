@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -1608,8 +1608,57 @@ function Get-DisplayValue {
             $value = $InputObject.$name
             if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
         }
+        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $InputObject.Attributes) {
+            $attributes = $InputObject.Attributes
+            if ($attributes -is [System.Collections.IDictionary] -and $attributes.Contains($name)) {
+                $value = $attributes[$name]
+                if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
+            }
+            elseif ($attributes.PSObject.Properties.Name -contains $name) {
+                $value = $attributes.$name
+                if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
+            }
+        }
     }
     return $Default
+}
+
+function Format-HybridGroupDisplay {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Group)
+
+    if ($null -eq $Group) { return '-' }
+    if ($Group -is [string]) { return $Group }
+
+    $name = Get-DisplayValue -InputObject $Group -Names @('Name','DisplayName','SamAccountName','Identity','DistinguishedName','Id') -Default ''
+    if (-not [string]::IsNullOrWhiteSpace($name)) { return $name }
+
+    return [string]$Group
+}
+
+function Resolve-HybridUserDistinguishedName {
+    [CmdletBinding()]
+    param([AllowNull()][object]$User)
+
+    return Get-DisplayValue -InputObject $User -Names @('DistinguishedName','DN') -Default '-'
+}
+
+function Resolve-HybridUserOrganizationalUnit {
+    [CmdletBinding()]
+    param([AllowNull()][object]$User)
+
+    $explicitOu = Get-DisplayValue -InputObject $User -Names @('OrganizationalUnit','OU') -Default ''
+    if (-not [string]::IsNullOrWhiteSpace($explicitOu) -and $explicitOu -ne '-') { return $explicitOu }
+
+    $dn = Resolve-HybridUserDistinguishedName -User $User
+    if ([string]::IsNullOrWhiteSpace($dn) -or $dn -eq '-') { return '-' }
+
+    $ouParts = @($dn.Split(',') | Where-Object { $_ -like 'OU=*' })
+    if ($ouParts.Count -gt 0) {
+        return (($ouParts | ForEach-Object { $_.Substring(3) }) -join ' / ')
+    }
+
+    return '-'
 }
 
 
@@ -1807,11 +1856,12 @@ function Update-DetailPanels {
 
     $managerValue = Get-DisplayValue -InputObject $details -Names @('ManagerDisplayName','ManagerName','Manager')
     $controls.ManagerText.Text = $managerValue
-    $controls.OrganizationalUnitText.Text = Get-DisplayValue -InputObject $details -Names @('OrganizationalUnit','OU')
+    $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $details
+    $controls.OrganizationalUnitText.Text = Resolve-HybridUserOrganizationalUnit -User $details
 
     $groups = @()
     if ($details.PSObject.Properties.Name -contains 'Groups' -and $null -ne $details.Groups) { $groups = @($details.Groups) }
-    foreach ($group in $groups) { [void]$controls.GroupsList.Items.Add([string]$group) }
+    foreach ($group in $groups) { [void]$controls.GroupsList.Items.Add((Format-HybridGroupDisplay -Group $group)) }
     if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('No groups loaded') }
 
     $reports = @()
@@ -1955,7 +2005,7 @@ function Update-ExchangePanels {
 
     $distributionGroups = @()
     if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'DistributionGroups') { $distributionGroups = @($mailboxDetails.DistributionGroups) }
-    foreach ($group in $distributionGroups) { [void]$controls.DistributionGroupsList.Items.Add([string]$group) }
+    foreach ($group in $distributionGroups) { [void]$controls.DistributionGroupsList.Items.Add((Format-HybridGroupDisplay -Group $group)) }
     if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('No distribution groups loaded') }
 }
 
@@ -1997,7 +2047,8 @@ function Invoke-UserSearch {
         $controls.CompanyText.Text = Get-DisplayValue -InputObject $user -Names @('Company')
         $controls.OfficeText.Text = Get-DisplayValue -InputObject $user -Names @('Office')
         $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $user -Names @('EmployeeId','EmployeeID')
-        $controls.DistinguishedNameText.Text = Get-DisplayValue -InputObject $user -Names @('DistinguishedName')
+        $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $user
+        $controls.OrganizationalUnitText.Text = Resolve-HybridUserOrganizationalUnit -User $user
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
