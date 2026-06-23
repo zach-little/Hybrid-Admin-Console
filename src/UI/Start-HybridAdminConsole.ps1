@@ -306,14 +306,14 @@ $xaml = @"
                                             <StackPanel Margin="0,0,12,12"><TextBlock Text="Cloud" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeCloudText" Text="-" Foreground="#A78BFA" FontWeight="SemiBold"/></StackPanel>
                                             <StackPanel Margin="0,0,12,12"><TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeModeText" Text="-" Foreground="#22C55E" FontWeight="SemiBold"/></StackPanel>
                                             <StackPanel Margin="0,0,12,0"><TextBlock Text="Schema" Style="{StaticResource LabelText}"/><TextBlock Text="1.0" Foreground="#CBD5E1"/></StackPanel>
-                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="HAP Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="v0.8.1" Foreground="#CBD5E1"/></StackPanel>
+                                            <StackPanel Margin="0,0,12,0"><TextBlock Text="HAP Version" Style="{StaticResource LabelText}"/><TextBlock x:Name="RuntimeVersionText" Text="v0.8.3" Foreground="#CBD5E1"/></StackPanel>
                                         </UniformGrid>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Margin="18,0,0,0">
                                         <TextBlock Text="COMPATIBILITY" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
                                         <TextBlock Text="Compatible" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,12,0,6"/>
                                         <TextBlock Text="Min Supported" Style="{StaticResource LabelText}"/><TextBlock Text="v0.7.0" Foreground="#CBD5E1" Margin="0,2,0,8"/>
-                                        <TextBlock Text="Max Tested" Style="{StaticResource LabelText}"/><TextBlock Text="v0.8.1" Foreground="#CBD5E1"/>
+                                        <TextBlock Text="Max Tested" Style="{StaticResource LabelText}"/><TextBlock Text="v0.8.3" Foreground="#CBD5E1"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -975,7 +975,7 @@ function Update-HybridStartupView {
 
     $selectedProfile = $script:SelectedRuntimeProfileSummary
     if ($null -ne $selectedProfile) {
-        $controls.RuntimeVersionText.Text = 'v0.8.1'
+        $controls.RuntimeVersionText.Text = 'v0.8.3'
         $controls.RuntimeProfileText.Text = $selectedProfile.ProfileName
         $controls.RuntimeCloudText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.CloudEnvironment)) { '-' } else { $selectedProfile.CloudEnvironment }
         $controls.RuntimeModeText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.RuntimeMode)) { '-' } else { $selectedProfile.RuntimeMode }
@@ -994,7 +994,7 @@ function Update-HybridStartupView {
     }
 
     if ($null -eq $runtime) {
-        $controls.RuntimeVersionText.Text = 'v0.8.1'
+        $controls.RuntimeVersionText.Text = 'v0.8.3'
         $controls.RuntimeProfileText.Text = 'Legacy startup'
         $controls.RuntimeCloudText.Text = 'Unknown'
         $controls.RuntimeModeText.Text = if ($Mock) { 'Simulation' } else { 'Legacy' }
@@ -1005,7 +1005,7 @@ function Update-HybridStartupView {
         return
     }
 
-    $controls.RuntimeVersionText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('Version') -Default 'v0.8.1'
+    $controls.RuntimeVersionText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('Version') -Default 'v0.8.3'
     $controls.RuntimeProfileText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime.Profile -Names @('ProfileName','Name') -Default 'Simulation'
     $controls.RuntimeCloudText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('CloudEnvironment') -Default 'Commercial'
     $controls.RuntimeModeText.Text = Get-HybridRuntimeDisplayValue -InputObject $runtime -Names @('RuntimeMode','Mode') -Default 'Simulation'

@@ -1,5 +1,5 @@
 # Version
 
-Current Version: v0.8.2
+Current Version: v0.8.3
 
-Milestone 8.2 — Branding & Theme System complete.
+Milestone 8.3 — Active Directory Runtime Readiness hotfix complete.

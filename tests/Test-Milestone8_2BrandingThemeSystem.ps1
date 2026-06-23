@@ -39,8 +39,8 @@ Assert-Pass -Condition ($themeText -match 'WindowTitle') -Message 'Theme model e
 Assert-Pass -Condition ($themeText -match 'SplashPath') -Message 'Theme model exposes splash path'
 Assert-Pass -Condition ($themeText -match 'profiles''?\s*\$safeOrg') -Message 'Theme module stores packages under profile organization folder'
 
-Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.2'") -Message 'Runtime context reports branding/theme version'
-Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.2") -Message 'Runtime profile manager reports branding/theme version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.3'") -Message 'Runtime context reports AD readiness hotfix version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.3") -Message 'Runtime profile manager reports AD readiness hotfix version'
 
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('hap-theme-test-' + [Guid]::NewGuid().ToString('N'))
 New-Item -Path (Join-Path $testRoot 'profiles\Runtime') -ItemType Directory -Force | Out-Null

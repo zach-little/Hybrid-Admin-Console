@@ -460,7 +460,7 @@ function Initialize-HybridRuntime {
     }
 
     $context = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeContext' -Properties @{
-        Version = 'v0.8.2'
+        Version = 'v0.8.3'
         RootPath = $resolvedRoot
         Paths = @{ Root = $resolvedRoot }
         Profile = $null

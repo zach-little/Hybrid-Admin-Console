@@ -66,8 +66,8 @@ Assert-Pass -Condition ($coreThemeText -match 'SurfaceColor') -Message 'Core the
 Assert-Pass -Condition ($coreThemeText -match 'PanelColor') -Message 'Core theme model exposes panel color'
 Assert-Pass -Condition ($coreThemeText -match 'BorderColor') -Message 'Core theme model exposes border color'
 
-Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.2'") -Message 'Runtime context reports branding/theme version'
-Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.2") -Message 'Runtime profile manager reports branding/theme version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $runtimeModule -Raw) -match "Version = 'v0.8.3'") -Message 'Runtime context reports AD readiness hotfix version'
+Assert-Pass -Condition ((Get-Content -LiteralPath $profileManagerModule -Raw) -match "v0.8.3") -Message 'Runtime profile manager reports AD readiness hotfix version'
 
 Import-Module $themeModule -Force
 $theme = Resolve-HybridUiTheme -RepositoryRoot $root -ProfileName 'Simulation'

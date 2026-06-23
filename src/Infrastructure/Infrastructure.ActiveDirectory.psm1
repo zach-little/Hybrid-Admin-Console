@@ -27,7 +27,8 @@ $script:ProviderCapabilities = @(
     'StructuredErrors',
     'ProviderHealth',
     'CapabilityDiscovery',
-    'Lifecycle'
+    'Lifecycle',
+    'RuntimeReadiness'
 )
 
 $script:ProviderState = if (Get-Command New-HybridProviderState -ErrorAction SilentlyContinue) {
@@ -64,6 +65,8 @@ $script:State = @{
     SearchBase        = ''
     Credential        = $null
     ProviderAvailable = $false
+    RuntimeReady      = $false
+    LastReadinessError = $null
     CommandHistory    = @()
     Cache             = @{
         Users         = @{}
@@ -107,8 +110,49 @@ function Import-HybridActiveDirectoryModule {
         return $true
     }
     catch {
-        Write-HybridADLog -Level Warning -Message 'ActiveDirectory module is not available.' -Exception $_
+        Write-HybridADLog -Level Warning -Message 'ActiveDirectory module is not available in this runtime session.' -Exception $_
         return $false
+    }
+}
+
+function Initialize-HybridActiveDirectoryRuntime {
+    <#
+    .SYNOPSIS
+    Ensures the live ActiveDirectory runtime is usable in the current PowerShell session.
+
+    .DESCRIPTION
+    Runtime profile diagnostics and live console operations may execute in different PowerShell
+    sessions. This readiness gate imports the ActiveDirectory module and verifies the commands
+    required by the provider before every live AD command path.
+    #>
+    [CmdletBinding()]
+    param()
+
+    try {
+        if (-not (Import-HybridActiveDirectoryModule)) {
+            throw 'ActiveDirectory module could not be imported in this runtime session. Install RSAT Active Directory tools or launch HAP from an administrative/domain-capable workstation.'
+        }
+
+        foreach ($requiredCommand in @('Get-ADUser','Get-ADPrincipalGroupMembership','Get-ADOrganizationalUnit')) {
+            if (-not (Get-Command -Name $requiredCommand -ErrorAction SilentlyContinue)) {
+                throw "ActiveDirectory module loaded, but required command '$requiredCommand' is unavailable in this runtime session."
+            }
+        }
+
+        $script:State.ProviderAvailable = $true
+        $script:State.RuntimeReady = $true
+        $script:State.LastReadinessError = $null
+        $script:ProviderState.Available = $true
+        $script:ProviderState.Connected = $true
+        $script:ProviderState.LastError = $null
+        return $true
+    }
+    catch {
+        $script:State.RuntimeReady = $false
+        $script:State.LastReadinessError = $_.Exception.Message
+        $script:ProviderState.LastError = 'ActiveDirectoryRuntimeUnavailable'
+        Write-HybridADLog -Level Warning -Message "Active Directory runtime readiness failed: $($_.Exception.Message)" -Exception $_
+        throw (New-HybridADProviderException -Code 'ActiveDirectoryRuntimeUnavailable' -Message $_.Exception.Message -InnerException $_.Exception)
     }
 }
 
@@ -156,6 +200,8 @@ function Assert-HybridADProviderAvailable {
     if (-not $script:State.ProviderAvailable) {
         throw 'Active Directory provider is not available. Install RSAT Active Directory tools or initialize without -NoNet on a domain-joined/admin workstation.'
     }
+
+    Initialize-HybridActiveDirectoryRuntime | Out-Null
 }
 
 function ConvertTo-HybridArrayValue {
@@ -204,6 +250,7 @@ function Invoke-HybridADCommand {
     Write-HybridADLog -Level Debug -Message "AD operation '$Operation' starting."
 
     try {
+        Initialize-HybridActiveDirectoryRuntime | Out-Null
         $command = Get-Command $CommandName -ErrorAction Stop
         $result = & $command @Parameters
         $elapsed = [int]((Get-Date) - $started).TotalMilliseconds
@@ -299,6 +346,17 @@ function Get-HybridADProviderHealth {
     [CmdletBinding()]
     param()
 
+    if ($script:State.Initialized -and $script:State.ProviderAvailable) {
+        try {
+            Initialize-HybridActiveDirectoryRuntime | Out-Null
+        }
+        catch {
+            $script:State.ProviderAvailable = $false
+            $script:ProviderState.Available = $false
+            $script:ProviderState.Connected = $false
+        }
+    }
+
     $script:ProviderState.Available = [bool]$script:State.ProviderAvailable
     $script:ProviderState.Connected = [bool]$script:State.ProviderAvailable
     $script:ProviderState.Cache = $script:State.Cache
@@ -316,6 +374,8 @@ function Get-HybridADProviderHealth {
             Initialized    = [bool]$script:State.Initialized
             Available      = [bool]$script:State.ProviderAvailable
             Connected      = [bool]$script:State.ProviderAvailable
+            RuntimeReady   = [bool]$script:State.RuntimeReady
+            LastReadinessError = $script:State.LastReadinessError
             LastError      = $script:ProviderState.LastError
             Version        = [string]$script:ProviderState.Version
             Capabilities   = @($script:ProviderState.Capabilities)
@@ -333,13 +393,18 @@ function Get-HybridADProviderHealth {
 function Test-HybridActiveDirectoryProviderAvailable {
     <#
     .SYNOPSIS
-    Returns true when the ActiveDirectory PowerShell module is available.
+    Returns true when the ActiveDirectory module can be imported and used in this runtime session.
     #>
     [CmdletBinding()]
     param()
 
-    if (Get-Module -Name ActiveDirectory) { return $true }
-    return $null -ne (Get-Module -ListAvailable -Name ActiveDirectory)
+    try {
+        Initialize-HybridActiveDirectoryRuntime | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
 }
 
 function Initialize-HybridActiveDirectoryProvider {
@@ -366,15 +431,17 @@ function Initialize-HybridActiveDirectoryProvider {
     $script:State.SearchBase = $SearchBase
     $script:State.Credential = $Credential
     $script:State.ProviderAvailable = $false
+    $script:State.RuntimeReady = $false
+    $script:State.LastReadinessError = $null
     Clear-HybridADProviderCache
 
     if (-not $NoNet) {
-        $script:State.ProviderAvailable = Import-HybridActiveDirectoryModule
+        $script:State.ProviderAvailable = Test-HybridActiveDirectoryProviderAvailable
     }
 
     $script:ProviderState.Cache = $script:State.Cache
     if (Get-Command Initialize-HybridProvider -ErrorAction SilentlyContinue) {
-        Initialize-HybridProvider -ProviderState $script:ProviderState -Available ([bool]$script:State.ProviderAvailable) -Connected ([bool]$script:State.ProviderAvailable) -Version '0.4.0' | Out-Null
+        Initialize-HybridProvider -ProviderState $script:ProviderState -Available ([bool]$script:State.ProviderAvailable) -Connected ([bool]$script:State.ProviderAvailable) -Version '0.8.3' | Out-Null
     }
     else {
         $script:ProviderState.Initialized = $true
@@ -887,6 +954,7 @@ function Move-HybridADUserOU {
 Export-ModuleMember -Function @(
     'Initialize-HybridActiveDirectoryProvider',
     'Test-HybridActiveDirectoryProviderAvailable',
+    'Initialize-HybridActiveDirectoryRuntime',
     'Get-HybridADProviderHealth',
     'Test-HybridADProviderCapability',
     'Get-HybridADProviderCapabilities',
