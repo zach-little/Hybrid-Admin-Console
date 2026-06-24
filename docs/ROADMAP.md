@@ -2,11 +2,11 @@
 
 ## Current Version
 
-v0.8.3
+v0.8.8
 
 ---
 
-# Completed
+## Completed
 
 - ✅ Milestone 1 — Foundation
 - ✅ Milestone 2 — Domain Model
@@ -17,10 +17,43 @@ v0.8.3
 - ✅ Milestone 7 — Service Layer & Vertical Integration
 - ✅ Milestone 8 — Runtime Platform
 - ✅ Milestone 8.1 — Runtime Platform Hardening
+- ✅ Milestone 8.2 — Branding & Theme System
 
 ---
 
-# Milestone 9 — Background Runtime Services
+## Current Pre-Milestone 9 Track
+
+### v0.8.9 — Live Runtime UX & Vertical Stabilization
+
+This stabilization release should be completed before Milestone 9.
+
+Primary goals:
+
+- Fix Active Directory Distinguished Name display.
+- Fix Active Directory Organizational Unit display.
+- Ensure AD detail display reads from the actual service-layer object shape returned in live environments.
+- Preserve friendly group display formatting.
+- Separate hybrid AD mail attributes from real Exchange Online provider data.
+- Prevent Exchange from showing as loaded unless the Exchange Online provider actually returned mailbox data.
+- Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, or unavailable.
+- Add a Back/Start button to return from the main console to Runtime Home/Profile selection.
+- Add a bottom-center search progress bar to the left of the active profile indicator.
+- Continue writing persistent runtime, AD, and hydration diagnostics.
+- Remove leftover backup/repair artifacts before tagging.
+
+Suggested validation tests:
+
+- `Test-Milestone8_8GroupOuDisplay.ps1`
+- New `Test-Milestone8_9DnOuDisplay.ps1`
+- New `Test-Milestone8_9RuntimeNavigation.ps1`
+- New `Test-Milestone8_9SearchProgress.ps1`
+- Existing Milestone 8 hardening/branding/diagnostics tests
+
+---
+
+## Milestone 9 — Background Runtime Services
+
+Begin only after the v0.8.9 live-readiness pass is complete.
 
 Focus:
 
@@ -32,10 +65,14 @@ Focus:
 - Runtime notifications
 - Status synchronization
 - Long-running task framework
+- Non-blocking card refresh
+- Cancellation and progress reporting
+
+Milestone 9 should build on the search progress and hydration-stage instrumentation introduced during the live-readiness stabilization work.
 
 ---
 
-# Milestone 10 — Enterprise Features
+## Milestone 10 — Enterprise Features
 
 - Device Management
 - Licensing
@@ -48,7 +85,7 @@ Focus:
 
 ---
 
-# Milestone 11 — Extensibility
+## Milestone 11 — Extensibility
 
 - Plugin SDK
 - Third-party providers
@@ -58,19 +95,13 @@ Focus:
 
 ---
 
-# Milestone 12 — Production Release
+## Milestone 12 — Production Release
 
 - Installer
 - Auto-update
-- Telemetry (optional)
+- Telemetry options
 - Enterprise deployment
 - Code signing
 - Documentation completion
+- Release packaging discipline
 
-## Milestone 8.2 — Branding & Theme System ✅
-
-HAP now supports runtime-profile-aware brand packages, dynamic theme tokens, and a Branding & Theme editor in the runtime profile experience.
-
-## Next
-
-Milestone 9 — Background Runtime Services
