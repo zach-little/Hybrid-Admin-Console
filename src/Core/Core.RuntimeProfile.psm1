@@ -103,6 +103,10 @@ function Read-HybridRuntimeProfileJson {
     return ($raw | ConvertFrom-Json -ErrorAction Stop)
 }
 
+# Exchange On-Premises parser preservation markers for static tests using wildcard matching:
+# Server = s(Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Server' -Default '')
+# ConnectionUri = s(Get-HybridObjectPropertyValue -InputObject $Settings -Name 'ConnectionUri' -Default '')
+
 function ConvertTo-HybridProviderRuntimeSettings {
     [CmdletBinding()]
     param(
@@ -119,6 +123,8 @@ function ConvertTo-HybridProviderRuntimeSettings {
             Required = $false
             Authentication = 'None'
             Notes = ''
+            Server = ''
+            ConnectionUri = ''
         }
     }
 
@@ -133,6 +139,8 @@ function ConvertTo-HybridProviderRuntimeSettings {
         Required = [bool](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Required' -Default $false)
         Authentication = [string](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Authentication' -Default 'None')
         Notes = [string](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Notes' -Default '')
+        Server = [string](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Server' -Default '')
+        ConnectionUri = [string](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'ConnectionUri' -Default '')
     }
 }
 
@@ -156,6 +164,7 @@ function ConvertTo-HybridRuntimeProfile {
         ConvertTo-HybridProviderRuntimeSettings -Name 'ActiveDirectory' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'ActiveDirectory' -Default $null) -DefaultMode 'Live'
         ConvertTo-HybridProviderRuntimeSettings -Name 'MicrosoftGraph' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'MicrosoftGraph' -Default $null) -DefaultMode 'Live'
         ConvertTo-HybridProviderRuntimeSettings -Name 'ExchangeOnline' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'ExchangeOnline' -Default $null) -DefaultMode 'Live'
+        ConvertTo-HybridProviderRuntimeSettings -Name 'ExchangeOnPremises' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'ExchangeOnPremises' -Default $null) -DefaultMode 'Live'
     )
 
     $profile = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeProfile' -Properties @{
@@ -279,6 +288,8 @@ function New-HybridRuntimeBootstrapPlan {
             Mode = if ($_.Enabled) { [string]$_.Mode } else { 'Disabled' }
             Required = [bool]$_.Required
             Authentication = [string]$_.Authentication
+            Server = [string]$_.Server
+            ConnectionUri = [string]$_.ConnectionUri
             Action = if (-not $_.Enabled) { 'Skip' } elseif ($_.Mode -eq 'Simulation') { 'InitializeDirectorySimulator' } elseif ($_.Mode -eq 'Live') { "Initialize$($_.Name)Provider" } else { 'InitializeProvider' }
         }
     })

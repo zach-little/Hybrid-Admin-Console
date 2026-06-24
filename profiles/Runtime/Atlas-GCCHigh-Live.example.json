@@ -29,6 +29,14 @@
                                              "Mode":  "Live",
                                              "Required":  true,
                                              "Authentication":  "Interactive"
-                                         }
+                                         },
+                      "ExchangeOnPremises":  {
+                                                 "Enabled":  true,
+                                                 "Mode":  "Live",
+                                                 "Required":  true,
+                                                 "Authentication":  "Kerberos",
+                                                 "Server":  "congo",
+                                                 "ConnectionUri":  ""
+                                             }
                   }
 }

@@ -375,7 +375,7 @@ function Initialize-HybridRuntimeSimulationProviders {
     Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name 'DirectorySimulator' -Mode 'Simulation' -Enabled $true -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Initialized' -Service $providers -Message 'Directory Simulator initialized.' | Out-Null
     $Records.Add((New-HybridRuntimeBootstrapRecord -Name 'DirectorySimulator' -Kind 'Provider' -Status 'Initialized' -Message 'Directory Simulator providers created.')) | Out-Null
 
-    $logicalProviders = @('ActiveDirectory','MicrosoftGraph','ExchangeOnline')
+    $logicalProviders = @('ActiveDirectory','MicrosoftGraph','ExchangeOnline','ExchangeOnPremises')
     foreach ($logicalProviderName in $logicalProviders) {
         if ($ProviderRegistry.ContainsKey($logicalProviderName)) { continue }
         $logicalSettings = @(Get-HybridRuntimeProviderSettingsByName -Providers $ProfileProviders -Name $logicalProviderName)
@@ -395,6 +395,7 @@ function Initialize-HybridRuntimeSimulationProviders {
             if ($logicalProviderName -eq 'ActiveDirectory') { $service = $providers.ActiveDirectory }
             elseif ($logicalProviderName -eq 'MicrosoftGraph') { $service = $providers.MicrosoftGraph }
             elseif ($logicalProviderName -eq 'ExchangeOnline') { $service = $providers.ExchangeOnline }
+            elseif ($logicalProviderName -eq 'ExchangeOnPremises') { $service = $providers.ExchangeOnline }
             Initialize-HybridRuntimeProviderFromSimulator -ProviderRegistry $ProviderRegistry -Name $logicalProviderName -ProviderSettings $settings -Service $service -Records $Records -Message "Simulation $logicalProviderName provider registered."
         }
     }
@@ -449,6 +450,45 @@ function Initialize-HybridRuntimeLiveActiveDirectoryProvider {
     }
 }
 
+
+function Initialize-HybridRuntimeLiveExchangeOnPremisesProvider {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$RootPath,
+        [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
+        [Parameter(Mandatory=$true)][object]$ProviderSettings,
+        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
+    )
+
+    $providerName = [string]$ProviderSettings.Name
+    try {
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Infrastructure\Infrastructure.ExchangeOnPremises.psm1' -Required | Out-Null
+        $server = if ($ProviderSettings.PSObject.Properties.Name -contains 'Server') { [string]$ProviderSettings.Server } else { '' }
+        $connectionUri = if ($ProviderSettings.PSObject.Properties.Name -contains 'ConnectionUri') { [string]$ProviderSettings.ConnectionUri } else { '' }
+        $authentication = if ($ProviderSettings.PSObject.Properties.Name -contains 'Authentication') { [string]$ProviderSettings.Authentication } else { 'Kerberos' }
+
+        $service = Initialize-HybridExchangeOnPremisesProvider -Server $server -ConnectionUri $connectionUri -Authentication $authentication -DeferConnection
+        $health = $null
+        if ($null -ne $service) { $health = @(& $service.GetHealth | Select-Object -First 1) }
+        if ($health -is [array]) { $health = $health | Select-Object -First 1 }
+
+        $status = 'Deferred'
+        $message = 'Exchange On-Premises provider registered. Connection is deferred until recipient data is requested.'
+        if ($null -ne $health -and -not [string]::IsNullOrWhiteSpace([string]$health.LastError)) {
+            $status = 'Unavailable'
+            $message = 'Exchange On-Premises provider unavailable: ' + [string]$health.LastError
+        }
+
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status $status -Service $service -Message $message | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status $status -Message $message)) | Out-Null
+    }
+    catch {
+        $message = 'Exchange On-Premises provider failed during runtime binding: ' + $_.Exception.Message
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Failed' -Service $null -Message $message | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Failed' -Message $message)) | Out-Null
+    }
+}
+
 function Register-HybridRuntimeDeferredProvider {
     param(
         [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
@@ -477,11 +517,13 @@ function Initialize-HybridRuntimeApplicationServices {
     $adProvider = $null
     $graphProvider = $null
     $exchangeProvider = $null
+    $exchangeOnPremisesProvider = $null
     if ($ProviderRegistry.ContainsKey('ActiveDirectory')) { $adProvider = $ProviderRegistry['ActiveDirectory'].Service }
     if ($ProviderRegistry.ContainsKey('MicrosoftGraph')) { $graphProvider = $ProviderRegistry['MicrosoftGraph'].Service }
     if ($ProviderRegistry.ContainsKey('ExchangeOnline')) { $exchangeProvider = $ProviderRegistry['ExchangeOnline'].Service }
+    if ($ProviderRegistry.ContainsKey('ExchangeOnPremises')) { $exchangeOnPremisesProvider = $ProviderRegistry['ExchangeOnPremises'].Service }
 
-    $userService = Initialize-HybridUserService -ActiveDirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider -ExchangeOnlineProvider $exchangeProvider
+    $userService = Initialize-HybridUserService -ActiveDirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider -ExchangeOnlineProvider $exchangeProvider -ExchangeOnPremisesProvider $exchangeOnPremisesProvider
     Register-HybridService -Name 'HybridUser' -Instance $userService -Description 'Unified hybrid user application service.' -Provider 'Application' -Force | Out-Null
 
     $graphService = Initialize-HybridGraphProfileService -MicrosoftGraphProvider $graphProvider
@@ -601,6 +643,9 @@ function Initialize-HybridRuntime {
             }
             elseif ([string]$provider.Name -eq 'ActiveDirectory' -and [string]$provider.Mode -eq 'Live') {
                 Initialize-HybridRuntimeLiveActiveDirectoryProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Context $context -Records $records
+            }
+            elseif ([string]$provider.Name -eq 'ExchangeOnPremises' -and [string]$provider.Mode -eq 'Live') {
+                Initialize-HybridRuntimeLiveExchangeOnPremisesProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records
             }
             else {
                 Register-HybridRuntimeDeferredProvider -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records
