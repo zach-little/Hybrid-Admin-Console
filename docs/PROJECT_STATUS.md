@@ -44,7 +44,9 @@ The project is currently in a live-environment stabilization pass after Mileston
 - The bottom status bar now has staged search progress for Search, Base User, AD, Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
 - Exchange display now distinguishes AD mail attributes from Exchange Online mailbox provider data.
 - Duplicate user search results now open a chooser instead of silently selecting the first match.
-- An `Infrastructure.ExchangeOnPremises` provider slice was added so hybrid environments can query local Exchange recipient and remote-mailbox data separately from Exchange Online.
+- An `Infrastructure.ExchangeOnPremises` provider slice was added so hybrid environments can query local Exchange recipient, remote-mailbox, forwarding, and distribution-group data separately from Exchange Online.
+- Runtime Home provider display now renders enabled providers dynamically from the selected profile/runtime registry, including Exchange On-Premises.
+- Exchange mailbox hydration can now load an on-prem remote mailbox when Exchange Online mailbox data is unavailable, and aggregation annotates the ExchangeMailbox vertical with the source provider.
 - Runtime theme support and profile-aware branding are available.
 
 ### Current live validation findings
@@ -71,7 +73,7 @@ The likely investigation areas are:
 
 ### Other known live validation gaps
 
-- Exchange on-premises support is now represented as a separate provider slice, but runtime profile bootstrap wiring and live connection validation still need to be completed against the local Exchange server.
+- Exchange on-premises support is represented as a separate provider slice and has runtime/profile/editor wiring. Live validation should confirm the local Exchange server returns remote mailbox, forwarding, and distribution-group data for the selected identity.
 - Microsoft Graph vertical is not yet loading in the live test environment.
 - Authentication posture vertical is not yet loading in the live test environment.
 - Graph, Exchange, and Authentication services may still be unregistered or deferred depending on runtime profile/provider configuration.

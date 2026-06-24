@@ -361,8 +361,7 @@ $xaml = @"
                                             <TextBlock Text="PROVIDERS" Style="{StaticResource SectionTitle}"/>
                                             <TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
                                             <TextBlock x:Name="RuntimeActiveDirectoryStatusText" Text="Active Directory        Validates on launch" Foreground="#FACC15" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Microsoft Graph         Deferred" Foreground="#FACC15" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Exchange Online         Deferred" Foreground="#FACC15"/>
+                                            <TextBlock x:Name="RuntimeProviderDetailsText" Text="Provider details load from the selected runtime profile." TextWrapping="Wrap" Foreground="#CBD5E1"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,14">
@@ -858,7 +857,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1087,6 +1086,97 @@ function Get-HybridRuntimeProfileProviderSummary {
     }
 }
 
+
+function Get-HybridProviderDisplayName {
+    param([Parameter(Mandatory=$true)][string]$Name)
+    switch ($Name) {
+        'ActiveDirectory' { 'Active Directory' }
+        'MicrosoftGraph' { 'Microsoft Graph' }
+        'ExchangeOnline' { 'Exchange Online' }
+        'ExchangeOnPremises' { 'Exchange On-Premises' }
+        'DirectorySimulator' { 'Directory Simulator' }
+        default { $Name }
+    }
+}
+
+function Get-HybridRuntimeProfileEnabledProviderNames {
+    param([AllowNull()][object]$Profile)
+    $names = New-Object System.Collections.Generic.List[string]
+    if ($null -eq $Profile) { return @() }
+    if ($Profile.PSObject.Properties.Name -contains 'Providers' -and $null -ne $Profile.Providers) {
+        $providersObject = $Profile.Providers
+        if ($providersObject -is [System.Collections.IDictionary]) {
+            foreach ($key in @($providersObject.Keys | Sort-Object)) {
+                $provider = $providersObject[$key]
+                $enabled = $true
+                if ($null -ne $provider -and $provider.PSObject.Properties.Name -contains 'Enabled') { $enabled = [bool]$provider.Enabled }
+                if ($enabled) { $names.Add([string]$key) | Out-Null }
+            }
+        }
+        else {
+            foreach ($property in @($providersObject.PSObject.Properties | Sort-Object Name)) {
+                $provider = $property.Value
+                $enabled = $true
+                if ($null -ne $provider -and $provider.PSObject.Properties.Name -contains 'Enabled') { $enabled = [bool]$provider.Enabled }
+                if ($enabled) { $names.Add([string]$property.Name) | Out-Null }
+            }
+        }
+    }
+    if ($names.Count -eq 0 -and $Profile.PSObject.Properties.Name -contains 'Path' -and -not [string]::IsNullOrWhiteSpace([string]$Profile.Path) -and (Test-Path -LiteralPath ([string]$Profile.Path))) {
+        try {
+            $rawProfile = Get-Content -LiteralPath ([string]$Profile.Path) -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            if ($null -ne $rawProfile.Providers) {
+                foreach ($property in @($rawProfile.Providers.PSObject.Properties | Sort-Object Name)) {
+                    $provider = $property.Value
+                    $enabled = $true
+                    if ($null -ne $provider -and $provider.PSObject.Properties.Name -contains 'Enabled') { $enabled = [bool]$provider.Enabled }
+                    if ($enabled) { $names.Add([string]$property.Name) | Out-Null }
+                }
+            }
+        }
+        catch { }
+    }
+
+    if ($names.Count -eq 0 -and $Profile.PSObject.Properties.Name -contains 'EnabledProviders') {
+        foreach ($providerName in @($Profile.EnabledProviders | Sort-Object)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$providerName)) { $names.Add([string]$providerName) | Out-Null }
+        }
+    }
+    return @($names | Select-Object -Unique)
+}
+
+function Set-HybridRuntimeProviderDetailsText {
+    param([AllowNull()][object]$Runtime, [AllowNull()][object]$SelectedProfile)
+    if (-not $controls.ContainsKey('RuntimeProviderDetailsText') -or $null -eq $controls.RuntimeProviderDetailsText) { return }
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $providerNames = @()
+    if ($null -ne $Runtime -and $null -ne $Runtime.ProviderRegistry) { $providerNames = @($Runtime.ProviderRegistry.Keys | Sort-Object) }
+    if ($providerNames.Count -eq 0) { $providerNames = @(Get-HybridRuntimeProfileEnabledProviderNames -Profile $SelectedProfile) }
+
+    foreach ($name in $providerNames) {
+        $displayName = Get-HybridProviderDisplayName -Name ([string]$name)
+        $status = 'Validates on launch'
+        $mode = $null
+        if ($null -ne $Runtime -and $null -ne $Runtime.ProviderRegistry -and $Runtime.ProviderRegistry.ContainsKey([string]$name)) {
+            $provider = $Runtime.ProviderRegistry[[string]$name]
+            $status = [string]$provider.Status
+            $mode = [string]$provider.Mode
+        }
+        elseif ($null -ne $SelectedProfile -and $SelectedProfile.PSObject.Properties.Name -contains 'Providers' -and $null -ne $SelectedProfile.Providers) {
+            $providerConfig = $null
+            if ($SelectedProfile.Providers -is [System.Collections.IDictionary] -and $SelectedProfile.Providers.ContainsKey([string]$name)) { $providerConfig = $SelectedProfile.Providers[[string]$name] }
+            elseif ($SelectedProfile.Providers.PSObject.Properties.Name -contains [string]$name) { $providerConfig = $SelectedProfile.Providers.PSObject.Properties[[string]$name].Value }
+            if ($null -ne $providerConfig -and $providerConfig.PSObject.Properties.Name -contains 'Mode') { $mode = [string]$providerConfig.Mode }
+        }
+        if ([string]::IsNullOrWhiteSpace($mode)) { $lines.Add(('{0}        {1}' -f $displayName,$status)) | Out-Null }
+        else { $lines.Add(('{0}        {1}/{2}' -f $displayName,$mode,$status)) | Out-Null }
+    }
+
+    if ($lines.Count -eq 0) { $controls.RuntimeProviderDetailsText.Text = 'No enabled providers declared.' }
+    else { $controls.RuntimeProviderDetailsText.Text = ($lines -join [Environment]::NewLine) }
+}
+
 function Set-HybridRuntimeActiveDirectoryStatusText {
     param([AllowNull()][object]$Runtime, [AllowNull()][object]$SelectedProfile)
 
@@ -1134,6 +1224,7 @@ function Update-HybridStartupView {
         $providerSummary = Get-HybridRuntimeProfileProviderSummary -Profile $selectedProfile
         $controls.RuntimeProviderSummaryText.Text = ('{0} enabled provider(s): {1}' -f $providerSummary.Count, $providerSummary.Text)
         Set-HybridRuntimeActiveDirectoryStatusText -Runtime $script:HybridRuntime -SelectedProfile $selectedProfile
+        Set-HybridRuntimeProviderDetailsText -Runtime $script:HybridRuntime -SelectedProfile $selectedProfile
         $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { 'Profile metadata is valid. Full runtime diagnostics run during launch.' } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
         $profileBadges = @()
         if ($selectedProfile.IsDefault) { $profileBadges += 'Default' }
@@ -1153,6 +1244,7 @@ function Update-HybridStartupView {
         $controls.RuntimeModeText.Text = if ($Mock) { 'Simulation' } else { 'Legacy' }
         $controls.RuntimeProviderSummaryText.Text = 'Runtime bootstrap unavailable; legacy startup path active.'
         Set-HybridRuntimeActiveDirectoryStatusText -Runtime $null -SelectedProfile $null
+        Set-HybridRuntimeProviderDetailsText -Runtime $null -SelectedProfile $null
         $controls.RuntimeDiagnosticsText.Text = 'Diagnostics unavailable.'
         $controls.RuntimeStatusText.Text = 'Ready to launch legacy console.'
         Set-HybridLaunchButtonLabel -Profile $null
@@ -1173,6 +1265,7 @@ function Update-HybridStartupView {
     }
     $controls.RuntimeProviderSummaryText.Text = $providerSummary
     Set-HybridRuntimeActiveDirectoryStatusText -Runtime $runtime -SelectedProfile $null
+    Set-HybridRuntimeProviderDetailsText -Runtime $runtime -SelectedProfile $null
 
     $diagSummary = 'Diagnostics unavailable.'
     if ($null -ne $runtime.Diagnostics -and $null -ne $runtime.Diagnostics.Summary) {
@@ -1903,8 +1996,13 @@ function Update-AggregationPanel {
         $total = Get-DisplayValue -InputObject $aggregate -Names @('TotalVerticalCount') -Default '0'
         $statusText = 'No vertical status returned'
         if ($aggregate.PSObject.Properties.Name -contains 'Verticals' -and $null -ne $aggregate.Verticals) {
+            $exchangeSource = $null
+            if ($aggregate.PSObject.Properties.Name -contains 'MailboxDetails' -and $null -ne $aggregate.MailboxDetails -and $aggregate.MailboxDetails.PSObject.Properties.Name -contains 'SourceProvider') {
+                $exchangeSource = [string]$aggregate.MailboxDetails.SourceProvider
+            }
             $statusText = (@($aggregate.Verticals) | ForEach-Object {
                 $state = if ($_.Loaded) { 'Loaded' } else { 'Unavailable' }
+                if ($_.Name -eq 'ExchangeMailbox' -and -not [string]::IsNullOrWhiteSpace($exchangeSource)) { $state = "$state ($exchangeSource)" }
                 "{0}: {1}" -f $_.Name, $state
             }) -join ' | '
         }
@@ -2214,7 +2312,8 @@ function Update-ExchangePanels {
     $forwardTo = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('ForwardingSmtpAddress') -Default '' } else { '' }
     $deliverAndForward = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('DeliverToMailboxAndForward') -Default 'Unknown' } else { 'Unknown' }
     $controls.ForwardingText.Text = if ([string]::IsNullOrWhiteSpace($forwardTo)) { "No forwarding configured" } else { "Forwarding to $forwardTo | DeliverToMailboxAndForward=$deliverAndForward" }
-    $controls.ExchangeSummaryText.Text = "Exchange loaded: $recipientType | $primarySmtp"
+    $sourceProvider = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('SourceProvider') -Default 'Exchange' } else { 'Exchange' }
+    $controls.ExchangeSummaryText.Text = "$sourceProvider loaded: $recipientType | $primarySmtp"
 
     $delegations = @()
     if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Delegations') { $delegations = @($mailboxDetails.Delegations) }

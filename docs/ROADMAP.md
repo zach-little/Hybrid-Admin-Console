@@ -40,10 +40,12 @@ Implemented in this pass:
 - Persistent runtime, AD, and hydration diagnostics continue.
 - Duplicate AD search matches now show a chooser before user hydration.
 - On-premises Exchange provider slice added for hybrid recipient/remote mailbox lookup.
+- Runtime Home provider card now renders provider detail lines dynamically instead of using a hardcoded AD/Graph/EXO list.
+- Exchange mailbox hydration now accepts Exchange On-Premises remote mailbox data as valid mailbox detail data when Exchange Online is unavailable.
 
 Still planned before Milestone 9:
 
-- Validate and complete runtime profile bootstrap wiring for on-premises Exchange server connectivity.
+- Live-validate on-premises Exchange remote mailbox, forwarding, and distribution-group retrieval against the local Exchange server.
 - Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, unavailable, or failed.
 - Remove leftover backup/repair artifacts before tagging.
 
@@ -55,6 +57,7 @@ Suggested validation tests:
 - `Test-Milestone8_9SearchProgress.ps1`
 - `Test-Milestone8_9DuplicateUserChooser.ps1`
 - `Test-Milestone8_9ExchangeOnPremisesProvider.ps1`
+- `Test-Milestone8_9ExchangeOnPremisesRuntimeHydration.ps1`
 - Existing Milestone 8 hardening/branding/diagnostics tests
 
 ---

@@ -98,6 +98,31 @@ function Initialize-HybridExchangeOnPremisesProvider {
     }
 }
 
+
+function Ensure-HybridExchangeOnPremisesConnection {
+    [CmdletBinding()]
+    param()
+
+    if (-not [bool]$script:HybridExchangeOnPremisesState.Initialized) {
+        throw 'On-premises Exchange provider has not been initialized.'
+    }
+
+    if ($null -ne $script:HybridExchangeOnPremisesState.Session) { return }
+
+    try {
+        $script:HybridExchangeOnPremisesState.Session = Connect-HybridExchangeOnPremisesSession `
+            -Server $script:HybridExchangeOnPremisesState.Server `
+            -ConnectionUri $script:HybridExchangeOnPremisesState.ConnectionUri `
+            -Authentication $script:HybridExchangeOnPremisesState.Authentication `
+            -Credential $script:HybridExchangeOnPremisesState.Credential
+        $script:HybridExchangeOnPremisesState.LastError = $null
+    }
+    catch {
+        $script:HybridExchangeOnPremisesState.LastError = $_.Exception.Message
+        throw
+    }
+}
+
 function Get-HybridExchangeOnPremisesHealth {
     [CmdletBinding()]
     param()
@@ -119,7 +144,8 @@ function Get-HybridExchangeOnPremisesRecipient {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
-    if (-not (Get-Command Get-Recipient -ErrorAction SilentlyContinue)) { throw 'Get-Recipient is unavailable. Connect the on-premises Exchange provider first.' }
+    Ensure-HybridExchangeOnPremisesConnection
+    if (-not (Get-Command Get-Recipient -ErrorAction SilentlyContinue)) { throw 'Get-Recipient is unavailable after connecting to on-premises Exchange.' }
     Get-Recipient -Identity $Identity -ErrorAction Stop | Select-Object *
 }
 
@@ -127,6 +153,7 @@ function Get-HybridExchangeOnPremisesRemoteMailbox {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
+    Ensure-HybridExchangeOnPremisesConnection
     if (-not (Get-Command Get-RemoteMailbox -ErrorAction SilentlyContinue)) { return $null }
     Get-RemoteMailbox -Identity $Identity -ErrorAction Stop | Select-Object *
 }
@@ -153,8 +180,41 @@ function Get-HybridExchangeOnPremisesDistributionGroups {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
-    if (-not (Get-Command Get-Recipient -ErrorAction SilentlyContinue)) { throw 'Get-Recipient is unavailable. Connect the on-premises Exchange provider first.' }
-    Get-Recipient -Filter "Members -eq '$Identity'" -RecipientTypeDetails MailUniversalDistributionGroup,MailUniversalSecurityGroup -ErrorAction SilentlyContinue | Select-Object *
+    Ensure-HybridExchangeOnPremisesConnection
+    if (-not (Get-Command Get-Recipient -ErrorAction SilentlyContinue)) { throw 'Get-Recipient is unavailable after connecting to on-premises Exchange.' }
+
+    $recipient = Get-Recipient -Identity $Identity -ErrorAction Stop | Select-Object -First 1
+    if ($null -eq $recipient) { return @() }
+
+    $memberKeys = @(
+        $recipient.DistinguishedName,
+        $recipient.Identity,
+        $recipient.PrimarySmtpAddress,
+        $recipient.WindowsEmailAddress,
+        $recipient.Alias,
+        $recipient.Name
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ }
+
+    $groups = @()
+    foreach ($memberKey in $memberKeys) {
+        try {
+            $escaped = $memberKey.Replace("'","''")
+            $groups += @(Get-Recipient -Filter "Members -eq '$escaped'" -RecipientTypeDetails MailUniversalDistributionGroup,MailUniversalSecurityGroup -ErrorAction SilentlyContinue | Select-Object *)
+        }
+        catch { }
+    }
+
+    if ($groups.Count -eq 0 -and (Get-Command Get-DistributionGroup -ErrorAction SilentlyContinue)) {
+        try {
+            $recipientDn = [string]$recipient.DistinguishedName
+            if (-not [string]::IsNullOrWhiteSpace($recipientDn)) {
+                $groups += @(Get-DistributionGroup -ResultSize Unlimited -ErrorAction SilentlyContinue | Where-Object { @($_.Members) -contains $recipientDn } | Select-Object *)
+            }
+        }
+        catch { }
+    }
+
+    $groups | Sort-Object Name -Unique
 }
 
 function Disconnect-HybridExchangeOnPremisesProvider {

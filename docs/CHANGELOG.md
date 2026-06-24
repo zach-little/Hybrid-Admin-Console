@@ -29,6 +29,8 @@
 - Added duplicate user search handling with an operator chooser before hydration.
 - Added `Infrastructure.ExchangeOnPremises` as a separate provider slice for hybrid local Exchange recipient data.
 - Added tests for duplicate-user handling and the on-premises Exchange provider boundary.
+- Completed runtime/start-page provider display so enabled providers are rendered dynamically from the selected profile/runtime registry, including Exchange On-Premises.
+- Completed Exchange On-Premises mailbox hydration fallback for remote mailbox, forwarding, distribution groups, and aggregation source reporting.
 
 
 ## v0.8.2 - Runtime Platform Hardening
