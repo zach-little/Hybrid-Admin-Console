@@ -257,9 +257,12 @@ function Register-HybridRuntimeProviderRecord {
         [string]$Authentication = 'None',
         [string]$Status = 'Skipped',
         [AllowNull()][object]$Service = $null,
-        [string]$Message = ''
+        [string]$Message = '',
+        [string[]]$CapabilityStates = @()
     )
 
+    $configured = ($Mode -ne 'Disabled')
+    $registered = ($null -ne $Service)
     $record = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeProviderRegistration' -Properties @{
         Name = $Name
         Mode = $Mode
@@ -269,6 +272,13 @@ function Register-HybridRuntimeProviderRecord {
         Status = $Status
         Service = $Service
         Message = $Message
+        Configured = $configured
+        ModuleAvailable = ($Status -ne 'ModuleMissing')
+        Registered = $registered
+        Deferred = ($Status -eq 'Deferred')
+        Connected = ($Status -eq 'Connected' -or $Status -eq 'Initialized')
+        Failed = ($Status -eq 'Failed')
+        CapabilityStates = @($CapabilityStates)
         RegisteredUtc = [datetime]::UtcNow
     }
     $Registry[$Name] = $record
@@ -489,6 +499,54 @@ function Initialize-HybridRuntimeLiveExchangeOnPremisesProvider {
     }
 }
 
+function Initialize-HybridRuntimeLiveExchangeOnlineProvider {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$RootPath,
+        [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
+        [Parameter(Mandatory=$true)][object]$ProviderSettings,
+        [Parameter(Mandatory=$true)][object]$Context,
+        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
+    )
+
+    $providerName = [string]$ProviderSettings.Name
+    try {
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.CloudEnvironment.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.Manager.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.MSAL.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Provider.ExchangeOnline.psm1' -Required | Out-Null
+
+        Register-HybridMsalAuthenticationAdapters -Force -RuntimeMode Auto | Out-Null
+        $cloud = if ($null -ne $Context.Profile -and $Context.Profile.PSObject.Properties.Name -contains 'Cloud') { [string]$Context.Profile.Cloud } else { [string]$Context.CloudEnvironment }
+        $authenticationSettings = if ($null -ne $Context.Profile -and $Context.Profile.PSObject.Properties.Name -contains 'Authentication') { $Context.Profile.Authentication } else { $null }
+        $providerContext = New-HybridExchangeOnlineProviderContext -Cloud $cloud -Authentication $authenticationSettings -ProviderSettings $ProviderSettings
+        $service = Initialize-HybridExchangeOnlineProvider -Context $providerContext -DeferConnection
+        $health = $null
+        if ($null -ne $service) { $health = @(& $service.GetHealth | Select-Object -First 1) }
+        if ($health -is [array]) { $health = $health | Select-Object -First 1 }
+
+        $status = if ($null -ne $health -and $health.PSObject.Properties.Name -contains 'Status') { [string]$health.Status } else { 'Deferred' }
+        $message = switch ($status) {
+            'NotConfigured' { 'Exchange Online provider registered but app-only authentication is not configured.' }
+            'ModuleMissing' { 'Exchange Online provider registered but ExchangeOnlineManagement is not available.' }
+            'AuthenticationUnavailable' { 'Exchange Online provider registered but authentication is unavailable.' }
+            'Connected' { 'Exchange Online provider connected.' }
+            'Failed' { 'Exchange Online provider failed.' }
+            default { 'Exchange Online provider registered. App-only connection is deferred until mailbox data is requested.' }
+        }
+        if ($null -ne $health -and -not [string]::IsNullOrWhiteSpace([string]$health.LastError)) { $message = $message + ' ' + [string]$health.LastError }
+
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status $status -Service $service -Message $message -CapabilityStates @('AppOnlySupported','DelegatedRequired','Deferred') | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status $status -Message $message)) | Out-Null
+    }
+    catch {
+        $message = 'Exchange Online provider failed during runtime binding: ' + $_.Exception.Message
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Failed' -Service $null -Message $message -CapabilityStates @('Failed') | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Failed' -Message $message)) | Out-Null
+    }
+}
+
 function Register-HybridRuntimeDeferredProvider {
     param(
         [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
@@ -646,6 +704,9 @@ function Initialize-HybridRuntime {
             }
             elseif ([string]$provider.Name -eq 'ExchangeOnPremises' -and [string]$provider.Mode -eq 'Live') {
                 Initialize-HybridRuntimeLiveExchangeOnPremisesProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records
+            }
+            elseif ([string]$provider.Name -eq 'ExchangeOnline' -and [string]$provider.Mode -eq 'Live') {
+                Initialize-HybridRuntimeLiveExchangeOnlineProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Context $context -Records $records
             }
             else {
                 Register-HybridRuntimeDeferredProvider -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records

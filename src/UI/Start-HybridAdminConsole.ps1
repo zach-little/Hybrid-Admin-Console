@@ -811,6 +811,49 @@ $xaml = @"
                                         <TextBlock Grid.Column="0" Text="Authentication" Foreground="#CBD5E1" VerticalAlignment="Center"/>
                                         <ComboBox x:Name="WizardExchangeOnPremisesAuthenticationComboBox" Grid.Column="1" SelectedIndex="0"><ComboBoxItem Content="Kerberos"/><ComboBoxItem Content="Negotiate"/><ComboBoxItem Content="Default"/></ComboBox>
                                     </Grid>
+                                    <TextBlock Text="Cloud Authentication" Foreground="#F8FAFC" FontSize="14" FontWeight="SemiBold" Margin="0,18,0,8"/>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="App-only Enabled" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardAppOnlyEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="WizardAppOnlyCredentialModeComboBox" Grid.Column="2" SelectedIndex="0"><ComboBoxItem Content="Certificate"/><ComboBoxItem Content="ClientSecretReference"/></ComboBox>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Tenant ID" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardAppOnlyTenantIdTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Client ID" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardAppOnlyClientIdTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Certificate Thumbprint" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardCertificateThumbprintTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Certificate Path" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardCertificatePathTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Secret Reference" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardSecretReferenceTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Delegated Enabled" Foreground="#E5E7EB" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardDelegatedEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
+                                        <CheckBox x:Name="WizardDelegatedPromptWhenRequiredCheckBox" Grid.Column="2" Content="Prompt when required" IsChecked="True" Foreground="#CBD5E1"/>
+                                    </Grid>
+                                    <Grid Margin="22,8,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Delegated Client ID" Foreground="#CBD5E1" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="WizardDelegatedClientIdTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                    </Grid>
                                 </StackPanel>
 
                                 <StackPanel x:Name="WizardStepValidationPanel" Visibility="Collapsed">
@@ -857,7 +900,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardDelegatedPromptWhenRequiredCheckBox','WizardDelegatedClientIdTextBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1627,6 +1670,16 @@ function Reset-HybridRuntimeProfileWizardFields {
     $controls.WizardExchangeOnPremisesServerTextBox.Text = ''
     $controls.WizardExchangeOnPremisesConnectionUriTextBox.Text = ''
     Set-HybridWizardComboValue -ComboBox $controls.WizardExchangeOnPremisesAuthenticationComboBox -Value 'Kerberos'
+    $controls.WizardAppOnlyEnabledCheckBox.IsChecked = $false
+    Set-HybridWizardComboValue -ComboBox $controls.WizardAppOnlyCredentialModeComboBox -Value 'Certificate'
+    $controls.WizardAppOnlyTenantIdTextBox.Text = ''
+    $controls.WizardAppOnlyClientIdTextBox.Text = ''
+    $controls.WizardCertificateThumbprintTextBox.Text = ''
+    $controls.WizardCertificatePathTextBox.Text = ''
+    $controls.WizardSecretReferenceTextBox.Text = ''
+    $controls.WizardDelegatedEnabledCheckBox.IsChecked = $false
+    $controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked = $true
+    $controls.WizardDelegatedClientIdTextBox.Text = ''
 }
 
 function Load-HybridRuntimeProfileIntoWizard {
@@ -1674,6 +1727,26 @@ function Load-HybridRuntimeProfileIntoWizard {
             if ($null -ne $serverProperty) { $controls.WizardExchangeOnPremisesServerTextBox.Text = [string]$serverProperty.Value }
             if ($null -ne $uriProperty) { $controls.WizardExchangeOnPremisesConnectionUriTextBox.Text = [string]$uriProperty.Value }
             if ($null -ne $authProperty) { Set-HybridWizardComboValue -ComboBox $controls.WizardExchangeOnPremisesAuthenticationComboBox -Value ([string]$authProperty.Value) }
+        }
+
+        $authentication = if ($profile.PSObject.Properties.Name -contains 'Authentication') { $profile.Authentication } else { $null }
+        if ($null -ne $authentication) {
+            $appOnly = if ($authentication.PSObject.Properties.Name -contains 'AppOnly') { $authentication.AppOnly } else { $null }
+            $delegated = if ($authentication.PSObject.Properties.Name -contains 'Delegated') { $authentication.Delegated } else { $null }
+            if ($null -ne $appOnly) {
+                if ($appOnly.PSObject.Properties.Name -contains 'Enabled') { $controls.WizardAppOnlyEnabledCheckBox.IsChecked = [bool]$appOnly.Enabled }
+                if ($appOnly.PSObject.Properties.Name -contains 'TenantId') { $controls.WizardAppOnlyTenantIdTextBox.Text = [string]$appOnly.TenantId }
+                if ($appOnly.PSObject.Properties.Name -contains 'ClientId') { $controls.WizardAppOnlyClientIdTextBox.Text = [string]$appOnly.ClientId }
+                if ($appOnly.PSObject.Properties.Name -contains 'CredentialMode') { Set-HybridWizardComboValue -ComboBox $controls.WizardAppOnlyCredentialModeComboBox -Value ([string]$appOnly.CredentialMode) }
+                if ($appOnly.PSObject.Properties.Name -contains 'CertificateThumbprint') { $controls.WizardCertificateThumbprintTextBox.Text = [string]$appOnly.CertificateThumbprint }
+                if ($appOnly.PSObject.Properties.Name -contains 'CertificatePath') { $controls.WizardCertificatePathTextBox.Text = [string]$appOnly.CertificatePath }
+                if ($appOnly.PSObject.Properties.Name -contains 'SecretReference') { $controls.WizardSecretReferenceTextBox.Text = [string]$appOnly.SecretReference }
+            }
+            if ($null -ne $delegated) {
+                if ($delegated.PSObject.Properties.Name -contains 'Enabled') { $controls.WizardDelegatedEnabledCheckBox.IsChecked = [bool]$delegated.Enabled }
+                if ($delegated.PSObject.Properties.Name -contains 'ClientId') { $controls.WizardDelegatedClientIdTextBox.Text = [string]$delegated.ClientId }
+                if ($delegated.PSObject.Properties.Name -contains 'PromptWhenRequired') { $controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked = [bool]$delegated.PromptWhenRequired }
+            }
         }
 
         $controls.StatusText.Text = ('Editing runtime profile: {0}' -f $profileName)
@@ -1783,6 +1856,24 @@ function New-HybridRuntimeProfileFromWizard {
         $providers[$providerName] = $providerSettings
     }
 
+    $authentication = [ordered]@{
+        Cloud = $cloud
+        AppOnly = [ordered]@{
+            Enabled = [bool]$controls.WizardAppOnlyEnabledCheckBox.IsChecked
+            TenantId = $controls.WizardAppOnlyTenantIdTextBox.Text.Trim()
+            ClientId = $controls.WizardAppOnlyClientIdTextBox.Text.Trim()
+            CredentialMode = Get-HybridWizardComboValue -ComboBox $controls.WizardAppOnlyCredentialModeComboBox
+            CertificateThumbprint = $controls.WizardCertificateThumbprintTextBox.Text.Trim()
+            CertificatePath = $controls.WizardCertificatePathTextBox.Text.Trim()
+            SecretReference = $controls.WizardSecretReferenceTextBox.Text.Trim()
+        }
+        Delegated = [ordered]@{
+            Enabled = [bool]$controls.WizardDelegatedEnabledCheckBox.IsChecked
+            ClientId = $controls.WizardDelegatedClientIdTextBox.Text.Trim()
+            PromptWhenRequired = [bool]$controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked
+        }
+    }
+
     return [ordered]@{
         ProfileName = $profileName
         Mode = $mode
@@ -1790,6 +1881,7 @@ function New-HybridRuntimeProfileFromWizard {
         Environment = 'Development'
         Organization = $organization
         TenantId = $tenantId
+        Authentication = $authentication
         Providers = $providers
     }
 }
@@ -1801,6 +1893,14 @@ function Test-HybridRuntimeProfileWizardInput {
         if ($enabledProviders.Count -eq 0) { throw 'At least one provider must be enabled.' }
         if ($profile.Providers.ExchangeOnPremises.Enabled -and $profile.Providers.ExchangeOnPremises.Mode -eq 'Live' -and [string]::IsNullOrWhiteSpace([string]$profile.Providers.ExchangeOnPremises.Server) -and [string]::IsNullOrWhiteSpace([string]$profile.Providers.ExchangeOnPremises.ConnectionUri)) {
             throw 'Exchange On-Premises requires a server name or connection URI when enabled for Live mode.'
+        }
+        if ($profile.Providers.ExchangeOnline.Enabled -and $profile.Providers.ExchangeOnline.Mode -eq 'Live' -and [bool]$profile.Authentication.AppOnly.Enabled) {
+            if ([string]::IsNullOrWhiteSpace([string]$profile.Authentication.AppOnly.TenantId) -or [string]::IsNullOrWhiteSpace([string]$profile.Authentication.AppOnly.ClientId)) {
+                throw 'Exchange Online app-only authentication requires Tenant ID and Client ID.'
+            }
+            if ($profile.Authentication.AppOnly.CredentialMode -eq 'Certificate' -and [string]::IsNullOrWhiteSpace([string]$profile.Authentication.AppOnly.CertificateThumbprint) -and [string]::IsNullOrWhiteSpace([string]$profile.Authentication.AppOnly.CertificatePath)) {
+                throw 'Exchange Online certificate authentication requires a certificate thumbprint or certificate path.'
+            }
         }
         if ($profile.Mode -eq 'Live' -and [string]::IsNullOrWhiteSpace($profile.TenantId)) {
             $controls.WizardValidationText.Text = 'Warning: Live profiles should include a Tenant ID before production use. Profile shape is otherwise valid.'
@@ -2618,4 +2718,3 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
-

@@ -272,6 +272,58 @@ function ConvertTo-HybridSourceStatus {
     }
 }
 
+function New-HybridAdMailAttributeSnapshot {
+    [CmdletBinding()]
+    param([AllowNull()][object]$User)
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.AdMailAttributes'
+        Mail = Get-HybridObjectValue -InputObject $User -Names @('Mail','EmailAddress') -Default $null
+        ProxyAddresses = @((Get-HybridObjectValue -InputObject $User -Names @('ProxyAddresses','EmailAddresses') -Default @()))
+        TargetAddress = Get-HybridObjectValue -InputObject $User -Names @('TargetAddress') -Default $null
+        MailNickname = Get-HybridObjectValue -InputObject $User -Names @('MailNickname','Alias') -Default $null
+        Source = 'ActiveDirectory'
+    }
+}
+
+function New-HybridMailboxSourceEnvelope {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$AdMailAttributes,
+        [AllowNull()][object]$ExchangeOnPremises,
+        [AllowNull()][object]$ExchangeOnline
+    )
+
+    $sourcePriority = 'ActiveDirectory'
+    $primary = [string](Get-HybridObjectValue -InputObject $AdMailAttributes -Names @('Mail') -Default '')
+    $recipientType = ''
+
+    if ($null -ne $ExchangeOnline) {
+        $sourcePriority = 'ExchangeOnline'
+        $primary = [string](Get-HybridObjectValue -InputObject $ExchangeOnline -Names @('PrimarySmtpAddress','Mail','EmailAddress') -Default $primary)
+        $recipientType = [string](Get-HybridObjectValue -InputObject $ExchangeOnline -Names @('RecipientTypeDetails','RecipientType','MailboxType') -Default '')
+    }
+    elseif ($null -ne $ExchangeOnPremises) {
+        $sourcePriority = 'ExchangeOnPremises'
+        $primary = [string](Get-HybridObjectValue -InputObject $ExchangeOnPremises -Names @('PrimarySmtpAddress','WindowsEmailAddress','Mail','EmailAddress') -Default $primary)
+        $recipientType = [string](Get-HybridObjectValue -InputObject $ExchangeOnPremises -Names @('RecipientTypeDetails','RecipientType','Type') -Default '')
+    }
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.UserMailboxSources'
+        AdMailAttributes = $AdMailAttributes
+        ExchangeOnPremises = $ExchangeOnPremises
+        ExchangeOnline = $ExchangeOnline
+        Summary = [pscustomobject]@{
+            PSTypeName = 'Hybrid.UserMailboxSummary'
+            HasExchangeData = ($null -ne $ExchangeOnPremises -or $null -ne $ExchangeOnline)
+            PrimarySmtpAddress = $primary
+            RecipientType = $recipientType
+            SourcePriority = $sourcePriority
+        }
+    }
+}
+
 function ConvertTo-HybridUserOrganizationalUnit {
     [CmdletBinding()]
     param([AllowNull()][string]$DistinguishedName)
@@ -352,7 +404,7 @@ function New-HybridCompositeUser {
         LockedOut             = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('LockedOut','IsLockedOut') -Default $null
         Groups                = @()
         DirectReports         = @()
-        Mailbox               = $Mailbox
+        Mailbox               = New-HybridMailboxSourceEnvelope -AdMailAttributes (New-HybridAdMailAttributeSnapshot -User $ActiveDirectoryUser) -ExchangeOnPremises $null -ExchangeOnline $Mailbox
         MailboxDetails        = $null
         ExchangeLoaded        = $false
         ExchangeRetrievedOn   = $null
@@ -463,6 +515,7 @@ function Add-HybridUserMailboxDetails {
     $onPremRemoteMailbox = $null
     $onPremForwarding = $null
     $onPremDistributionGroups = @()
+    $adMailAttributes = New-HybridAdMailAttributeSnapshot -User $User
 
     if ($null -ne $script:HybridUserServiceState.ExchangeOnPremises) {
         try {
@@ -510,13 +563,20 @@ function Add-HybridUserMailboxDetails {
     }
 
     $effectiveMailbox = if ($null -ne $mailbox) { $mailbox } elseif ($null -ne $onPremRemoteMailbox) { $onPremRemoteMailbox } else { $onPremRecipient }
+    $exchangeOnPremisesMailbox = if ($null -ne $onPremRemoteMailbox) { $onPremRemoteMailbox } else { $onPremRecipient }
+    $mailboxSources = New-HybridMailboxSourceEnvelope -AdMailAttributes $adMailAttributes -ExchangeOnPremises $exchangeOnPremisesMailbox -ExchangeOnline $mailbox
     if ($null -eq $effectiveMailbox) {
         if ($User.PSObject.Properties.Name -notcontains 'ExchangeLoaded') { Add-Member -InputObject $User -NotePropertyName ExchangeLoaded -NotePropertyValue $false }
         if ($User.PSObject.Properties.Name -notcontains 'MailboxDetails') { Add-Member -InputObject $User -NotePropertyName MailboxDetails -NotePropertyValue $null }
         if ($User.PSObject.Properties.Name -notcontains 'OnPremisesExchangeRecipient') { Add-Member -InputObject $User -NotePropertyName OnPremisesExchangeRecipient -NotePropertyValue $null }
+        if ($User.PSObject.Properties.Name -notcontains 'AdMailAttributes') { Add-Member -InputObject $User -NotePropertyName AdMailAttributes -NotePropertyValue $adMailAttributes }
+        if ($User.PSObject.Properties.Name -notcontains 'ExchangeOnlineMailbox') { Add-Member -InputObject $User -NotePropertyName ExchangeOnlineMailbox -NotePropertyValue $null }
         $User.ExchangeLoaded = $false
         $User.MailboxDetails = $null
         $User.OnPremisesExchangeRecipient = $null
+        $User.AdMailAttributes = $adMailAttributes
+        $User.ExchangeOnlineMailbox = $null
+        $User.Mailbox = $mailboxSources
         Write-HybridUserHydrationDiagnostic -Stage 'ExchangeMailbox' -Message 'No Exchange Online mailbox or Exchange On-Premises recipient data returned. AD mail attributes are not treated as Exchange mailbox data.' -Level WARN -Data ([pscustomobject]@{ Identity = $identity; ExchangeOnlineProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnline); ExchangeOnPremisesProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnPremises) })
         return $User
     }
@@ -549,7 +609,9 @@ function Add-HybridUserMailboxDetails {
     $mailboxDetails = [pscustomobject]@{
         PSTypeName = 'Hybrid.UserMailboxDetails'
         Mailbox = $effectiveMailbox
+        AdMailAttributes = $adMailAttributes
         ExchangeOnlineMailbox = $mailbox
+        ExchangeOnPremises = $exchangeOnPremisesMailbox
         OnPremisesRecipient = $onPremRecipient
         OnPremisesRemoteMailbox = $onPremRemoteMailbox
         SourceProvider = if ($null -ne $mailbox) { 'ExchangeOnline' } else { 'ExchangeOnPremises' }
@@ -568,6 +630,8 @@ function Add-HybridUserMailboxDetails {
 
     if ($User.PSObject.Properties.Name -notcontains 'OnPremisesExchangeRecipient') { Add-Member -InputObject $User -NotePropertyName OnPremisesExchangeRecipient -NotePropertyValue $onPremRecipient }
     if ($User.PSObject.Properties.Name -notcontains 'OnPremisesRemoteMailbox') { Add-Member -InputObject $User -NotePropertyName OnPremisesRemoteMailbox -NotePropertyValue $onPremRemoteMailbox }
+    if ($User.PSObject.Properties.Name -notcontains 'AdMailAttributes') { Add-Member -InputObject $User -NotePropertyName AdMailAttributes -NotePropertyValue $adMailAttributes }
+    if ($User.PSObject.Properties.Name -notcontains 'ExchangeOnlineMailbox') { Add-Member -InputObject $User -NotePropertyName ExchangeOnlineMailbox -NotePropertyValue $mailbox }
     if ($User.PSObject.Properties.Name -notcontains 'Mailbox') { Add-Member -InputObject $User -NotePropertyName Mailbox -NotePropertyValue $effectiveMailbox }
     if ($User.PSObject.Properties.Name -notcontains 'MailboxDetails') { Add-Member -InputObject $User -NotePropertyName MailboxDetails -NotePropertyValue $mailboxDetails }
     if ($User.PSObject.Properties.Name -notcontains 'ExchangeLoaded') { Add-Member -InputObject $User -NotePropertyName ExchangeLoaded -NotePropertyValue $false }
@@ -575,7 +639,9 @@ function Add-HybridUserMailboxDetails {
 
     $User.OnPremisesExchangeRecipient = $onPremRecipient
     $User.OnPremisesRemoteMailbox = $onPremRemoteMailbox
-    $User.Mailbox = $effectiveMailbox
+    $User.AdMailAttributes = $adMailAttributes
+    $User.ExchangeOnlineMailbox = $mailbox
+    $User.Mailbox = $mailboxSources
     $User.MailboxDetails = $mailboxDetails
     $User.ExchangeLoaded = $true
     $User.ExchangeRetrievedOn = [datetime]::UtcNow
@@ -681,7 +747,16 @@ function Get-HybridUser {
 
     $adUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) | Select-Object -First 1)
     $graphUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
-    $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) | Select-Object -First 1)
+    $mailbox = @()
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
+        try {
+            $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) | Select-Object -First 1)
+        }
+        catch {
+            Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Base Exchange Online mailbox lookup deferred or unavailable for '$Identity' - $($_.Exception.Message)" -Level WARN
+            $mailbox = @()
+        }
+    }
     Write-HybridUserHydrationDiagnostic -Stage 'BaseHydration' -Message "Base hydration results AD=$(@($adUser).Count), Graph=$(@($graphUser).Count), Exchange=$(@($mailbox).Count) for identity '$Identity'." -Level INFO -Data ([pscustomobject]@{
         Identity = $Identity
         ActiveDirectoryResultCount = @($adUser).Count
@@ -879,8 +954,5 @@ Export-ModuleMember -Function @(
     'Get-HybridUserServiceHealth',
     'Clear-HybridUserService'
 )
-
-
-
 
 

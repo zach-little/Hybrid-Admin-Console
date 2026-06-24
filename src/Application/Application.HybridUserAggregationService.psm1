@@ -120,7 +120,13 @@ function Get-HybridUserAggregateProfile {
         $primaryUser = $detailStep.Data
         if ($null -eq $primaryUser) { $primaryUser = $baseStep.Data }
 
-        $verticals = @($baseStep.Status, $detailStep.Status, $exchangeStep.Status, $graphStep.Status, $authStep.Status)
+        $mailboxDetails = if ($null -ne $exchangeStep.Data -and $exchangeStep.Data.PSObject.Properties.Name -contains 'MailboxDetails') { $exchangeStep.Data.MailboxDetails } else { $null }
+        $exchangeOnlineData = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'ExchangeOnlineMailbox') { $mailboxDetails.ExchangeOnlineMailbox } else { $null }
+        $exchangeOnPremisesData = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'ExchangeOnPremises') { $mailboxDetails.ExchangeOnPremises } else { $null }
+
+        $exchangeOnlineStatus = New-HybridAggregationVerticalStatus -Name 'ExchangeOnlineMailbox' -Data $exchangeOnlineData
+        $exchangeOnPremisesStatus = New-HybridAggregationVerticalStatus -Name 'ExchangeOnPremisesRecipient' -Data $exchangeOnPremisesData
+        $verticals = @($baseStep.Status, $detailStep.Status, $exchangeStep.Status, $exchangeOnPremisesStatus, $exchangeOnlineStatus, $graphStep.Status, $authStep.Status)
         $loadedCount = @($verticals | Where-Object { $_.Loaded }).Count
 
         $aggregate = [pscustomobject]@{
@@ -130,7 +136,9 @@ function Get-HybridUserAggregateProfile {
             User = $primaryUser
             BaseUser = $baseStep.Data
             Details = $detailStep.Data
-            MailboxDetails = if ($null -ne $exchangeStep.Data -and $exchangeStep.Data.PSObject.Properties.Name -contains 'MailboxDetails') { $exchangeStep.Data.MailboxDetails } else { $null }
+            MailboxDetails = $mailboxDetails
+            ExchangeOnPremises = $exchangeOnPremisesData
+            ExchangeOnline = $exchangeOnlineData
             GraphProfile = $graphStep.Data
             AuthenticationProfile = $authStep.Data
             Verticals = $verticals

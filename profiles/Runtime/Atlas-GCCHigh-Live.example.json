@@ -5,6 +5,23 @@
     "Environment":  "Development",
     "Organization":  "Atlas",
     "TenantId":  "ea26f921-331e-4244-948d-d4d13598bbf5",
+    "Authentication":  {
+                           "Cloud":  "GCCHigh",
+                           "AppOnly":  {
+                                           "Enabled":  false,
+                                           "TenantId":  "ea26f921-331e-4244-948d-d4d13598bbf5",
+                                           "ClientId":  "",
+                                           "CredentialMode":  "Certificate",
+                                           "CertificateThumbprint":  "",
+                                           "CertificatePath":  "",
+                                           "SecretReference":  ""
+                                       },
+                           "Delegated":  {
+                                             "Enabled":  true,
+                                             "ClientId":  "",
+                                             "PromptWhenRequired":  true
+                                         }
+                       },
     "Providers":  {
                       "DirectorySimulator":  {
                                                  "Enabled":  false,

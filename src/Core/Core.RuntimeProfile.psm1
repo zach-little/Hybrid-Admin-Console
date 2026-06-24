@@ -144,6 +144,43 @@ function ConvertTo-HybridProviderRuntimeSettings {
     }
 }
 
+function ConvertTo-HybridRuntimeAuthenticationSettings {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Settings,
+        [string]$DefaultCloud = 'Commercial',
+        [string]$DefaultTenantId = ''
+    )
+
+    $appOnly = Get-HybridObjectPropertyValue -InputObject $Settings -Name 'AppOnly' -Default $null
+    $delegated = Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Delegated' -Default $null
+    $cloud = [string](Get-HybridObjectPropertyValue -InputObject $Settings -Name 'Cloud' -Default $DefaultCloud)
+    if ([string]::IsNullOrWhiteSpace($cloud)) { $cloud = $DefaultCloud }
+
+    $appOnlyTenantId = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'TenantId' -Default $DefaultTenantId)
+    $appOnlyClientId = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'ClientId' -Default '')
+    $delegatedClientId = [string](Get-HybridObjectPropertyValue -InputObject $delegated -Name 'ClientId' -Default $appOnlyClientId)
+
+    New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeAuthenticationSettings' -Properties @{
+        Cloud = $cloud
+        AppOnly = (New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeAuthentication.AppOnly' -Properties @{
+            Enabled = [bool](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'Enabled' -Default $false)
+            TenantId = $appOnlyTenantId
+            ClientId = $appOnlyClientId
+            CredentialMode = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CredentialMode' -Default 'Certificate')
+            CertificateThumbprint = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CertificateThumbprint' -Default '')
+            CertificateName = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CertificateName' -Default '')
+            CertificatePath = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CertificatePath' -Default '')
+            SecretReference = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'SecretReference' -Default '')
+        })
+        Delegated = (New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeAuthentication.Delegated' -Properties @{
+            Enabled = [bool](Get-HybridObjectPropertyValue -InputObject $delegated -Name 'Enabled' -Default $false)
+            ClientId = $delegatedClientId
+            PromptWhenRequired = [bool](Get-HybridObjectPropertyValue -InputObject $delegated -Name 'PromptWhenRequired' -Default $true)
+        })
+    }
+}
+
 function ConvertTo-HybridRuntimeProfile {
     [CmdletBinding()]
     param(
@@ -158,6 +195,7 @@ function ConvertTo-HybridRuntimeProfile {
     $tenantId = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'TenantId' -Default '')
     $organization = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Organization' -Default '')
     $providers = Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Providers' -Default $null
+    $authentication = ConvertTo-HybridRuntimeAuthenticationSettings -Settings (Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Authentication' -Default $null) -DefaultCloud $cloud -DefaultTenantId $tenantId
 
     $providerSettings = @(
         ConvertTo-HybridProviderRuntimeSettings -Name 'DirectorySimulator' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'DirectorySimulator' -Default $null) -DefaultMode 'Simulation'
@@ -175,6 +213,7 @@ function ConvertTo-HybridRuntimeProfile {
         Environment = $environment
         TenantId = $tenantId
         Organization = $organization
+        Authentication = $authentication
         Providers = @($providerSettings)
         Raw = $RawProfile
         LoadedUtc = [datetime]::UtcNow
@@ -288,6 +327,8 @@ function New-HybridRuntimeBootstrapPlan {
             Mode = if ($_.Enabled) { [string]$_.Mode } else { 'Disabled' }
             Required = [bool]$_.Required
             Authentication = [string]$_.Authentication
+            AppOnlySupported = ($_.Name -in @('MicrosoftGraph','ExchangeOnline') -and $null -ne $Profile.Authentication -and [bool]$Profile.Authentication.AppOnly.Enabled)
+            DelegatedRequired = ($_.Name -eq 'MicrosoftGraph' -and $null -ne $Profile.Authentication -and [bool]$Profile.Authentication.Delegated.Enabled)
             Server = [string]$_.Server
             ConnectionUri = [string]$_.ConnectionUri
             Action = if (-not $_.Enabled) { 'Skip' } elseif ($_.Mode -eq 'Simulation') { 'InitializeDirectorySimulator' } elseif ($_.Mode -eq 'Live') { "Initialize$($_.Name)Provider" } else { 'InitializeProvider' }
@@ -298,6 +339,7 @@ function New-HybridRuntimeBootstrapPlan {
         ProfileName = [string]$Profile.ProfileName
         Mode = [string]$Profile.Mode
         Cloud = [string]$Profile.Cloud
+        Authentication = $Profile.Authentication
         ProviderCount = @($steps | Where-Object { $_.Enabled }).Count
         Steps = @($steps)
         CreatedUtc = [datetime]::UtcNow
