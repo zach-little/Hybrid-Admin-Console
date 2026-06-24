@@ -1640,14 +1640,14 @@ function Resolve-HybridUserDistinguishedName {
     [CmdletBinding()]
     param([AllowNull()][object]$User)
 
-    return Get-DisplayValue -InputObject $User -Names @('DistinguishedName','DN') -Default '-'
+    return Get-DisplayValue -InputObject $User -Names @('DistinguishedName','ActiveDirectoryDistinguishedName','DN') -Default '-'
 }
 
 function Resolve-HybridUserOrganizationalUnit {
     [CmdletBinding()]
     param([AllowNull()][object]$User)
 
-    $explicitOu = Get-DisplayValue -InputObject $User -Names @('OrganizationalUnit','OU') -Default ''
+    $explicitOu = Get-DisplayValue -InputObject $User -Names @('OrganizationalUnit','ActiveDirectoryOrganizationalUnit','OU') -Default ''
     if (-not [string]::IsNullOrWhiteSpace($explicitOu) -and $explicitOu -ne '-') { return $explicitOu }
 
     $dn = Resolve-HybridUserDistinguishedName -User $User
@@ -1856,6 +1856,11 @@ function Update-DetailPanels {
     $controls.ManagerText.Text = $managerValue
     $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $details
     $controls.OrganizationalUnitText.Text = Resolve-HybridUserOrganizationalUnit -User $details
+    Write-HybridUiHydrationDiagnostic -Stage 'ActiveDirectoryDetails' -Message 'Resolved Active Directory DN and OU display values.' -Level INFO -Data ([pscustomobject]@{
+        DistinguishedName = $controls.DistinguishedNameText.Text
+        OrganizationalUnit = $controls.OrganizationalUnitText.Text
+        DetailProperties = @($details.PSObject.Properties.Name)
+    })
 
     $groups = @()
     if ($details.PSObject.Properties.Name -contains 'Groups' -and $null -ne $details.Groups) { $groups = @($details.Groups) }
@@ -2045,7 +2050,7 @@ function Invoke-UserSearch {
         $controls.CompanyText.Text = Get-DisplayValue -InputObject $user -Names @('Company')
         $controls.OfficeText.Text = Get-DisplayValue -InputObject $user -Names @('Office')
         $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $user -Names @('EmployeeId','EmployeeID')
-        $controls.DistinguishedNameText.Text = Get-DisplayValue -InputObject $user -Names @('DistinguishedName')
+        $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $user
         $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
         $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
         $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
