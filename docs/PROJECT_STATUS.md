@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.8
+v0.8.9
 
 ---
 
@@ -23,7 +23,7 @@ v0.8.8
 
 ## Current Stabilization Track
 
-The project is currently in a live-environment stabilization pass after Milestone 8. The goal is to validate the Runtime Profile launch path against a real hybrid environment before starting Milestone 9.
+The project is currently in a live-environment stabilization pass after Milestone 8. v0.8.9 focuses on live Runtime UX and vertical stabilization before starting Milestone 9.
 
 ### Completed in the stabilization pass
 
@@ -39,11 +39,15 @@ The project is currently in a live-environment stabilization pass after Mileston
 - Base user hydration works in the live environment.
 - Active Directory details load for the selected user.
 - Group display formatting was corrected so group lists display friendly group names rather than raw object output.
+- DN/OU propagation was tightened across AD provider, HybridUserService, and UI resolvers.
+- The main console now has a Back/Start button to reopen Runtime Home.
+- The bottom status bar now has staged search progress for Search, Base User, AD, Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
+- Exchange display now distinguishes AD mail attributes from Exchange Online mailbox provider data.
 - Runtime theme support and profile-aware branding are available.
 
 ### Current live validation findings
 
-Active Directory search and group display are working. The current unresolved Active Directory display issue is that **Distinguished Name** and **Organizational Unit** are still not appearing in the UI even though the AD vertical otherwise loads.
+Active Directory search and group display are working. v0.8.9 includes a DN/OU propagation fix that must be validated live: AD conversion now preserves DN/OU as direct properties and Attributes values, the service layer reads hashtable attributes, and the UI resolver reads both direct and Attributes-backed names.
 
 The likely investigation areas are:
 
@@ -78,13 +82,13 @@ The likely investigation areas are:
 
 Do not begin Milestone 9 yet.
 
-Before Milestone 9, complete a final live-readiness stabilization pass:
+Before Milestone 9, validate the v0.8.9 live-readiness stabilization pass:
 
-- Resolve DN/OU display.
-- Clarify hybrid Exchange vs Exchange Online status.
+- Validate DN/OU display in live AD.
+- Continue clarifying hybrid Exchange vs Exchange Online status, including future on-prem Exchange connectivity.
 - Register or explicitly mark Graph, Exchange, and Authentication verticals as deferred/unavailable with clear reason text.
-- Add a Back/Start button to reopen Runtime Home/Profile selection.
-- Add a bottom search progress bar that tracks Base User, AD Details, Graph, Exchange, Authentication, and Aggregation stages.
+- Validate Back/Start navigation to Runtime Home/Profile selection.
+- Validate the bottom search progress bar stages.
 - Clean backup artifacts created during hotfix attempts before tagging a new release.
 
 ---

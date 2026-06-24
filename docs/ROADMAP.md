@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.8
+v0.8.9
 
 ---
 
@@ -25,28 +25,32 @@ v0.8.8
 
 ### v0.8.9 — Live Runtime UX & Vertical Stabilization
 
-This stabilization release should be completed before Milestone 9.
+This stabilization release is the current validation target before Milestone 9.
 
-Primary goals:
+Implemented in this pass:
 
-- Fix Active Directory Distinguished Name display.
-- Fix Active Directory Organizational Unit display.
-- Ensure AD detail display reads from the actual service-layer object shape returned in live environments.
-- Preserve friendly group display formatting.
-- Separate hybrid AD mail attributes from real Exchange Online provider data.
-- Prevent Exchange from showing as loaded unless the Exchange Online provider actually returned mailbox data.
-- Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, or unavailable.
-- Add a Back/Start button to return from the main console to Runtime Home/Profile selection.
-- Add a bottom-center search progress bar to the left of the active profile indicator.
-- Continue writing persistent runtime, AD, and hydration diagnostics.
+- Active Directory Distinguished Name display path tightened.
+- Active Directory Organizational Unit display path tightened.
+- AD detail display now reads direct properties and Attributes-backed values returned by the service layer.
+- Friendly group display formatting preserved.
+- Hybrid AD mail attributes are separated from real Exchange Online provider mailbox data in the UI.
+- Exchange is not shown as loaded unless the Exchange Online provider returns mailbox details.
+- Back/Start button added to return from the main console to Runtime Home/Profile selection.
+- Bottom-center search progress bar added to the left of the active profile indicator.
+- Persistent runtime, AD, and hydration diagnostics continue.
+
+Still planned before Milestone 9:
+
+- Add profile-level support for on-premises Exchange server connectivity.
+- Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, unavailable, or failed.
 - Remove leftover backup/repair artifacts before tagging.
 
 Suggested validation tests:
 
 - `Test-Milestone8_8GroupOuDisplay.ps1`
-- New `Test-Milestone8_9DnOuDisplay.ps1`
-- New `Test-Milestone8_9RuntimeNavigation.ps1`
-- New `Test-Milestone8_9SearchProgress.ps1`
+- `Test-Milestone8_9DnOuDisplay.ps1`
+- `Test-Milestone8_9RuntimeNavigation.ps1`
+- `Test-Milestone8_9SearchProgress.ps1`
 - Existing Milestone 8 hardening/branding/diagnostics tests
 
 ---

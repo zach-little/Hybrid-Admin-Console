@@ -53,7 +53,16 @@ function Get-HybridObjectValue {
     )
 
     foreach ($name in $Names) {
-        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
+        if ($null -eq $InputObject) { continue }
+
+        if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            $value = $InputObject[$name]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+                return $value
+            }
+        }
+
+        if ($InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
             if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
                 return $value
@@ -358,6 +367,14 @@ function New-HybridCompositeUser {
 
     $user.PSObject.TypeNames.Insert(0, 'Hybrid.User.VerticalSlice')
     Add-HybridUserActiveDirectoryIdentityMetadata -User $user -ActiveDirectoryUser $ActiveDirectoryUser | Out-Null
+    Write-HybridUserHydrationDiagnostic -Stage 'BaseHydration' -Message 'Resolved Active Directory DN and OU metadata for composite user.' -Level INFO -Data ([pscustomobject]@{
+        Identity = $Identity
+        DistinguishedName = $user.DistinguishedName
+        ActiveDirectoryDistinguishedName = $user.ActiveDirectoryDistinguishedName
+        OrganizationalUnit = $user.OrganizationalUnit
+        ActiveDirectoryIdentity = $user.ActiveDirectoryIdentity
+        ActiveDirectoryUserProperties = if ($null -ne $ActiveDirectoryUser) { @($ActiveDirectoryUser.PSObject.Properties.Name) } else { @() }
+    })
     return $user
 }
 
@@ -439,10 +456,19 @@ function Add-HybridUserMailboxDetails {
     $identity = [string]($identityCandidates | Select-Object -First 1)
     if ([string]::IsNullOrWhiteSpace($identity)) { return $User }
 
-    $mailbox = $User.Mailbox
-    if ($null -eq $mailbox) {
+    $mailbox = $null
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
         $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($identity) | Select-Object -First 1)
         $mailbox = ($mailbox | Select-Object -First 1)
+    }
+
+    if ($null -eq $mailbox) {
+        if ($User.PSObject.Properties.Name -notcontains 'ExchangeLoaded') { Add-Member -InputObject $User -NotePropertyName ExchangeLoaded -NotePropertyValue $false }
+        if ($User.PSObject.Properties.Name -notcontains 'MailboxDetails') { Add-Member -InputObject $User -NotePropertyName MailboxDetails -NotePropertyValue $null }
+        $User.ExchangeLoaded = $false
+        $User.MailboxDetails = $null
+        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeMailbox' -Message 'Exchange Online mailbox provider did not return mailbox data; AD mail attributes are not treated as Exchange mailbox data.' -Level WARN -Data ([pscustomobject]@{ Identity = $identity; ExchangeProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnline) })
+        return $User
     }
 
     $statistics = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailboxStatistics','GetMailboxStats','GetStatistics') -Arguments @($identity) | Select-Object -First 1)

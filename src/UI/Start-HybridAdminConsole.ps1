@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -412,7 +412,7 @@ $xaml = @"
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
 
                 <Grid Grid.Row="0" Margin="0,0,0,14">
-                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="52"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Width="42" Height="42" CornerRadius="10" Background="#0F172A" BorderBrush="#26364F" BorderThickness="1" VerticalAlignment="Center">
@@ -423,12 +423,13 @@ $xaml = @"
                             <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
-                    <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center">
+                    <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse x:Name="ProviderDot" Width="12" Height="12" Fill="#22C55E" Margin="0,0,8,0"/>
                             <TextBlock x:Name="ProviderStatusText" Text="Provider health: checking" Foreground="#CBD5E1" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
+                    <Button x:Name="BackToStartButton" Grid.Column="2" Content="Back / Start" Height="38" Padding="16,0" VerticalAlignment="Center" ToolTip="Return to Runtime Home to switch profiles"/>
                 </Grid>
 
                 <Border Grid.Row="1" Style="{StaticResource Card}">
@@ -553,9 +554,12 @@ $xaml = @"
         </Grid>
 
         <Grid x:Name="StatusBarRegion" Grid.Row="1" Background="#08111E" MinHeight="44">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <ProgressBar x:Name="SearchProgressIndicator" Grid.Column="0" Width="120" Height="8" IsIndeterminate="False" Visibility="Collapsed" Margin="22,0,12,0" VerticalAlignment="Center"/>
-            <TextBlock x:Name="StatusText" Grid.Column="1" Text="Ready." Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,22,0"/>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="360"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="StatusText" Grid.Column="0" Text="Ready." Foreground="#CBD5E1" VerticalAlignment="Center" Margin="22,0,22,0"/>
+            <StackPanel x:Name="SearchProgressPanel" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock x:Name="SearchProgressStageText" Text="Search" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ProgressBar x:Name="SearchProgressIndicator" Width="220" Height="8" Minimum="0" Maximum="100" Value="0" IsIndeterminate="False" VerticalAlignment="Center"/>
+            </StackPanel>
             <StackPanel x:Name="ShellStatusPanel" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,22,0">
                 <TextBlock Text="Profile: " Foreground="#64748B"/><TextBlock x:Name="StatusProfileText" Text="-" Foreground="#94A3B8" Margin="0,0,14,0"/>
                 <TextBlock Text="Cloud: " Foreground="#64748B"/><TextBlock x:Name="StatusCloudText" Text="-" Foreground="#A78BFA" FontWeight="SemiBold" Margin="0,0,14,0"/>
@@ -799,7 +803,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1597,18 +1601,51 @@ function Set-HybridUiBusyState {
     param([bool]$Busy)
     $script:IsSearchBusy = $Busy
     $controls.SearchButton.IsEnabled = -not $Busy
-    $controls.SearchProgressIndicator.Visibility = if ($Busy) { 'Visible' } else { 'Collapsed' }
-    $controls.SearchProgressIndicator.IsIndeterminate = $Busy
+    if ($controls.ContainsKey('SearchProgressPanel') -and $null -ne $controls.SearchProgressPanel) {
+        $controls.SearchProgressPanel.Visibility = if ($Busy) { 'Visible' } else { 'Collapsed' }
+    }
+    if ($controls.ContainsKey('SearchProgressIndicator') -and $null -ne $controls.SearchProgressIndicator) {
+        $controls.SearchProgressIndicator.IsIndeterminate = $false
+        if (-not $Busy) { $controls.SearchProgressIndicator.Value = 0 }
+    }
+    if ($controls.ContainsKey('SearchProgressStageText') -and $null -ne $controls.SearchProgressStageText -and -not $Busy) {
+        $controls.SearchProgressStageText.Text = 'Ready'
+    }
+}
+
+function Set-HybridSearchProgressStage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Stage,
+        [int]$Percent = 0
+    )
+
+    $bounded = [Math]::Max(0, [Math]::Min(100, $Percent))
+    if ($controls.ContainsKey('SearchProgressPanel') -and $null -ne $controls.SearchProgressPanel) { $controls.SearchProgressPanel.Visibility = 'Visible' }
+    if ($controls.ContainsKey('SearchProgressStageText') -and $null -ne $controls.SearchProgressStageText) { $controls.SearchProgressStageText.Text = $Stage }
+    if ($controls.ContainsKey('SearchProgressIndicator') -and $null -ne $controls.SearchProgressIndicator) {
+        $controls.SearchProgressIndicator.IsIndeterminate = $false
+        $controls.SearchProgressIndicator.Value = $bounded
+    }
+    [System.Windows.Forms.Application]::DoEvents()
 }
 
 function Get-DisplayValue {
     param([AllowNull()][object]$InputObject, [string[]]$Names, [string]$Default = '-')
     foreach ($name in $Names) {
-        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
+        if ($null -eq $InputObject) { continue }
+
+        if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            $value = $InputObject[$name]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
+        }
+
+        if ($InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
             if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return [string]$value }
         }
-        if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $InputObject.Attributes) {
+
+        if ($InputObject.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $InputObject.Attributes) {
             $attributes = $InputObject.Attributes
             if ($attributes -is [System.Collections.IDictionary] -and $attributes.Contains($name)) {
                 $value = $attributes[$name]
@@ -1653,8 +1690,11 @@ function Resolve-HybridUserOrganizationalUnit {
     $dn = Resolve-HybridUserDistinguishedName -User $User
     if ([string]::IsNullOrWhiteSpace($dn) -or $dn -eq '-') { return '-' }
 
-    $ouParts = @($dn.Split(',') | Where-Object { $_ -like 'OU=*' })
-    if ($ouParts.Count -gt 0) { return (($ouParts | ForEach-Object { $_.Substring(3) }) -join ' / ') }
+    $ouParts = @($dn.Split(',') | Where-Object { $_ -like 'OU=*' } | ForEach-Object { $_.Substring(3) })
+    if ($ouParts.Count -gt 0) {
+        [array]::Reverse($ouParts)
+        return ($ouParts -join ' / ')
+    }
 
     return '-'
 }
@@ -1981,9 +2021,20 @@ function Update-ExchangePanels {
 
     $mailboxDetails = $null
     if ($exchangeUser.PSObject.Properties.Name -contains 'MailboxDetails') { $mailboxDetails = $exchangeUser.MailboxDetails }
-    $mailbox = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Mailbox') { $mailboxDetails.Mailbox } else { $exchangeUser.Mailbox }
+    $mailbox = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Mailbox') { $mailboxDetails.Mailbox } else { $null }
 
-    $primarySmtp = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('PrimarySmtpAddress') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('PrimarySmtpAddress','Mail') } else { 'Not found' }
+    if ($null -eq $mailboxDetails -or $null -eq $mailbox) {
+        $controls.ExchangeSummaryText.Text = 'Exchange Online mailbox not loaded. Showing AD mail attribute only where available.'
+        $controls.MailboxText.Text = Get-DisplayValue -InputObject $exchangeUser -Names @('Mail','EmailAddress') -Default 'AD mail attribute not found'
+        $controls.RecipientTypeText.Text = 'Exchange Online unavailable/not registered'
+        $controls.MailboxStatusText.Text = 'Not loaded from Exchange Online'
+        $controls.ForwardingText.Text = 'Not loaded from Exchange Online'
+        if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Exchange Online not loaded') }
+        if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Exchange Online not loaded') }
+        return
+    }
+
+    $primarySmtp = Get-DisplayValue -InputObject $mailboxDetails -Names @('PrimarySmtpAddress')
     $controls.MailboxText.Text = $primarySmtp
     $recipientType = if ($null -ne $mailboxDetails) { Get-DisplayValue -InputObject $mailboxDetails -Names @('RecipientTypeDetails') } elseif ($null -ne $mailbox) { Get-DisplayValue -InputObject $mailbox -Names @('RecipientTypeDetails','RecipientType') } else { 'Not found' }
     $controls.RecipientTypeText.Text = $recipientType
@@ -2028,6 +2079,7 @@ function Invoke-UserSearch {
     Reset-UserDisplay
     Set-HybridUiBusyState -Busy $true
     $controls.StatusText.Text = "Searching for $effectiveQuery ..."
+    Set-HybridSearchProgressStage -Stage 'Search' -Percent 8
 
     try {
         $users = @(Search-HybridUser -Query $effectiveQuery)
@@ -2035,10 +2087,12 @@ function Invoke-UserSearch {
         if ($users.Count -eq 0) {
             $controls.ResultHeader.Text = 'No users found.'
             $controls.StatusText.Text = 'No result.'
+            Set-HybridSearchProgressStage -Stage 'No Results' -Percent 100
             return
         }
 
         $user = $users[0]
+        Set-HybridSearchProgressStage -Stage 'Base User' -Percent 20
         $script:SelectedHybridUser = $user
         $controls.ResultHeader.Text = Get-DisplayValue -InputObject $user -Names @('DisplayName','Name') -Default $effectiveQuery
         $controls.DisplayNameText.Text = Get-DisplayValue -InputObject $user -Names @('DisplayName','Name')
@@ -2060,6 +2114,7 @@ function Invoke-UserSearch {
             SamAccountName = $controls.SamText.Text
         })
 
+        Set-HybridSearchProgressStage -Stage 'Active Directory Details' -Percent 35
         [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action {
             Update-DetailPanels -User $user -Query $effectiveQuery
         } -OnFailure {
@@ -2070,14 +2125,7 @@ function Invoke-UserSearch {
             if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
         })
 
-        [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action {
-            Update-AggregationPanel -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
-            $controls.AggregationStatusText.Text = 'Failed'
-        })
-
+        Set-HybridSearchProgressStage -Stage 'Microsoft Graph' -Percent 52
         [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action {
             Update-GraphPanels -User $user -Query $effectiveQuery
         } -OnFailure {
@@ -2085,13 +2133,7 @@ function Invoke-UserSearch {
             $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)"
         })
 
-        [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action {
-            Update-AuthenticationPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)"
-        })
-
+        Set-HybridSearchProgressStage -Stage 'Exchange Online' -Percent 64
         [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action {
             Update-ExchangePanels -User $user -Query $effectiveQuery
         } -OnFailure {
@@ -2104,7 +2146,25 @@ function Invoke-UserSearch {
             if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
         })
 
+        Set-HybridSearchProgressStage -Stage 'Authentication Posture' -Percent 76
+        [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action {
+            Update-AuthenticationPanels -User $user -Query $effectiveQuery
+        } -OnFailure {
+            param($ErrorRecord)
+            $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)"
+        })
+
+        Set-HybridSearchProgressStage -Stage 'Aggregation' -Percent 92
+        [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action {
+            Update-AggregationPanel -User $user -Query $effectiveQuery
+        } -OnFailure {
+            param($ErrorRecord)
+            $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
+            $controls.AggregationStatusText.Text = 'Failed'
+        })
+
         $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
+        Set-HybridSearchProgressStage -Stage 'Complete' -Percent 100
         $controls.StatusText.Text = "Search complete: $effectiveQuery | See logs\\hydration-diagnostics.log for provider details"
         Update-HybridUiHealth
     }
@@ -2126,6 +2186,7 @@ function Invoke-UserSearch {
 $controls.SearchBox.Text = $InitialQuery
 $controls.SearchButton.Add_Click({ Invoke-UserSearch -Query $controls.SearchBox.Text })
 $controls.SearchBox.Add_KeyDown({ param($sender, $eventArgs) if ($eventArgs.Key -eq 'Return') { $eventArgs.Handled = $true; Invoke-UserSearch -Query $controls.SearchBox.Text } })
+if ($controls.BackToStartButton) { $controls.BackToStartButton.Add_Click({ Show-HybridHomeView }) }
 $controls.LaunchConsoleButton.Add_Click({ Invoke-HybridRuntimeProfileLaunch })
 $controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForSelectedProfile })
 $controls.ManageRuntimeThemeButton.Add_Click({ Show-HybridRuntimeThemeEditor })

@@ -628,7 +628,21 @@ function ConvertTo-HybridADUser {
             $mail = [string]$InputObject.Mail
         }
 
-        New-HybridUser `
+        $distinguishedName = ''
+        if ($InputObject.PSObject.Properties.Name -contains 'DistinguishedName' -and $null -ne $InputObject.DistinguishedName) {
+            $distinguishedName = [string]$InputObject.DistinguishedName
+        }
+
+        $organizationalUnit = ''
+        if (-not [string]::IsNullOrWhiteSpace($distinguishedName)) {
+            $ouParts = @($distinguishedName -split ',' | Where-Object { $_ -like 'OU=*' } | ForEach-Object { $_.Substring(3) })
+            if ($ouParts.Count -gt 0) {
+                [array]::Reverse($ouParts)
+                $organizationalUnit = ($ouParts -join ' / ')
+            }
+        }
+
+        $user = New-HybridUser `
             -Id $objectId `
             -DisplayName ([string]$InputObject.Name) `
             -GivenName ([string]$InputObject.GivenName) `
@@ -648,10 +662,19 @@ function ConvertTo-HybridADUser {
             -LockedOut ([bool]$InputObject.LockedOut) `
             -Source 'ActiveDirectory' `
             -Attributes @{
-                DistinguishedName = [string]$InputObject.DistinguishedName
+                DistinguishedName = $distinguishedName
+                ActiveDirectoryDistinguishedName = $distinguishedName
+                OrganizationalUnit = $organizationalUnit
+                ActiveDirectoryOrganizationalUnit = $organizationalUnit
                 ManagerDn         = $managerDn
                 DirectReportDns   = @(ConvertTo-HybridArrayValue $InputObject.DirectReports)
             }
+
+        $user | Add-Member -NotePropertyName DistinguishedName -NotePropertyValue $distinguishedName -Force
+        $user | Add-Member -NotePropertyName ActiveDirectoryDistinguishedName -NotePropertyValue $distinguishedName -Force
+        $user | Add-Member -NotePropertyName OrganizationalUnit -NotePropertyValue $organizationalUnit -Force
+        $user | Add-Member -NotePropertyName ActiveDirectoryOrganizationalUnit -NotePropertyValue $organizationalUnit -Force
+        return $user
     }
 }
 #endregion

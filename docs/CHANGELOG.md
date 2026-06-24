@@ -18,6 +18,16 @@
 
 # Changelog
 
+## v0.8.9 — Live Runtime UX & Vertical Stabilization
+
+- Preserved Active Directory Distinguished Name and Organizational Unit as direct AD provider properties and in the Attributes bag.
+- Updated HybridUserService value resolution to read hashtable-backed Attributes values.
+- Added service/UI diagnostics for DN/OU object-shape tracing.
+- Added a Back/Start button to reopen Runtime Home from the main console.
+- Added staged bottom search progress for Search, Base User, Active Directory Details, Microsoft Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
+- Clarified Exchange Online UI state so AD mail attributes are not treated as loaded Exchange mailbox data.
+
+
 ## v0.8.2 - Runtime Platform Hardening
 
 - Aligned root launcher to the runtime/profile WPF entry point.
