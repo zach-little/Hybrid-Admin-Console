@@ -19,10 +19,12 @@ Summary:
 - A Back/Start button was added to the main console so operators can return to Runtime Home and switch profiles without closing the app.
 - A bottom search progress indicator was added with stages for Search, Base User, Active Directory Details, Microsoft Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
 - Exchange display now clearly distinguishes AD mail attributes from Exchange Online mailbox data when the Exchange Online provider is unavailable or returns no mailbox.
+- User search now preserves multiple matches and prompts the operator to choose the intended user before hydration.
+- Added an on-premises Exchange provider slice for hybrid recipient/remote mailbox lookup through local Exchange PowerShell.
 
 Known issues / next stabilization work:
 
-- On-premises Exchange server connectivity is not yet implemented. Hybrid environments need a future profile-level `OnPremExchangeServer`/provider path so on-prem Exchange attributes and recipient operations can be queried directly.
+- On-premises Exchange provider support is introduced, but runtime profile bootstrap wiring still needs live validation against the local Exchange server profile settings.
 - Microsoft Graph vertical may still be unavailable depending on runtime profile registration and authentication configuration.
 - Authentication posture vertical may still be unavailable depending on runtime profile registration and Microsoft Graph authentication readiness.
 - Service registry/deferred-provider status messaging still needs a deeper pass so each vertical clearly reports registered, deferred, unavailable, or failed.

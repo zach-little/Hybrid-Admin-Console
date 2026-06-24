@@ -2022,10 +2022,25 @@ function Update-ExchangePanels {
     $mailboxDetails = $null
     if ($exchangeUser.PSObject.Properties.Name -contains 'MailboxDetails') { $mailboxDetails = $exchangeUser.MailboxDetails }
     $mailbox = if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'Mailbox') { $mailboxDetails.Mailbox } else { $null }
+    $onPremRecipient = $null
+    if ($null -ne $mailboxDetails -and $mailboxDetails.PSObject.Properties.Name -contains 'OnPremisesRecipient') { $onPremRecipient = $mailboxDetails.OnPremisesRecipient }
+    elseif ($exchangeUser.PSObject.Properties.Name -contains 'OnPremisesExchangeRecipient') { $onPremRecipient = $exchangeUser.OnPremisesExchangeRecipient }
 
     if ($null -eq $mailboxDetails -or $null -eq $mailbox) {
+        $adMail = Get-DisplayValue -InputObject $exchangeUser -Names @('Mail','EmailAddress') -Default 'AD mail attribute not found'
+        $controls.MailboxText.Text = $adMail
+        if ($null -ne $onPremRecipient) {
+            $onPremType = Get-DisplayValue -InputObject $onPremRecipient -Names @('RecipientTypeDetails','RecipientType') -Default 'On-prem recipient'
+            $remoteRouting = Get-DisplayValue -InputObject $onPremRecipient -Names @('RemoteRoutingAddress','TargetAddress') -Default ''
+            $controls.ExchangeSummaryText.Text = "Exchange On-Prem recipient loaded: $onPremType | Exchange Online mailbox not loaded."
+            $controls.RecipientTypeText.Text = "On-Prem: $onPremType | EXO: unavailable/not registered"
+            $controls.MailboxStatusText.Text = if ([string]::IsNullOrWhiteSpace($remoteRouting) -or $remoteRouting -eq '-') { 'On-prem recipient loaded; remote routing not returned' } else { "Remote routing: $remoteRouting" }
+            $controls.ForwardingText.Text = 'Forwarding requires Exchange provider data; AD mail attributes are not treated as Exchange mailbox data.'
+            if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Exchange Online mailbox delegations not loaded') }
+            if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('On-prem distribution groups not loaded') }
+            return
+        }
         $controls.ExchangeSummaryText.Text = 'Exchange Online mailbox not loaded. Showing AD mail attribute only where available.'
-        $controls.MailboxText.Text = Get-DisplayValue -InputObject $exchangeUser -Names @('Mail','EmailAddress') -Default 'AD mail attribute not found'
         $controls.RecipientTypeText.Text = 'Exchange Online unavailable/not registered'
         $controls.MailboxStatusText.Text = 'Not loaded from Exchange Online'
         $controls.ForwardingText.Text = 'Not loaded from Exchange Online'
@@ -2063,6 +2078,201 @@ function Update-ExchangePanels {
     if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('No distribution groups loaded') }
 }
 
+
+function Select-HybridUserFromSearchResults {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object[]]$Users,
+        [Parameter(Mandatory=$true)][string]$Query
+    )
+
+    if ($Users.Count -le 1) { return ($Users | Select-Object -First 1) }
+    return Show-HybridUserSelectionDialog -Users $Users -Query $Query
+}
+
+function Show-HybridUserSelectionDialog {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object[]]$Users,
+        [Parameter(Mandatory=$true)][string]$Query
+    )
+
+    $selectionWindow = [Windows.Window]::new()
+    $selectionWindow.Title = "Select user match - $Query"
+    $selectionWindow.Width = 980
+    $selectionWindow.Height = 460
+    $selectionWindow.WindowStartupLocation = 'CenterOwner'
+    $selectionWindow.Owner = $window
+    $selectionWindow.Background = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#0B1220'))
+
+    $root = [Windows.Controls.Grid]::new()
+    $root.Margin = [Windows.Thickness]::new(16)
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions[0].Height = [Windows.GridLength]::Auto
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions[2].Height = [Windows.GridLength]::Auto
+
+    $header = [Windows.Controls.TextBlock]::new()
+    $header.Text = "Multiple users matched '$Query'. Choose the intended account before details are hydrated."
+    $header.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#F8FAFC'))
+    $header.FontSize = 16
+    $header.FontWeight = 'SemiBold'
+    $header.Margin = [Windows.Thickness]::new(0,0,0,12)
+    [Windows.Controls.Grid]::SetRow($header,0)
+    [void]$root.Children.Add($header)
+
+    $grid = [Windows.Controls.DataGrid]::new()
+    $grid.AutoGenerateColumns = $false
+    $grid.CanUserAddRows = $false
+    $grid.CanUserDeleteRows = $false
+    $grid.IsReadOnly = $true
+    $grid.SelectionMode = 'Single'
+    $grid.SelectionUnit = 'FullRow'
+    $grid.Background = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#111827'))
+    $grid.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#E5E7EB'))
+    $grid.RowBackground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#111827'))
+    $grid.AlternatingRowBackground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#0F172A'))
+    $grid.GridLinesVisibility = 'Horizontal'
+    $grid.Margin = [Windows.Thickness]::new(0,0,0,12)
+
+    foreach ($columnSpec in @(
+        @{ Header='Display Name'; Binding='DisplayName'; Width=180 },
+        @{ Header='SAM'; Binding='SamAccountName'; Width=120 },
+        @{ Header='UPN'; Binding='UserPrincipalName'; Width=220 },
+        @{ Header='Title'; Binding='Title'; Width=160 },
+        @{ Header='Department'; Binding='Department'; Width=150 },
+        @{ Header='OU / DN'; Binding='DisambiguationPath'; Width=260 }
+    )) {
+        $column = [Windows.Controls.DataGridTextColumn]::new()
+        $column.Header = $columnSpec.Header
+        $column.Binding = [Windows.Data.Binding]::new($columnSpec.Binding)
+        $column.Width = [Windows.Controls.DataGridLength]::new([double]$columnSpec.Width)
+        [void]$grid.Columns.Add($column)
+    }
+
+    $rows = @($Users | ForEach-Object {
+        [pscustomobject]@{
+            User = $_
+            DisplayName = Get-DisplayValue -InputObject $_ -Names @('DisplayName','Name') -Default '-'
+            SamAccountName = Get-DisplayValue -InputObject $_ -Names @('SamAccountName','SAMAccountName','ActiveDirectorySamAccountName') -Default '-'
+            UserPrincipalName = Get-DisplayValue -InputObject $_ -Names @('UserPrincipalName','UPN','Mail') -Default '-'
+            Title = Get-DisplayValue -InputObject $_ -Names @('Title','JobTitle') -Default '-'
+            Department = Get-DisplayValue -InputObject $_ -Names @('Department') -Default '-'
+            DisambiguationPath = Resolve-HybridUserOrganizationalUnit -User $_
+        }
+    })
+    $grid.ItemsSource = $rows
+    if ($rows.Count -gt 0) { $grid.SelectedIndex = 0 }
+    [Windows.Controls.Grid]::SetRow($grid,1)
+    [void]$root.Children.Add($grid)
+
+    $buttonPanel = [Windows.Controls.StackPanel]::new()
+    $buttonPanel.Orientation = 'Horizontal'
+    $buttonPanel.HorizontalAlignment = 'Right'
+    $chooseButton = [Windows.Controls.Button]::new()
+    $chooseButton.Content = 'Load Selected User'
+    $chooseButton.Width = 150
+    $chooseButton.Height = 34
+    $chooseButton.Margin = [Windows.Thickness]::new(0,0,8,0)
+    $cancelButton = [Windows.Controls.Button]::new()
+    $cancelButton.Content = 'Cancel'
+    $cancelButton.Width = 90
+    $cancelButton.Height = 34
+    [void]$buttonPanel.Children.Add($chooseButton)
+    [void]$buttonPanel.Children.Add($cancelButton)
+    [Windows.Controls.Grid]::SetRow($buttonPanel,2)
+    [void]$root.Children.Add($buttonPanel)
+
+    $selectedUser = $null
+    $chooseAction = {
+        if ($null -ne $grid.SelectedItem) {
+            $script:HybridUserSelectionDialogSelectedUser = $grid.SelectedItem.User
+            $selectionWindow.DialogResult = $true
+            $selectionWindow.Close()
+        }
+    }
+    $chooseButton.Add_Click($chooseAction)
+    $grid.Add_MouseDoubleClick($chooseAction)
+    $cancelButton.Add_Click({ $selectionWindow.DialogResult = $false; $selectionWindow.Close() })
+
+    $script:HybridUserSelectionDialogSelectedUser = $null
+    $selectionWindow.Content = $root
+    [void]$selectionWindow.ShowDialog()
+    $selectedUser = $script:HybridUserSelectionDialogSelectedUser
+    $script:HybridUserSelectionDialogSelectedUser = $null
+    return $selectedUser
+}
+
+function Invoke-HybridSelectedUserHydration {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object]$User,
+        [Parameter(Mandatory=$true)][string]$Query
+    )
+
+    Set-HybridSearchProgressStage -Stage 'Base User' -Percent 20
+    $script:SelectedHybridUser = $User
+    $controls.ResultHeader.Text = Get-DisplayValue -InputObject $User -Names @('DisplayName','Name') -Default $Query
+    $controls.DisplayNameText.Text = Get-DisplayValue -InputObject $User -Names @('DisplayName','Name')
+    $controls.UpnText.Text = Get-DisplayValue -InputObject $User -Names @('UserPrincipalName','UPN')
+    $controls.SamText.Text = Get-DisplayValue -InputObject $User -Names @('SamAccountName','SAMAccountName')
+    $controls.MailText.Text = Get-DisplayValue -InputObject $User -Names @('Mail','EmailAddress')
+    $controls.DepartmentText.Text = Get-DisplayValue -InputObject $User -Names @('Department')
+    $controls.TitleText.Text = Get-DisplayValue -InputObject $User -Names @('Title','JobTitle')
+    $controls.CompanyText.Text = Get-DisplayValue -InputObject $User -Names @('Company')
+    $controls.OfficeText.Text = Get-DisplayValue -InputObject $User -Names @('Office')
+    $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $User -Names @('EmployeeId','EmployeeID')
+    $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $User
+    $enabled = Get-DisplayValue -InputObject $User -Names @('Enabled') -Default 'Unknown'
+    $locked = Get-DisplayValue -InputObject $User -Names @('LockedOut') -Default 'Unknown'
+    $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
+    Write-HybridUiHydrationDiagnostic -Stage 'Search' -Message "Base user selected for hydration: $Query" -Level SUCCESS -Data ([pscustomobject]@{
+        DisplayName = $controls.DisplayNameText.Text
+        UserPrincipalName = $controls.UpnText.Text
+        SamAccountName = $controls.SamText.Text
+    })
+
+    Set-HybridSearchProgressStage -Stage 'Active Directory Details' -Percent 35
+    [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action { Update-DetailPanels -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.ManagerText.Text = "AD details failed: $($ErrorRecord.Exception.Message)"
+        $controls.OrganizationalUnitText.Text = 'Unavailable'
+        if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('Groups unavailable') }
+        if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
+    })
+
+    Set-HybridSearchProgressStage -Stage 'Microsoft Graph' -Percent 52
+    [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action { Update-GraphPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)" })
+
+    Set-HybridSearchProgressStage -Stage 'Exchange On-Prem' -Percent 60
+    Set-HybridSearchProgressStage -Stage 'Exchange Online' -Percent 68
+    [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action { Update-ExchangePanels -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.ExchangeSummaryText.Text = "Exchange mailbox load failed: $($ErrorRecord.Exception.Message)"
+        $controls.RecipientTypeText.Text = 'Unavailable'
+        $controls.MailboxStatusText.Text = 'Unavailable'
+        $controls.ForwardingText.Text = 'Unavailable'
+        if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Mailbox delegations unavailable') }
+        if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
+    })
+
+    Set-HybridSearchProgressStage -Stage 'Authentication Posture' -Percent 78
+    [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action { Update-AuthenticationPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)" })
+
+    Set-HybridSearchProgressStage -Stage 'Aggregation' -Percent 92
+    [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action { Update-AggregationPanel -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
+        $controls.AggregationStatusText.Text = 'Failed'
+    })
+
+    $controls.SourcesText.Text = if ($null -ne $User.Sources) { (($User.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
+    Set-HybridSearchProgressStage -Stage 'Complete' -Percent 100
+    $controls.StatusText.Text = "Search complete: $Query | See logs\hydration-diagnostics.log for provider details"
+    Update-HybridUiHealth
+}
+
 function Invoke-UserSearch {
     [CmdletBinding()]
     param([string]$Query)
@@ -2091,82 +2301,25 @@ function Invoke-UserSearch {
             return
         }
 
-        $user = $users[0]
-        Set-HybridSearchProgressStage -Stage 'Base User' -Percent 20
-        $script:SelectedHybridUser = $user
-        $controls.ResultHeader.Text = Get-DisplayValue -InputObject $user -Names @('DisplayName','Name') -Default $effectiveQuery
-        $controls.DisplayNameText.Text = Get-DisplayValue -InputObject $user -Names @('DisplayName','Name')
-        $controls.UpnText.Text = Get-DisplayValue -InputObject $user -Names @('UserPrincipalName','UPN')
-        $controls.SamText.Text = Get-DisplayValue -InputObject $user -Names @('SamAccountName','SAMAccountName')
-        $controls.MailText.Text = Get-DisplayValue -InputObject $user -Names @('Mail','EmailAddress')
-        $controls.DepartmentText.Text = Get-DisplayValue -InputObject $user -Names @('Department')
-        $controls.TitleText.Text = Get-DisplayValue -InputObject $user -Names @('Title','JobTitle')
-        $controls.CompanyText.Text = Get-DisplayValue -InputObject $user -Names @('Company')
-        $controls.OfficeText.Text = Get-DisplayValue -InputObject $user -Names @('Office')
-        $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $user -Names @('EmployeeId','EmployeeID')
-        $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $user
-        $enabled = Get-DisplayValue -InputObject $user -Names @('Enabled') -Default 'Unknown'
-        $locked = Get-DisplayValue -InputObject $user -Names @('LockedOut') -Default 'Unknown'
-        $controls.AccountStateText.Text = "Account state: Enabled=$enabled | LockedOut=$locked"
-        Write-HybridUiHydrationDiagnostic -Stage 'Search' -Message "Base user selected for hydration: $effectiveQuery" -Level SUCCESS -Data ([pscustomobject]@{
-            DisplayName = $controls.DisplayNameText.Text
-            UserPrincipalName = $controls.UpnText.Text
-            SamAccountName = $controls.SamText.Text
-        })
+        $user = Select-HybridUserFromSearchResults -Users $users -Query $effectiveQuery
+        if ($null -eq $user) {
+            $controls.ResultHeader.Text = 'User selection cancelled.'
+            $controls.StatusText.Text = "Search returned $($users.Count) matches; no user selected."
+            Set-HybridSearchProgressStage -Stage 'Selection Cancelled' -Percent 100
+            return
+        }
 
-        Set-HybridSearchProgressStage -Stage 'Active Directory Details' -Percent 35
-        [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action {
-            Update-DetailPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.ManagerText.Text = "AD details failed: $($ErrorRecord.Exception.Message)"
-            $controls.OrganizationalUnitText.Text = 'Unavailable'
-            if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('Groups unavailable') }
-            if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
-        })
+        if ($users.Count -gt 1) {
+            Write-HybridUiHydrationDiagnostic -Stage 'Search' -Message "Search returned multiple candidates; user selected one before hydration." -Level INFO -Data ([pscustomobject]@{
+                Query = $effectiveQuery
+                CandidateCount = $users.Count
+                SelectedDisplayName = Get-DisplayValue -InputObject $user -Names @('DisplayName','Name') -Default ''
+                SelectedSamAccountName = Get-DisplayValue -InputObject $user -Names @('SamAccountName','ActiveDirectorySamAccountName') -Default ''
+                SelectedUserPrincipalName = Get-DisplayValue -InputObject $user -Names @('UserPrincipalName','UPN') -Default ''
+            })
+        }
 
-        Set-HybridSearchProgressStage -Stage 'Microsoft Graph' -Percent 52
-        [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action {
-            Update-GraphPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)"
-        })
-
-        Set-HybridSearchProgressStage -Stage 'Exchange Online' -Percent 64
-        [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action {
-            Update-ExchangePanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.ExchangeSummaryText.Text = "Exchange mailbox load failed: $($ErrorRecord.Exception.Message)"
-            $controls.RecipientTypeText.Text = 'Unavailable'
-            $controls.MailboxStatusText.Text = 'Unavailable'
-            $controls.ForwardingText.Text = 'Unavailable'
-            if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Mailbox delegations unavailable') }
-            if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
-        })
-
-        Set-HybridSearchProgressStage -Stage 'Authentication Posture' -Percent 76
-        [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action {
-            Update-AuthenticationPanels -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)"
-        })
-
-        Set-HybridSearchProgressStage -Stage 'Aggregation' -Percent 92
-        [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action {
-            Update-AggregationPanel -User $user -Query $effectiveQuery
-        } -OnFailure {
-            param($ErrorRecord)
-            $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
-            $controls.AggregationStatusText.Text = 'Failed'
-        })
-
-        $controls.SourcesText.Text = if ($null -ne $user.Sources) { (($user.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
-        Set-HybridSearchProgressStage -Stage 'Complete' -Percent 100
-        $controls.StatusText.Text = "Search complete: $effectiveQuery | See logs\\hydration-diagnostics.log for provider details"
-        Update-HybridUiHealth
+        Invoke-HybridSelectedUserHydration -User $user -Query $effectiveQuery
     }
     catch {
         $controls.ResultHeader.Text = 'Search failed'

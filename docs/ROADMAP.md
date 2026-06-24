@@ -38,10 +38,12 @@ Implemented in this pass:
 - Back/Start button added to return from the main console to Runtime Home/Profile selection.
 - Bottom-center search progress bar added to the left of the active profile indicator.
 - Persistent runtime, AD, and hydration diagnostics continue.
+- Duplicate AD search matches now show a chooser before user hydration.
+- On-premises Exchange provider slice added for hybrid recipient/remote mailbox lookup.
 
 Still planned before Milestone 9:
 
-- Add profile-level support for on-premises Exchange server connectivity.
+- Validate and complete runtime profile bootstrap wiring for on-premises Exchange server connectivity.
 - Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, unavailable, or failed.
 - Remove leftover backup/repair artifacts before tagging.
 
@@ -51,6 +53,8 @@ Suggested validation tests:
 - `Test-Milestone8_9DnOuDisplay.ps1`
 - `Test-Milestone8_9RuntimeNavigation.ps1`
 - `Test-Milestone8_9SearchProgress.ps1`
+- `Test-Milestone8_9DuplicateUserChooser.ps1`
+- `Test-Milestone8_9ExchangeOnPremisesProvider.ps1`
 - Existing Milestone 8 hardening/branding/diagnostics tests
 
 ---

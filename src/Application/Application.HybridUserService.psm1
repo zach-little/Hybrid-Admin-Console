@@ -12,6 +12,7 @@ $script:HybridUserServiceState = @{
     ActiveDirectory  = $null
     MicrosoftGraph   = $null
     ExchangeOnline   = $null
+    ExchangeOnPremises = $null
     Cache            = @{}
     DetailCache      = @{}
     MailboxCache     = @{}
@@ -303,7 +304,8 @@ function New-HybridCompositeUser {
         [AllowNull()][object]$Mailbox,
         [AllowNull()][object]$ActiveDirectoryHealth,
         [AllowNull()][object]$GraphHealth,
-        [AllowNull()][object]$ExchangeHealth
+        [AllowNull()][object]$ExchangeHealth,
+        [AllowNull()][object]$ExchangeOnPremisesHealth
     )
 
     $displayName = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('DisplayName','Name') -Default $null
@@ -358,6 +360,7 @@ function New-HybridCompositeUser {
             ConvertTo-HybridSourceStatus -Name 'ActiveDirectory' -Object $ActiveDirectoryUser -ProviderHealth $ActiveDirectoryHealth
             ConvertTo-HybridSourceStatus -Name 'MicrosoftGraph' -Object $GraphUser -ProviderHealth $GraphHealth
             ConvertTo-HybridSourceStatus -Name 'ExchangeOnline' -Object $Mailbox -ProviderHealth $ExchangeHealth
+            ConvertTo-HybridSourceStatus -Name 'ExchangeOnPremises' -Object $null -ProviderHealth $ExchangeOnPremisesHealth
         )
         Source                = 'HybridUserService'
         RetrievedOn           = [datetime]::UtcNow
@@ -456,6 +459,12 @@ function Add-HybridUserMailboxDetails {
     $identity = [string]($identityCandidates | Select-Object -First 1)
     if ([string]::IsNullOrWhiteSpace($identity)) { return $User }
 
+    $onPremRecipient = $null
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnPremises) {
+        $onPremRecipient = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetRecipient','GetExchangeRecipient','GetRemoteMailbox','GetMailbox','Get') -Arguments @($identity) | Select-Object -First 1)
+        $onPremRecipient = ($onPremRecipient | Select-Object -First 1)
+    }
+
     $mailbox = $null
     if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
         $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($identity) | Select-Object -First 1)
@@ -467,7 +476,9 @@ function Add-HybridUserMailboxDetails {
         if ($User.PSObject.Properties.Name -notcontains 'MailboxDetails') { Add-Member -InputObject $User -NotePropertyName MailboxDetails -NotePropertyValue $null }
         $User.ExchangeLoaded = $false
         $User.MailboxDetails = $null
-        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeMailbox' -Message 'Exchange Online mailbox provider did not return mailbox data; AD mail attributes are not treated as Exchange mailbox data.' -Level WARN -Data ([pscustomobject]@{ Identity = $identity; ExchangeProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnline) })
+        if ($User.PSObject.Properties.Name -notcontains 'OnPremisesExchangeRecipient') { Add-Member -InputObject $User -NotePropertyName OnPremisesExchangeRecipient -NotePropertyValue $onPremRecipient }
+        $User.OnPremisesExchangeRecipient = $onPremRecipient
+        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeMailbox' -Message 'Exchange Online mailbox provider did not return mailbox data; AD mail attributes are not treated as Exchange mailbox data.' -Level WARN -Data ([pscustomobject]@{ Identity = $identity; ExchangeOnlineProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnline); ExchangeOnPremisesProviderRegistered = ($null -ne $script:HybridUserServiceState.ExchangeOnPremises); OnPremisesRecipientReturned = ($null -ne $onPremRecipient) })
         return $User
     }
 
@@ -479,6 +490,7 @@ function Add-HybridUserMailboxDetails {
     $mailboxDetails = [pscustomobject]@{
         PSTypeName = 'Hybrid.UserMailboxDetails'
         Mailbox = $mailbox
+        OnPremisesRecipient = $onPremRecipient
         PrimarySmtpAddress = [string](Get-HybridObjectValue -InputObject $mailbox -Names @('PrimarySmtpAddress','Mail','EmailAddress') -Default '')
         RecipientTypeDetails = [string](Get-HybridObjectValue -InputObject $mailbox -Names @('RecipientTypeDetails','RecipientType','Type') -Default '')
         HiddenFromAddressListsEnabled = Get-HybridObjectValue -InputObject $mailbox -Names @('HiddenFromAddressListsEnabled') -Default $null
@@ -491,11 +503,13 @@ function Add-HybridUserMailboxDetails {
         RetrievedOn = [datetime]::UtcNow
     }
 
+    if ($User.PSObject.Properties.Name -notcontains 'OnPremisesExchangeRecipient') { Add-Member -InputObject $User -NotePropertyName OnPremisesExchangeRecipient -NotePropertyValue $onPremRecipient }
     if ($User.PSObject.Properties.Name -notcontains 'Mailbox') { Add-Member -InputObject $User -NotePropertyName Mailbox -NotePropertyValue $mailbox }
     if ($User.PSObject.Properties.Name -notcontains 'MailboxDetails') { Add-Member -InputObject $User -NotePropertyName MailboxDetails -NotePropertyValue $mailboxDetails }
     if ($User.PSObject.Properties.Name -notcontains 'ExchangeLoaded') { Add-Member -InputObject $User -NotePropertyName ExchangeLoaded -NotePropertyValue $false }
     if ($User.PSObject.Properties.Name -notcontains 'ExchangeRetrievedOn') { Add-Member -InputObject $User -NotePropertyName ExchangeRetrievedOn -NotePropertyValue $null }
 
+    $User.OnPremisesExchangeRecipient = $onPremRecipient
     $User.Mailbox = $mailbox
     $User.MailboxDetails = $mailboxDetails
     $User.ExchangeLoaded = $true
@@ -508,12 +522,14 @@ function Initialize-HybridUserService {
     param(
         [AllowNull()][object]$ActiveDirectoryProvider,
         [AllowNull()][object]$MicrosoftGraphProvider,
-        [AllowNull()][object]$ExchangeOnlineProvider
+        [AllowNull()][object]$ExchangeOnlineProvider,
+        [AllowNull()][object]$ExchangeOnPremisesProvider
     )
 
     $script:HybridUserServiceState.ActiveDirectory = $ActiveDirectoryProvider
     $script:HybridUserServiceState.MicrosoftGraph = $MicrosoftGraphProvider
     $script:HybridUserServiceState.ExchangeOnline = $ExchangeOnlineProvider
+    $script:HybridUserServiceState.ExchangeOnPremises = $ExchangeOnPremisesProvider
     $script:HybridUserServiceState.Initialized = $true
     $script:HybridUserServiceState.Cache.Clear()
     $script:HybridUserServiceState.DetailCache.Clear()
@@ -527,6 +543,7 @@ function Initialize-HybridUserService {
             ActiveDirectory = ($null -ne $ActiveDirectoryProvider)
             MicrosoftGraph  = ($null -ne $MicrosoftGraphProvider)
             ExchangeOnline  = ($null -ne $ExchangeOnlineProvider)
+            ExchangeOnPremises = ($null -ne $ExchangeOnPremisesProvider)
         }
         SearchUser     = ({ param([string]$Query) Search-HybridUser -Query $Query }).GetNewClosure()
         GetUser        = ({ param([string]$Identity) Get-HybridUser -Identity $Identity }).GetNewClosure()
@@ -553,17 +570,31 @@ function Search-HybridUser {
             MicrosoftGraphResultCount = @($graphUsers).Count
         })
 
-        $primary = @($graphUsers | Select-Object -First 1)
-        if ($primary.Count -eq 0) { $primary = @($adUsers | Select-Object -First 1) }
-        if ($primary.Count -eq 0) {
+        $candidateUsers = @()
+        if (@($adUsers).Count -gt 0) { $candidateUsers += @($adUsers) }
+        if (@($adUsers).Count -eq 0 -and @($graphUsers).Count -gt 0) { $candidateUsers += @($graphUsers) }
+
+        if ($candidateUsers.Count -eq 0) {
             $script:HybridUserServiceState.LastResult = @()
             return @()
         }
 
-        $identity = [string](Get-HybridObjectValue -InputObject $primary[0] -Names @('UserPrincipalName','UPN','SamAccountName','Identity','Mail') -Default $Query)
-        $result = Get-HybridUser -Identity $identity
-        $script:HybridUserServiceState.LastResult = @($result)
-        return @($result)
+        $results = @()
+        $seen = @{}
+        foreach ($candidate in $candidateUsers) {
+            $identity = [string](Get-HybridObjectValue -InputObject $candidate -Names @('UserPrincipalName','UPN','SamAccountName','Identity','Mail','DistinguishedName') -Default $Query)
+            if ([string]::IsNullOrWhiteSpace($identity)) { continue }
+            $dedupeKey = $identity.ToLowerInvariant()
+            if ($seen.ContainsKey($dedupeKey)) { continue }
+            $seen[$dedupeKey] = $true
+            try { $results += @(Get-HybridUser -Identity $identity) }
+            catch {
+                Write-HybridUserHydrationDiagnostic -Stage 'Search' -Message "Candidate hydration failed for '$identity' - $($_.Exception.Message)" -Level WARN
+            }
+        }
+
+        $script:HybridUserServiceState.LastResult = @($results)
+        return @($results)
     }
     catch {
         $script:HybridUserServiceState.LastError = $_.Exception.Message
@@ -596,6 +627,7 @@ function Get-HybridUser {
     $adHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ActiveDirectory
     $graphHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.MicrosoftGraph
     $exchangeHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnline
+    $exchangeOnPremisesHealth = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnPremises
 
     $user = New-HybridCompositeUser `
         -Identity $Identity `
@@ -604,7 +636,8 @@ function Get-HybridUser {
         -Mailbox ($mailbox | Select-Object -First 1) `
         -ActiveDirectoryHealth $adHealth `
         -GraphHealth $graphHealth `
-        -ExchangeHealth $exchangeHealth
+        -ExchangeHealth $exchangeHealth `
+        -ExchangeOnPremisesHealth $exchangeOnPremisesHealth
 
     $script:HybridUserServiceState.Cache[$cacheKey] = $user
     return $user
@@ -657,11 +690,13 @@ function Get-HybridUserServiceHealth {
             ActiveDirectory = ($null -ne $script:HybridUserServiceState.ActiveDirectory)
             MicrosoftGraph  = ($null -ne $script:HybridUserServiceState.MicrosoftGraph)
             ExchangeOnline  = ($null -ne $script:HybridUserServiceState.ExchangeOnline)
+            ExchangeOnPremises = ($null -ne $script:HybridUserServiceState.ExchangeOnPremises)
         }
         ProviderHealth     = @{
             ActiveDirectory = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ActiveDirectory
             MicrosoftGraph  = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.MicrosoftGraph
             ExchangeOnline  = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnline
+            ExchangeOnPremises = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnPremises
         }
         CacheEntries       = $script:HybridUserServiceState.Cache.Count
         DetailCacheEntries = $script:HybridUserServiceState.DetailCache.Count
@@ -679,6 +714,7 @@ function Clear-HybridUserService {
     $script:HybridUserServiceState.ActiveDirectory = $null
     $script:HybridUserServiceState.MicrosoftGraph = $null
     $script:HybridUserServiceState.ExchangeOnline = $null
+    $script:HybridUserServiceState.ExchangeOnPremises = $null
     $script:HybridUserServiceState.Cache.Clear()
     $script:HybridUserServiceState.DetailCache.Clear()
     $script:HybridUserServiceState.MailboxCache.Clear()

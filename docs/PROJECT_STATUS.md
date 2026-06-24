@@ -43,11 +43,13 @@ The project is currently in a live-environment stabilization pass after Mileston
 - The main console now has a Back/Start button to reopen Runtime Home.
 - The bottom status bar now has staged search progress for Search, Base User, AD, Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
 - Exchange display now distinguishes AD mail attributes from Exchange Online mailbox provider data.
+- Duplicate user search results now open a chooser instead of silently selecting the first match.
+- An `Infrastructure.ExchangeOnPremises` provider slice was added so hybrid environments can query local Exchange recipient and remote-mailbox data separately from Exchange Online.
 - Runtime theme support and profile-aware branding are available.
 
 ### Current live validation findings
 
-Active Directory search and group display are working. v0.8.9 includes a DN/OU propagation fix that must be validated live: AD conversion now preserves DN/OU as direct properties and Attributes values, the service layer reads hashtable attributes, and the UI resolver reads both direct and Attributes-backed names.
+Active Directory search, group display, and DN/OU display are working. v0.8.9 now also includes duplicate-user selection before hydration: AD conversion now preserves DN/OU as direct properties and Attributes values, the service layer reads hashtable attributes, and the UI resolver reads both direct and Attributes-backed names.
 
 The likely investigation areas are:
 
@@ -69,12 +71,10 @@ The likely investigation areas are:
 
 ### Other known live validation gaps
 
-- Exchange status is currently misleading in a hybrid environment. The UI can report Exchange loaded while the data may be AD mail attributes rather than Exchange Online provider data.
+- Exchange on-premises support is now represented as a separate provider slice, but runtime profile bootstrap wiring and live connection validation still need to be completed against the local Exchange server.
 - Microsoft Graph vertical is not yet loading in the live test environment.
 - Authentication posture vertical is not yet loading in the live test environment.
 - Graph, Exchange, and Authentication services may still be unregistered or deferred depending on runtime profile/provider configuration.
-- The UI needs a Back/Start button to return to Runtime Home so operators can switch profiles without closing the application.
-- The bottom status area needs a centered search progress bar, placed to the left of the active profile indicator, showing current search/hydration progress.
 
 ---
 
@@ -85,7 +85,7 @@ Do not begin Milestone 9 yet.
 Before Milestone 9, validate the v0.8.9 live-readiness stabilization pass:
 
 - Validate DN/OU display in live AD.
-- Continue clarifying hybrid Exchange vs Exchange Online status, including future on-prem Exchange connectivity.
+- Validate the new on-premises Exchange provider against the live local Exchange server and wire it through runtime profile bootstrap if needed.
 - Register or explicitly mark Graph, Exchange, and Authentication verticals as deferred/unavailable with clear reason text.
 - Validate Back/Start navigation to Runtime Home/Profile selection.
 - Validate the bottom search progress bar stages.

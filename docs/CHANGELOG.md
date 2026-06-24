@@ -26,6 +26,9 @@
 - Added a Back/Start button to reopen Runtime Home from the main console.
 - Added staged bottom search progress for Search, Base User, Active Directory Details, Microsoft Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
 - Clarified Exchange Online UI state so AD mail attributes are not treated as loaded Exchange mailbox data.
+- Added duplicate user search handling with an operator chooser before hydration.
+- Added `Infrastructure.ExchangeOnPremises` as a separate provider slice for hybrid local Exchange recipient data.
+- Added tests for duplicate-user handling and the on-premises Exchange provider boundary.
 
 
 ## v0.8.2 - Runtime Platform Hardening
