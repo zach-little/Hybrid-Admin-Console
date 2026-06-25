@@ -205,6 +205,24 @@ function Get-HybridMicrosoftGraphEndpoint {
     return ([string]$graphEndpoint).TrimEnd('/')
 }
 
+function Add-HybridMicrosoftGraphObjectProperties {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object]$Target,
+        [AllowNull()][object]$Source,
+        [string[]]$PropertyNames = @()
+    )
+
+    if ($null -eq $Source) { return $Target }
+    foreach ($propertyName in $PropertyNames) {
+        if ($Source.PSObject.Properties.Name -contains $propertyName) {
+            $Target | Add-Member -NotePropertyName $propertyName -NotePropertyValue $Source.$propertyName -Force
+        }
+    }
+
+    return $Target
+}
+
 function Invoke-HybridMicrosoftGraphUserRequest {
     [CmdletBinding()]
     param(
@@ -218,11 +236,23 @@ function Invoke-HybridMicrosoftGraphUserRequest {
     $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
     $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
     $escapedIdentity = [System.Uri]::EscapeDataString($Identity)
-    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation,companyName,officeLocation,employeeId,state,mobilePhone,businessPhones,signInActivity,lastPasswordChangeDateTime'
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
     $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
     $user = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    $profileSelects = @(
+        'companyName,officeLocation,employeeId,mobilePhone,businessPhones',
+        'state',
+        'lastPasswordChangeDateTime',
+        'signInActivity'
+    )
+    foreach ($profileSelect in $profileSelects) {
+        $profileUri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $profileSelect)
+        $profileResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $profileUri -Session $Session
+        $user = Add-HybridMicrosoftGraphObjectProperties -Target $user -Source $profileResponse -PropertyNames @($profileSelect -split ',')
+    }
+
     return Add-HybridMicrosoftGraphUserSecurityEnrichment -GraphUser $user -Session $Session
 }
 
@@ -343,7 +373,7 @@ function Invoke-HybridMicrosoftGraphUserSearchRequest {
     $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
     $escapedQuery = $Query.Replace("'", "''")
     $filter = [System.Uri]::EscapeDataString("startswith(displayName,'$escapedQuery') or startswith(userPrincipalName,'$escapedQuery') or startswith(mail,'$escapedQuery')")
-    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation,companyName,officeLocation,employeeId,state,mobilePhone,businessPhones'
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
     $uri = ('{0}/v1.0/users?$top=25&$select={1}&$filter={2}' -f $graphEndpoint, $select, $filter)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
