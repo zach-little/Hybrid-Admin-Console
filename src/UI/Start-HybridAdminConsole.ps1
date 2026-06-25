@@ -1659,7 +1659,7 @@ function Invoke-HybridRuntimeProfileLaunch {
         $controls.OverlayRegion.Visibility = 'Visible'
         $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'
         $controls.LaunchProgressView.Visibility = 'Visible'
-        $steps = @('Loading runtime profile...', 'Validating configuration...', 'Building runtime context...', 'Initializing services...', 'Opening dashboard...')
+        $steps = @('Loading runtime profile...', 'Validating configuration...', 'Building runtime context...', 'Initializing services...', 'Starting delegated sign-in if enabled...', 'Opening dashboard...')
         for ($i = 0; $i -lt $steps.Count; $i++) {
             $controls.LaunchProgressText.Text = $steps[$i]
             $controls.LaunchProgressBar.Value = [int](($i + 1) * (100 / $steps.Count))
@@ -1670,6 +1670,9 @@ function Invoke-HybridRuntimeProfileLaunch {
             Set-HybridRuntimeProfileSelection -RepositoryRoot $repoRoot -ProfilePath $script:SelectedRuntimeProfileSummary.Path | Out-Null
         }
         if (Get-Command Initialize-HybridRuntime -ErrorAction SilentlyContinue) {
+            $controls.LaunchProgressText.Text = 'Initializing runtime providers and delegated sign-in if enabled...'
+            $controls.LaunchProgressBar.Value = 90
+            [System.Windows.Forms.Application]::DoEvents()
             $script:HybridRuntime = Initialize-HybridRuntime -ProfilePath $script:SelectedRuntimeProfileSummary.Path -RootPath $repoRoot -Force
         }
         $controls.LaunchProgressView.Visibility = 'Collapsed'

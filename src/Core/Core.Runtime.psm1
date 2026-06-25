@@ -642,9 +642,20 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
             GetProviderHealth = $getGraphHealth
         }
 
+        $status = 'Deferred'
+        $capabilityStates = @('GraphProfile','AuthenticationPosture','Deferred')
         $message = 'Microsoft Graph provider registered. Authentication is deferred until Graph profile data is requested.'
-        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Deferred' -Service $service -Message $message -CapabilityStates @('GraphProfile','AuthenticationPosture','Deferred') | Out-Null
-        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Deferred' -Message $message)) | Out-Null
+        if ($delegatedEnabled) {
+            $message = 'Microsoft Graph delegated authentication is requested during console launch.'
+            $null = & $getInnerService
+            $service.ProviderConnected = $true
+            $status = 'Connected'
+            $capabilityStates = @('GraphProfile','AuthenticationPosture','DelegatedAuthenticated')
+            $message = 'Microsoft Graph delegated authentication completed during console launch.'
+        }
+
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status $status -Service $service -Message $message -CapabilityStates $capabilityStates | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status $status -Message $message)) | Out-Null
     }
     catch {
         $message = 'Microsoft Graph provider failed during runtime binding: ' + $_.Exception.Message

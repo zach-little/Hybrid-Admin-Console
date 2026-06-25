@@ -303,9 +303,11 @@ $msalText = Get-Content -LiteralPath $msalModule -Raw
 $graphProviderText = Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
-Assert-ContainsText $runtimeText 'Authentication is deferred until Graph profile data is requested' 'Microsoft Graph bootstrap defers live authentication until data access'
+Assert-ContainsText $runtimeText 'Microsoft Graph delegated authentication is requested during console launch.' 'Microsoft Graph bootstrap requests delegated authentication during console launch'
+Assert-ContainsText $runtimeText 'Microsoft Graph delegated authentication completed during console launch.' 'Microsoft Graph bootstrap records delegated authentication completion during console launch'
 Assert-ContainsText $runtimeText 'SearchUser = $searchGraphUsers' 'Microsoft Graph lazy provider exposes search fallback'
 Assert-ContainsText $runtimeText "if (`$delegatedEnabled) { 'InteractiveBrowser' }" 'Microsoft Graph runtime prefers delegated browser auth when delegated is enabled'
+Assert-ContainsText $ui 'Starting delegated sign-in if enabled...' 'Runtime launch overlay announces delegated sign-in during loading'
 Assert-ContainsText $msalText 'Invoke-HybridMsalCertificateClientCredentials' 'MSAL adapter supports certificate client credentials for Graph app-only auth'
 Assert-ContainsText $msalText 'client_assertion_type' 'MSAL adapter builds certificate client assertions instead of delegated desktop auth'
 Assert-ContainsText $msalText 'Invoke-HybridMsalLoopbackInteractive' 'MSAL adapter prompts delegated auth with browser loopback flow'
