@@ -306,6 +306,7 @@ $xaml = @"
 
                     <Border Grid.Column="2" x:Name="RuntimeSummaryPanel" Style="{StaticResource PanelCard}" Margin="0">
                         <!-- Phase 8.3 RuntimeSummaryPanel -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -398,13 +399,16 @@ $xaml = @"
                                 </Border>
                             </Grid>
                         </Grid>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
 
                 <Border x:Name="RuntimeActionFooter" Grid.Row="2" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="14" Margin="0,16,0,0">
                     <!-- Fixed action footer: buttons remain visible regardless of profile-card scrolling. -->
                     <!-- Phase 8 Final UI polish: action buttons are large, styled, single-row command tiles. -->
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
                         <Button x:Name="LaunchConsoleButton" Style="{StaticResource LaunchActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
@@ -432,10 +436,11 @@ $xaml = @"
                         <Button x:Name="SetDefaultRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Set Default" Foreground="#FACC15" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+F" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                        <Button x:Name="ExitButton" Style="{StaticResource RuntimeActionButton}">
+                    </WrapPanel></ScrollViewer>
+                        <Button x:Name="ExitButton" Grid.Column="1" Style="{StaticResource RuntimeActionButton}" Margin="12,0,0,0">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Exit" Foreground="#E5E7EB" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Alt+F4" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                    </WrapPanel></ScrollViewer>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>
@@ -723,6 +728,7 @@ $xaml = @"
                         </Border>
 
                         <Border Grid.Column="1" Background="#0F172A" CornerRadius="14" Padding="18">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                             <Grid>
                                 <StackPanel x:Name="WizardStepProfilePanel" Visibility="Visible">
                                     <TextBlock Text="Step 1: Profile" Style="{StaticResource SectionTitle}"/>
@@ -874,6 +880,7 @@ $xaml = @"
                                     <Button x:Name="WizardSaveButton" Content="Save Profile" Height="38" MinWidth="130" HorizontalAlignment="Left"/>
                                 </StackPanel>
                             </Grid>
+                            </ScrollViewer>
                         </Border>
                     </Grid>
 

@@ -81,6 +81,8 @@ Assert-ContainsText $ui 'ToolTip="Thumbprint of a certificate installed in the W
 Assert-ContainsText $ui 'ToolTip="Path to a local certificate file for app-only auth' 'Runtime profile wizard explains certificate path'
 Assert-ContainsText $ui 'ToolTip="Name or URI of a secret stored outside this profile' 'Runtime profile wizard explains secret reference'
 Assert-ContainsText $ui 'Normalize-HybridWizardCertificateThumbprint' 'Runtime profile wizard normalizes pasted certificate thumbprints'
+Assert-ContainsText $ui '<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">' 'Runtime profile wizard and startup summary support vertical scrolling on shorter screens'
+Assert-ContainsText $ui '<Button x:Name="ExitButton" Grid.Column="1"' 'Runtime home keeps Exit pinned outside the horizontal action scroller'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange On-Prem'" 'Search progress includes Exchange On-Premises stage'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange Online'" 'Search progress includes Exchange Online stage'
 
