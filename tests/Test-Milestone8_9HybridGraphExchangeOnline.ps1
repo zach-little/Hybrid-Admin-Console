@@ -94,6 +94,7 @@ Assert-ContainsText $ui 'ImportExportRuntimeProfileButton' 'Runtime home combine
 Assert-ContainsText $ui 'Show-HybridRuntimeProfileImportExportWizard' 'Runtime home opens an import/export chooser workflow'
 Assert-True (-not ($ui -match '<Button x:Name="DuplicateRuntimeProfileButton"')) 'Runtime home removes Duplicate from the footer'
 Assert-True ($ui -match '<Button x:Name="ExitButton" Style="\{StaticResource RuntimeActionButton\}"') 'Runtime home keeps Exit in the same dynamic button flow'
+Assert-ContainsText $ui 'HorizontalContentAlignment="Center"><WrapPanel HorizontalAlignment="Center"' 'Runtime home centers footer buttons in available space'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange On-Prem'" 'Search progress includes Exchange On-Premises stage'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange Online'" 'Search progress includes Exchange Online stage'
 
@@ -207,15 +208,36 @@ Initialize-HybridUserService -ActiveDirectoryProvider $failingAdProvider -Micros
 $fallbackResults = @(Search-HybridUser -Query 'cloud.only')
 Assert-True ($fallbackResults.Count -eq 1 -and $fallbackResults[0].UserPrincipalName -eq 'cloud.only@atlas.test') 'HybridUserService search continues with Graph results when AD search fails'
 
+$exactOnlyGraphProvider = [pscustomobject]@{
+    SearchUser = { param([string]$Query) @() }.GetNewClosure()
+    GetUser = {
+        param([string]$Identity)
+        if ($Identity -eq 'exact.user@atlas.test') {
+            [pscustomobject]@{
+                Id = 'graph-exact-1'
+                DisplayName = 'Exact User'
+                UserPrincipalName = 'exact.user@atlas.test'
+                Mail = 'exact.user@atlas.test'
+                Source = 'MicrosoftGraph'
+            }
+        }
+    }.GetNewClosure()
+}
+Initialize-HybridUserService -MicrosoftGraphProvider $exactOnlyGraphProvider | Out-Null
+$exactFallbackResults = @(Search-HybridUser -Query 'exact.user@atlas.test')
+Assert-True ($exactFallbackResults.Count -eq 1 -and $exactFallbackResults[0].UserPrincipalName -eq 'exact.user@atlas.test') 'HybridUserService search tries exact identity lookup before returning no users'
+
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 $msalText = Get-Content -LiteralPath $msalModule -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
 Assert-ContainsText $runtimeText 'Authentication is deferred until Graph profile data is requested' 'Microsoft Graph bootstrap defers live authentication until data access'
 Assert-ContainsText $runtimeText 'SearchUser = $searchGraphUsers' 'Microsoft Graph lazy provider exposes search fallback'
-Assert-ContainsText $runtimeText "'AppOnlyClientCredentials'" 'Microsoft Graph runtime prefers app-only client credentials when certificate auth is configured'
+Assert-ContainsText $runtimeText "if (`$delegatedEnabled) { 'InteractiveBrowser' }" 'Microsoft Graph runtime prefers delegated browser auth when delegated is enabled'
 Assert-ContainsText $msalText 'Invoke-HybridMsalCertificateClientCredentials' 'MSAL adapter supports certificate client credentials for Graph app-only auth'
 Assert-ContainsText $msalText 'client_assertion_type' 'MSAL adapter builds certificate client assertions instead of delegated desktop auth'
+Assert-ContainsText $msalText 'Invoke-HybridMsalLoopbackInteractive' 'MSAL adapter prompts delegated auth with browser loopback flow'
+Assert-ContainsText $msalText 'Start-Process $authorizeUri' 'Delegated browser auth launches a sign-in prompt'
 Assert-ContainsText $runtimeText 'ProviderRegistry.ContainsKey(''ExchangeOnline'')' 'Exchange Online appears in provider diagnostics and service registration when enabled'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |

@@ -211,6 +211,87 @@ function Invoke-HybridMsalCertificateClientCredentials {
     }
 }
 
+function Invoke-HybridMsalLoopbackInteractive {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$TokenRequest)
+
+    $clientId = [string](Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('ClientId') -Default '')
+    $authority = [string](Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('Authority') -Default '')
+    if ([string]::IsNullOrWhiteSpace($clientId)) { throw 'Delegated Microsoft Graph authentication requires ClientId.' }
+    if ([string]::IsNullOrWhiteSpace($authority)) { throw 'Delegated Microsoft Graph authentication requires Authority.' }
+
+    $listener = $null
+    $redirectUri = ''
+    foreach ($port in 8400..8499) {
+        try {
+            $candidate = "http://localhost:$port/"
+            $listener = [System.Net.HttpListener]::new()
+            $listener.Prefixes.Add($candidate)
+            $listener.Start()
+            $redirectUri = $candidate
+            break
+        }
+        catch {
+            if ($null -ne $listener) { $listener.Close() }
+            $listener = $null
+        }
+    }
+    if ($null -eq $listener) { throw 'Delegated Microsoft Graph authentication could not open a localhost callback listener.' }
+
+    $state = [guid]::NewGuid().ToString('N')
+    $scopeText = (@($TokenRequest.Scopes) + 'offline_access') | Select-Object -Unique
+    $authorizeUri = '{0}/oauth2/v2.0/authorize?client_id={1}&response_type=code&redirect_uri={2}&response_mode=query&scope={3}&state={4}&prompt=select_account' -f `
+        $authority.TrimEnd('/'),
+        [System.Uri]::EscapeDataString($clientId),
+        [System.Uri]::EscapeDataString($redirectUri),
+        [System.Uri]::EscapeDataString(($scopeText -join ' ')),
+        [System.Uri]::EscapeDataString($state)
+
+    try {
+        Start-Process $authorizeUri | Out-Null
+        $async = $listener.BeginGetContext($null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne([TimeSpan]::FromMinutes(5))) {
+            throw 'Delegated Microsoft Graph sign-in timed out waiting for browser callback.'
+        }
+        $context = $listener.EndGetContext($async)
+        $request = $context.Request
+        $code = [string]$request.QueryString['code']
+        $returnedState = [string]$request.QueryString['state']
+        $error = [string]$request.QueryString['error']
+        $errorDescription = [string]$request.QueryString['error_description']
+        $message = if ([string]::IsNullOrWhiteSpace($error)) { 'Hybrid Admin Platform sign-in complete. You can close this browser window.' } else { "Hybrid Admin Platform sign-in failed: $error $errorDescription" }
+        $bytes = [Text.Encoding]::UTF8.GetBytes("<html><body><h2>$message</h2></body></html>")
+        $context.Response.ContentType = 'text/html'
+        $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+        $context.Response.Close()
+
+        if (-not [string]::IsNullOrWhiteSpace($error)) { throw "Delegated Microsoft Graph sign-in failed: $error $errorDescription" }
+        if ([string]::IsNullOrWhiteSpace($code)) { throw 'Delegated Microsoft Graph sign-in did not return an authorization code.' }
+        if ($returnedState -ne $state) { throw 'Delegated Microsoft Graph sign-in returned an invalid state value.' }
+
+        $tokenEndpoint = $authority.TrimEnd('/') + '/oauth2/v2.0/token'
+        $body = @{
+            client_id = $clientId
+            scope = ($scopeText -join ' ')
+            code = $code
+            redirect_uri = $redirectUri
+            grant_type = 'authorization_code'
+        }
+        $response = Invoke-RestMethod -Method Post -Uri $tokenEndpoint -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
+        $expiresIn = [int](Get-HybridMsalObjectValue -InputObject $response -Names @('expires_in','ExpiresIn') -Default 3600)
+        [pscustomobject]@{
+            PSTypeName = 'Hybrid.MsalLoopbackInteractiveTokenResult'
+            AccessToken = [string](Get-HybridMsalObjectValue -InputObject $response -Names @('access_token','AccessToken') -Default '')
+            TokenType = [string](Get-HybridMsalObjectValue -InputObject $response -Names @('token_type','TokenType') -Default 'Bearer')
+            ExpiresOn = [datetime]::UtcNow.AddSeconds($expiresIn)
+            RuntimeMode = 'LoopbackInteractive'
+        }
+    }
+    finally {
+        if ($null -ne $listener) { $listener.Close() }
+    }
+}
+
 function ConvertTo-HybridMsalTokenDescriptor {
     [CmdletBinding()]
     param(
@@ -258,6 +339,10 @@ function Invoke-HybridMsalTokenAcquisition {
     }
 
     $runtime = Test-HybridMsalRuntimeAvailable
+    if ($TokenRequest.MethodName -in @('Interactive','InteractiveBrowser')) {
+        return Invoke-HybridMsalLoopbackInteractive -TokenRequest $TokenRequest
+    }
+
     if ($TokenRequest.MethodName -in @('AppOnly','AppOnlyClientCredentials')) {
         $attributes = Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('Attributes') -Default @{}
         $thumbprint = [string](Get-HybridMsalObjectValue -InputObject $attributes -Names @('CertificateThumbprint') -Default '')

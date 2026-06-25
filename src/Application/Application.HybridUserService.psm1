@@ -730,6 +730,35 @@ function Search-HybridUser {
         if (@($adUsers).Count -eq 0 -and @($graphUsers).Count -gt 0) { $candidateUsers += @($graphUsers) }
 
         if ($candidateUsers.Count -eq 0) {
+            Write-HybridUserHydrationDiagnostic -Stage 'Search' -Message "Search returned no candidates for '$Query'. Trying exact identity lookup before returning no results." -Level WARN
+            $exactUser = @(Get-HybridUser -Identity $Query | Select-Object -First 1)
+            $hasExactData = $false
+            if ($exactUser.Count -gt 0 -and $null -ne $exactUser[0]) {
+                foreach ($sourceName in @('ActiveDirectory','MicrosoftGraph','ExchangeOnline','ExchangeOnPremises')) {
+                    if ($exactUser[0].PSObject.Properties.Name -contains 'Sources' -and $null -ne $exactUser[0].Sources) {
+                        $sourceStatus = $null
+                        if ($exactUser[0].Sources -is [System.Collections.IDictionary] -and $exactUser[0].Sources.Contains($sourceName)) {
+                            $sourceStatus = $exactUser[0].Sources[$sourceName]
+                        }
+                        elseif ($exactUser[0].Sources.PSObject.Properties.Name -contains $sourceName) {
+                            $sourceStatus = $exactUser[0].Sources.$sourceName
+                        }
+                        else {
+                            $sourceStatus = @($exactUser[0].Sources | Where-Object {
+                                $_.PSObject.Properties.Name -contains 'Name' -and [string]$_.Name -eq $sourceName
+                            } | Select-Object -First 1)
+                            if ($sourceStatus.Count -gt 0) { $sourceStatus = $sourceStatus[0] }
+                        }
+                        if ($null -ne $sourceStatus -and $sourceStatus.PSObject.Properties.Name -contains 'Available' -and [bool]$sourceStatus.Available) {
+                            $hasExactData = $true
+                        }
+                    }
+                }
+            }
+            if ($hasExactData) {
+                $script:HybridUserServiceState.LastResult = @($exactUser)
+                return @($exactUser)
+            }
             $script:HybridUserServiceState.LastResult = @()
             return @()
         }

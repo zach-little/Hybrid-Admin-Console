@@ -399,7 +399,7 @@ $xaml = @"
                 <Border x:Name="RuntimeActionFooter" Grid.Row="2" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="14" Margin="0,16,0,0">
                     <!-- Fixed action footer: buttons remain visible regardless of profile-card scrolling. -->
                     <!-- Phase 8 Final UI polish: action buttons are large, styled, single-row command tiles. -->
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" HorizontalContentAlignment="Center"><WrapPanel HorizontalAlignment="Center">
                         <Button x:Name="LaunchConsoleButton" Style="{StaticResource LaunchActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
