@@ -137,6 +137,15 @@ function Get-HybridMicrosoftGraphAuthenticationSession {
         throw 'Core.Authentication.Manager is required before using the Microsoft Graph provider.'
     }
 
+    if (-not $ForceRefresh -and $null -ne $script:HybridMicrosoftGraphState.LastAuthenticationSession) {
+        $session = $script:HybridMicrosoftGraphState.LastAuthenticationSession
+        $expiresOn = Get-HybridMicrosoftGraphObjectValue -InputObject $session -Names @('ExpiresOn','ExpiresAt','Expires') -Default $null
+        $accessToken = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $session -Names @('AccessToken') -Default '')
+        if (-not [string]::IsNullOrWhiteSpace($accessToken) -and $null -ne $expiresOn -and ([datetime]$expiresOn) -gt (Get-Date).AddMinutes(5)) {
+            return $session
+        }
+    }
+
     $session = Get-HybridAuthenticationSession -Request $AuthenticationRequest -ForceRefresh:$ForceRefresh
     $script:HybridMicrosoftGraphState.LastAuthenticationSession = $session
     return $session

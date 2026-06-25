@@ -302,6 +302,7 @@ Assert-True (@($authProfile.AuthenticationMethods).Count -eq 2 -and [bool]$authP
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 $msalText = Get-Content -LiteralPath $msalModule -Raw
 $graphProviderText = Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw
+$authManagerText = Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Authentication.Manager.psm1') -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
 Assert-ContainsText $runtimeText 'Microsoft Graph delegated authentication is requested during console launch.' 'Microsoft Graph bootstrap requests delegated authentication during console launch'
@@ -319,6 +320,10 @@ Assert-ContainsText $graphProviderText "/auditLogs/signIns" 'Microsoft Graph pro
 Assert-ContainsText $graphProviderText "/identityProtection/riskyUsers" 'Microsoft Graph provider requests risky user state when available'
 Assert-ContainsText $graphProviderText "`$select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'" 'Microsoft Graph base user request uses a conservative select set'
 Assert-ContainsText $graphProviderText 'Invoke-HybridMicrosoftGraphOptionalRequest -Uri $profileUri' 'Microsoft Graph extended user fields are loaded with optional fallback requests'
+Assert-ContainsText $graphProviderText 'LastAuthenticationSession' 'Microsoft Graph provider reuses an existing valid authentication session'
+Assert-ContainsText $authManagerText '$tenantId,$cloudName,$methodName,$clientId,$scopeText' 'Authentication manager cache key includes client ID'
+Assert-ContainsText $ui '$script:HybridRuntimeLaunchInProgress' 'Runtime launch guards against repeated launch clicks'
+Assert-ContainsText $ui '$controls.LaunchConsoleButton.IsEnabled = $false' 'Runtime launch disables launch button while authentication is in progress'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |
     Where-Object { $_.FullName -notlike '*\.git\*' } |

@@ -113,9 +113,10 @@ function New-HybridAuthenticationManagerCacheKey {
 
     $tenantId = [string](Get-HybridAuthenticationObjectValue -InputObject $tenantContext -Names @('TenantId','Id') -Default '')
     $cloudName = [string](Get-HybridAuthenticationObjectValue -InputObject $cloudEnvironment -Names @('Name') -Default '')
+    $clientId = [string](Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('ClientId') -Default '')
     $scopeText = (@($scopes) | Sort-Object) -join ','
 
-    return ('{0}|{1}|{2}|{3}' -f $tenantId,$cloudName,$methodName,$scopeText).ToLowerInvariant()
+    return ('{0}|{1}|{2}|{3}|{4}' -f $tenantId,$cloudName,$methodName,$clientId,$scopeText).ToLowerInvariant()
 }
 
 function New-HybridAuthenticationManagerTokenDescriptor {

@@ -40,6 +40,7 @@ $script:HybridUiTheme = if (Get-Command Resolve-HybridUiTheme -ErrorAction Silen
 else { $null }
 
 $script:HybridRuntime = $null
+$script:HybridRuntimeLaunchInProgress = $false
 if (Test-Path $profileManagerModule) { Import-Module $profileManagerModule -Force -Global }
 if (Test-Path $runtimeModule) {
     Import-Module $runtimeModule -Force -Global
@@ -1653,9 +1654,12 @@ function Show-HybridHomeView {
 }
 
 function Invoke-HybridRuntimeProfileLaunch {
+    if ($script:HybridRuntimeLaunchInProgress) { return }
     if ($null -eq $script:SelectedRuntimeProfileSummary) { $controls.StatusText.Text = 'Select a runtime profile before launch.'; return }
     if (-not [bool]$script:SelectedRuntimeProfileSummary.IsValid) { $controls.StatusText.Text = 'Selected runtime profile is not valid.'; return }
     try {
+        $script:HybridRuntimeLaunchInProgress = $true
+        if ($controls.LaunchConsoleButton) { $controls.LaunchConsoleButton.IsEnabled = $false }
         $controls.OverlayRegion.Visibility = 'Visible'
         $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'
         $controls.LaunchProgressView.Visibility = 'Visible'
@@ -1684,6 +1688,10 @@ function Invoke-HybridRuntimeProfileLaunch {
     catch {
         $controls.LaunchProgressText.Text = "Launch failed: $($_.Exception.Message)"
         $controls.StatusText.Text = 'Runtime launch failed.'
+    }
+    finally {
+        $script:HybridRuntimeLaunchInProgress = $false
+        if ($controls.LaunchConsoleButton) { $controls.LaunchConsoleButton.IsEnabled = $true }
     }
 }
 
