@@ -590,6 +590,20 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
                 throw
             }
         }.GetNewClosure()
+        $searchGraphUsers = {
+            param([string]$Query)
+            try {
+                $inner = & $getInnerService
+                if ($null -eq $inner) { return @() }
+                if ($inner.PSObject.Properties.Name -contains 'SearchUser' -and $inner.SearchUser -is [scriptblock]) { return @(& $inner.SearchUser $Query) }
+                if ($inner.PSObject.Properties.Name -contains 'Search' -and $inner.Search -is [scriptblock]) { return @(& $inner.Search $Query) }
+                return @()
+            }
+            catch {
+                $lazyState.LastError = $_.Exception.Message
+                throw
+            }
+        }.GetNewClosure()
         $getGraphHealth = {
             if ($null -ne $lazyState.Service -and $lazyState.Service.PSObject.Properties.Name -contains 'GetHealth' -and $lazyState.Service.GetHealth -is [scriptblock]) {
                 return & $lazyState.Service.GetHealth
@@ -612,6 +626,8 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
             ProviderConnected = $false
             AuthenticationMethod = $methodName
             Scopes = @($scopes)
+            SearchUser = $searchGraphUsers
+            Search = $searchGraphUsers
             GetUser = $invokeGraphUser
             Get = $invokeGraphUser
             GetGraphProfile = $invokeGraphUser

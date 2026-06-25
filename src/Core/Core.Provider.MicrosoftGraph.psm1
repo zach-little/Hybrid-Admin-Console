@@ -193,6 +193,29 @@ function Invoke-HybridMicrosoftGraphUserRequest {
     return Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
 }
 
+function Invoke-HybridMicrosoftGraphUserSearchRequest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Query,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $token = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Session -Names @('AccessToken') -Default '')
+    if ([string]::IsNullOrWhiteSpace($token)) { throw 'Microsoft Graph authentication session did not include an access token.' }
+
+    $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+    $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+    $escapedQuery = $Query.Replace("'", "''")
+    $filter = [System.Uri]::EscapeDataString("startswith(displayName,'$escapedQuery') or startswith(userPrincipalName,'$escapedQuery') or startswith(mail,'$escapedQuery')")
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
+    $uri = ('{0}/v1.0/users?$top=25&$select={1}&$filter={2}' -f $graphEndpoint, $select, $filter)
+    $headers = @{ Authorization = ('Bearer {0}' -f $token) }
+
+    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    $values = Get-HybridMicrosoftGraphObjectValue -InputObject $response -Names @('value','Value') -Default @()
+    return @($values)
+}
+
 function Get-HybridMicrosoftGraphUserCacheKey {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Value)
@@ -231,6 +254,10 @@ function Search-HybridMicrosoftGraphUser {
                 ([string](Get-HybridMicrosoftGraphObjectValue -InputObject $_ -Names @('mail','Mail') -Default '') -like "*$needle*") -or
                 ([string](Get-HybridMicrosoftGraphObjectValue -InputObject $_ -Names @('id','Id') -Default '') -like "*$needle*")
             })
+        }
+
+        if ($users.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($Query)) {
+            $users = @(Invoke-HybridMicrosoftGraphUserSearchRequest -Query $Query -Session $session)
         }
 
         return @($users | ForEach-Object { ConvertTo-HybridMicrosoftGraphUser -GraphUser $_ })

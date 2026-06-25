@@ -170,10 +170,41 @@ $aggregate = Get-HybridUserAggregateProfile -Identity 'alex.morgan@atlas.test' -
 Assert-True (@($aggregate.Verticals | Where-Object { $_.Name -eq 'ExchangeOnPremisesRecipient' }).Count -eq 1) 'Aggregation includes Exchange On-Premises vertical status'
 Assert-True (@($aggregate.Verticals | Where-Object { $_.Name -eq 'ExchangeOnlineMailbox' }).Count -eq 1) 'Aggregation includes Exchange Online vertical status'
 
+$failingAdProvider = [pscustomobject]@{
+    SearchUser = { param([string]$Query) throw 'Simulated AD search outage' }.GetNewClosure()
+    GetUser = { param([string]$Identity) throw 'Simulated AD get outage' }.GetNewClosure()
+}
+$fallbackGraphProvider = [pscustomobject]@{
+    SearchUser = {
+        param([string]$Query)
+        [pscustomobject]@{
+            Id = 'graph-1'
+            DisplayName = 'Cloud Only User'
+            UserPrincipalName = 'cloud.only@atlas.test'
+            Mail = 'cloud.only@atlas.test'
+            Source = 'MicrosoftGraph'
+        }
+    }.GetNewClosure()
+    GetUser = {
+        param([string]$Identity)
+        [pscustomobject]@{
+            Id = 'graph-1'
+            DisplayName = 'Cloud Only User'
+            UserPrincipalName = 'cloud.only@atlas.test'
+            Mail = 'cloud.only@atlas.test'
+            Source = 'MicrosoftGraph'
+        }
+    }.GetNewClosure()
+}
+Initialize-HybridUserService -ActiveDirectoryProvider $failingAdProvider -MicrosoftGraphProvider $fallbackGraphProvider | Out-Null
+$fallbackResults = @(Search-HybridUser -Query 'cloud.only')
+Assert-True ($fallbackResults.Count -eq 1 -and $fallbackResults[0].UserPrincipalName -eq 'cloud.only@atlas.test') 'HybridUserService search continues with Graph results when AD search fails'
+
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
 Assert-ContainsText $runtimeText 'Authentication is deferred until Graph profile data is requested' 'Microsoft Graph bootstrap defers live authentication until data access'
+Assert-ContainsText $runtimeText 'SearchUser = $searchGraphUsers' 'Microsoft Graph lazy provider exposes search fallback'
 Assert-ContainsText $runtimeText 'ProviderRegistry.ContainsKey(''ExchangeOnline'')' 'Exchange Online appears in provider diagnostics and service registration when enabled'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |

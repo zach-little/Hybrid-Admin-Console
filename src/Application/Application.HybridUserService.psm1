@@ -217,6 +217,30 @@ function Invoke-HybridServiceOperation {
     return @()
 }
 
+function Invoke-HybridServiceOperationSafe {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Service,
+        [Parameter(Mandatory=$true)][string[]]$OperationNames,
+        [object[]]$Arguments = @(),
+        [string]$ProviderName = 'Provider'
+    )
+
+    try {
+        return @(Invoke-HybridServiceOperation -Service $Service -OperationNames $OperationNames -Arguments $Arguments)
+    }
+    catch {
+        Write-HybridUserHydrationDiagnostic -Stage 'ProviderOperation' -Message "$ProviderName provider operation skipped after failure - $($_.Exception.Message)" -Level WARN -Data ([pscustomobject]@{
+            Provider = $ProviderName
+            OperationNames = @($OperationNames)
+            Arguments = @($Arguments)
+            ExceptionType = $_.Exception.GetType().FullName
+            FullyQualifiedErrorId = $_.FullyQualifiedErrorId
+        })
+        return @()
+    }
+}
+
 function Get-HybridProviderHealthSnapshot {
     [CmdletBinding()]
     param([AllowNull()][object]$Service)
@@ -693,8 +717,8 @@ function Search-HybridUser {
 
     try {
         $script:HybridUserServiceState.LastQuery = $Query
-        $adUsers = Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('SearchUser','SearchADUser','Search') -Arguments @($Query)
-        $graphUsers = Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('SearchUser','SearchGraphUser','Search') -Arguments @($Query)
+        $adUsers = Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('SearchUser','SearchADUser','Search') -Arguments @($Query) -ProviderName 'ActiveDirectory'
+        $graphUsers = Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('SearchUser','SearchGraphUser','Search') -Arguments @($Query) -ProviderName 'MicrosoftGraph'
         Write-HybridUserHydrationDiagnostic -Stage 'Search' -Message "Search providers returned AD=$(@($adUsers).Count), Graph=$(@($graphUsers).Count) for query '$Query'." -Level INFO -Data ([pscustomobject]@{
             Query = $Query
             ActiveDirectoryResultCount = @($adUsers).Count
@@ -745,12 +769,12 @@ function Get-HybridUser {
         return $script:HybridUserServiceState.Cache[$cacheKey]
     }
 
-    $adUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) | Select-Object -First 1)
-    $graphUser = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
+    $adUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) -ProviderName 'ActiveDirectory' | Select-Object -First 1)
+    $graphUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) -ProviderName 'MicrosoftGraph' | Select-Object -First 1)
     $mailbox = @()
     if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
         try {
-            $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) | Select-Object -First 1)
+            $mailbox = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) -ProviderName 'ExchangeOnline' | Select-Object -First 1)
         }
         catch {
             Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Base Exchange Online mailbox lookup deferred or unavailable for '$Identity' - $($_.Exception.Message)" -Level WARN
@@ -954,5 +978,3 @@ Export-ModuleMember -Function @(
     'Get-HybridUserServiceHealth',
     'Clear-HybridUserService'
 )
-
-
