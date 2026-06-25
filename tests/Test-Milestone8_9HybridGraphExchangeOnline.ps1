@@ -82,7 +82,11 @@ Assert-ContainsText $ui 'ToolTip="Path to a local certificate file for app-only 
 Assert-ContainsText $ui 'ToolTip="Name or URI of a secret stored outside this profile' 'Runtime profile wizard explains secret reference'
 Assert-ContainsText $ui 'Normalize-HybridWizardCertificateThumbprint' 'Runtime profile wizard normalizes pasted certificate thumbprints'
 Assert-ContainsText $ui '<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">' 'Runtime profile wizard and startup summary support vertical scrolling on shorter screens'
-Assert-ContainsText $ui '<Button x:Name="ExitButton" Grid.Column="1"' 'Runtime home keeps Exit pinned outside the horizontal action scroller'
+Assert-ContainsText $ui '<Grid Margin="0,0,5,0">' 'Runtime summary scroll content leaves a gutter before the scrollbar'
+Assert-ContainsText $ui 'ImportExportRuntimeProfileButton' 'Runtime home combines import and export into one action'
+Assert-ContainsText $ui 'Show-HybridRuntimeProfileImportExportWizard' 'Runtime home opens an import/export chooser workflow'
+Assert-True (-not ($ui -match '<Button x:Name="DuplicateRuntimeProfileButton"')) 'Runtime home removes Duplicate from the footer'
+Assert-True ($ui -match '<Button x:Name="ExitButton" Style="\{StaticResource RuntimeActionButton\}"') 'Runtime home keeps Exit in the same dynamic button flow'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange On-Prem'" 'Search progress includes Exchange On-Premises stage'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange Online'" 'Search progress includes Exchange Online stage'
 

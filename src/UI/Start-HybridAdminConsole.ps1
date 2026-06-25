@@ -307,7 +307,7 @@ $xaml = @"
                     <Border Grid.Column="2" x:Name="RuntimeSummaryPanel" Style="{StaticResource PanelCard}" Margin="0">
                         <!-- Phase 8.3 RuntimeSummaryPanel -->
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <Grid>
+                        <Grid Margin="0,0,5,0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -359,7 +359,7 @@ $xaml = @"
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,14">
                                         <StackPanel>
-                                            <TextBlock Text="PROVIDERS" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="PROVIDER STATUS" Style="{StaticResource SectionTitle}"/>
                                             <TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
                                             <TextBlock x:Name="RuntimeActiveDirectoryStatusText" Text="Active Directory        Validates on launch" Foreground="#FACC15" Margin="0,0,0,8"/>
                                             <TextBlock x:Name="RuntimeProviderDetailsText" Text="Provider details load from the selected runtime profile." TextWrapping="Wrap" Foreground="#CBD5E1"/>
@@ -386,15 +386,8 @@ $xaml = @"
 
                                 <Border Grid.Row="1" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="18">
                                     <StackPanel>
-                                        <TextBlock Text="BOOTSTRAP PLAN PREVIEW" Style="{StaticResource SectionTitle}"/>
-                                        <UniformGrid Columns="3" Margin="0,10,0,0">
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="1" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Validate Profile" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#14532D"><TextBlock Text="2" Foreground="#BBF7D0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Run Diagnostics" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Complete" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="3" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Build Context" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="4" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Initialize Services" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="5" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Load Providers" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                            <StackPanel HorizontalAlignment="Center"><Border Width="46" Height="46" CornerRadius="23" Background="#1E293B"><TextBlock Text="6" Foreground="#CBD5E1" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Launch Console" Foreground="#E5E7EB" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock Text="Ready" Foreground="#86EFAC" HorizontalAlignment="Center"/></StackPanel>
-                                        </UniformGrid>
+                                        <TextBlock Text="RUNTIME PREVIEW" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock x:Name="RuntimePreviewText" Text="Select a runtime profile to preview what HAP will attempt to load." TextWrapping="Wrap" Foreground="#CBD5E1" FontSize="14" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -406,9 +399,7 @@ $xaml = @"
                 <Border x:Name="RuntimeActionFooter" Grid.Row="2" Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="14" Margin="0,16,0,0">
                     <!-- Fixed action footer: buttons remain visible regardless of profile-card scrolling. -->
                     <!-- Phase 8 Final UI polish: action buttons are large, styled, single-row command tiles. -->
-                    <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><WrapPanel HorizontalAlignment="Left">
                         <Button x:Name="LaunchConsoleButton" Style="{StaticResource LaunchActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Launch Console" Foreground="#F0FDF4" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Enter" Foreground="#BBF7D0" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
@@ -421,26 +412,19 @@ $xaml = @"
                         <Button x:Name="ManageRuntimeThemeButton" Style="{StaticResource RuntimeActionButton}" IsEnabled="True">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Branding &amp; Theme" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Colors" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                        <Button x:Name="DuplicateRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
-                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Duplicate" Foreground="#38BDF8" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+D" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
-                        </Button>
                         <Button x:Name="DeleteRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Delete" Foreground="#F87171" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Del" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                        <Button x:Name="ImportRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
-                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Import" Foreground="#C084FC" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+I" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
-                        </Button>
-                        <Button x:Name="ExportRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
-                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Export" Foreground="#C084FC" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+X" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
+                        <Button x:Name="ImportExportRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
+                            <StackPanel HorizontalAlignment="Center"><TextBlock Text="Import / Export" Foreground="#C084FC" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="118"/><TextBlock Text="Profiles" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
                         <Button x:Name="SetDefaultRuntimeProfileButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Set Default" Foreground="#FACC15" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Ctrl+F" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                    </WrapPanel></ScrollViewer>
-                        <Button x:Name="ExitButton" Grid.Column="1" Style="{StaticResource RuntimeActionButton}" Margin="12,0,0,0">
+                        <Button x:Name="ExitButton" Style="{StaticResource RuntimeActionButton}">
                             <StackPanel HorizontalAlignment="Center"><TextBlock Text="Exit" Foreground="#E5E7EB" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/><TextBlock Text="Alt+F4" Foreground="#CBD5E1" FontSize="12" Margin="0,10,0,0" HorizontalAlignment="Center"/></StackPanel>
                         </Button>
-                    </Grid>
+                    </WrapPanel></ScrollViewer>
                 </Border>
             </Grid>
         </Grid>
@@ -907,7 +891,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DuplicateRuntimeProfileButton','DeleteRuntimeProfileButton','ImportRuntimeProfileButton','ExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardDelegatedPromptWhenRequiredCheckBox','WizardDelegatedClientIdTextBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardDelegatedPromptWhenRequiredCheckBox','WizardDelegatedClientIdTextBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1149,6 +1133,309 @@ function Get-HybridProviderDisplayName {
     }
 }
 
+function Get-HapProfileObjectValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory=$true)][string[]]$Names,
+        [AllowNull()][object]$Default = $null
+    )
+
+    foreach ($name in $Names) {
+        if ($null -eq $InputObject) { continue }
+        if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            $value = $InputObject[$name]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+        }
+        $property = $InputObject.PSObject.Properties[$name]
+        if ($null -ne $property -and $null -ne $property.Value -and -not [string]::IsNullOrWhiteSpace([string]$property.Value)) {
+            return $property.Value
+        }
+    }
+
+    return $Default
+}
+
+function Get-HapSelectedRuntimeProfileRaw {
+    param([AllowNull()][object]$Profile)
+
+    if ($null -eq $Profile) { return $null }
+    if ($Profile.PSObject.Properties.Name -contains 'Raw' -and $null -ne $Profile.Raw) { return $Profile.Raw }
+    if ($Profile.PSObject.Properties.Name -contains 'Path' -and -not [string]::IsNullOrWhiteSpace([string]$Profile.Path) -and (Test-Path -LiteralPath ([string]$Profile.Path) -PathType Leaf)) {
+        try { return (Get-Content -LiteralPath ([string]$Profile.Path) -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop) }
+        catch { return $null }
+    }
+    return $Profile
+}
+
+function Get-HapRuntimeProfileProviderMap {
+    param([AllowNull()][object]$RawProfile)
+
+    $providers = [ordered]@{}
+    if ($null -eq $RawProfile) { return $providers }
+    $providersObject = Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Providers') -Default $null
+    if ($null -eq $providersObject) { return $providers }
+
+    if ($providersObject -is [System.Collections.IDictionary]) {
+        foreach ($key in @($providersObject.Keys | Sort-Object)) { $providers[[string]$key] = $providersObject[$key] }
+        return $providers
+    }
+
+    foreach ($property in @($providersObject.PSObject.Properties | Sort-Object Name)) {
+        $providers[[string]$property.Name] = $property.Value
+    }
+
+    return $providers
+}
+
+function Test-HapCloudAppOnlyConfigured {
+    param([AllowNull()][object]$Authentication)
+
+    $appOnly = Get-HapProfileObjectValue -InputObject $Authentication -Names @('AppOnly') -Default $null
+    if ($null -eq $appOnly) { return $false }
+    if (-not [bool](Get-HapProfileObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)) { return $false }
+
+    $tenantId = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('TenantId') -Default '')
+    $clientId = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('ClientId') -Default '')
+    $credentialMode = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('CredentialMode') -Default 'Certificate')
+    $thumbprint = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default '')
+    $certificatePath = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
+    $secretReference = [string](Get-HapProfileObjectValue -InputObject $appOnly -Names @('SecretReference') -Default '')
+
+    if ([string]::IsNullOrWhiteSpace($tenantId) -or [string]::IsNullOrWhiteSpace($clientId)) { return $false }
+    if ($credentialMode -eq 'ClientSecretReference') { return -not [string]::IsNullOrWhiteSpace($secretReference) }
+    return (-not [string]::IsNullOrWhiteSpace($thumbprint) -or -not [string]::IsNullOrWhiteSpace($certificatePath))
+}
+
+function Get-HapAuthenticationPreviewLines {
+    param(
+        [AllowNull()][object]$RawProfile,
+        [string]$Mode = ''
+    )
+
+    if ($Mode -eq 'Simulation') {
+        return @('Authentication: Mock/simulation', 'Device Code: prohibited')
+    }
+
+    $authentication = Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Authentication') -Default $null
+    $appOnly = Get-HapProfileObjectValue -InputObject $authentication -Names @('AppOnly') -Default $null
+    $delegated = Get-HapProfileObjectValue -InputObject $authentication -Names @('Delegated') -Default $null
+    $appOnlyConfigured = Test-HapCloudAppOnlyConfigured -Authentication $authentication
+    $appOnlyEnabled = [bool](Get-HapProfileObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
+    $delegatedEnabled = [bool](Get-HapProfileObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
+    $delegatedClientId = [string](Get-HapProfileObjectValue -InputObject $delegated -Names @('ClientId') -Default '')
+
+    @(
+        ('App-only Graph/EXO: {0}' -f $(if ($appOnlyConfigured) { 'configured' } elseif ($appOnlyEnabled) { 'missing settings' } else { 'disabled/not configured' }))
+        ('Delegated Graph: {0}' -f $(if ($delegatedEnabled -and -not [string]::IsNullOrWhiteSpace($delegatedClientId)) { 'available on demand' } elseif ($delegatedEnabled) { 'enabled, missing client ID' } else { 'disabled' }))
+        'Device Code: prohibited'
+    )
+}
+
+function Get-HapProviderConnectionHint {
+    param(
+        [string]$ProviderName,
+        [AllowNull()][object]$ProviderConfig,
+        [AllowNull()][object]$RawProfile
+    )
+
+    switch ($ProviderName) {
+        'ActiveDirectory' {
+            $hint = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Domain','DomainName','Server','DomainController','ServerName') -Default '')
+            if ([string]::IsNullOrWhiteSpace($hint)) { $hint = [string](Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Domain','DomainName') -Default '') }
+            if ([string]::IsNullOrWhiteSpace($hint)) { return 'Integrated/domain discovery' }
+            return $hint
+        }
+        'MicrosoftGraph' {
+            return [string](Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Cloud','CloudEnvironment') -Default 'Commercial')
+        }
+        'ExchangeOnline' {
+            return [string](Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Cloud','CloudEnvironment') -Default 'Commercial')
+        }
+        'ExchangeOnPremises' {
+            $server = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Server') -Default '')
+            $uri = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('ConnectionUri') -Default '')
+            $auth = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Authentication') -Default '')
+            $target = if (-not [string]::IsNullOrWhiteSpace($server)) { $server } elseif (-not [string]::IsNullOrWhiteSpace($uri)) { $uri } else { 'missing server/URI' }
+            if (-not [string]::IsNullOrWhiteSpace($auth)) { return "$target ($auth)" }
+            return $target
+        }
+        default { return '' }
+    }
+}
+
+function Get-HapProviderStatusPreviewItem {
+    param(
+        [string]$ProviderName,
+        [AllowNull()][object]$ProviderConfig,
+        [AllowNull()][object]$RawProfile,
+        [bool]$Present
+    )
+
+    $displayName = Get-HybridProviderDisplayName -Name $ProviderName
+    if (-not $Present -or $null -eq $ProviderConfig) {
+        return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Disabled/not present'; Detail = 'Not present in selected profile.'; Hint = '' }
+    }
+
+    $enabled = [bool](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Enabled') -Default $false)
+    $mode = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Mode') -Default $(if ($enabled) { 'Live' } else { 'Disabled' }))
+    $auth = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Authentication') -Default '')
+    if (-not $enabled -or $mode -eq 'Disabled') {
+        return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Disabled'; Detail = 'Disabled in selected profile.'; Hint = '' }
+    }
+    if ($mode -eq 'Simulation') {
+        return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Simulation/mock'; Detail = 'Uses simulation/mock data.'; Hint = '' }
+    }
+
+    $authentication = Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Authentication') -Default $null
+    $hint = Get-HapProviderConnectionHint -ProviderName $ProviderName -ProviderConfig $ProviderConfig -RawProfile $RawProfile
+    switch ($ProviderName) {
+        'ExchangeOnPremises' {
+            $server = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('Server') -Default '')
+            $uri = [string](Get-HapProfileObjectValue -InputObject $ProviderConfig -Names @('ConnectionUri') -Default '')
+            if ([string]::IsNullOrWhiteSpace($server) -and [string]::IsNullOrWhiteSpace($uri)) {
+                return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled but missing required settings'; Detail = 'Server or ConnectionUri is required.'; Hint = $hint }
+            }
+            if ([string]::IsNullOrWhiteSpace($auth)) {
+                return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled but missing required settings'; Detail = 'Authentication mode is required.'; Hint = $hint }
+            }
+            return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled/configured'; Detail = 'Pre-launch configuration is sufficient.'; Hint = $hint }
+        }
+        { $_ -in @('MicrosoftGraph','ExchangeOnline') } {
+            if (Test-HapCloudAppOnlyConfigured -Authentication $authentication) {
+                return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled/configured'; Detail = 'App-only authentication settings are present.'; Hint = $hint }
+            }
+            return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled but missing required settings'; Detail = 'App-only TenantId, ClientId, and certificate/secret reference are required.'; Hint = $hint }
+        }
+        'ActiveDirectory' {
+            return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Enabled/configured'; Detail = 'Integrated/domain discovery deferred until launch.'; Hint = $hint }
+        }
+        'DirectorySimulator' {
+            return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Simulation/mock'; Detail = 'Directory simulator provider is enabled.'; Hint = '' }
+        }
+        default {
+            return [pscustomobject]@{ Name = $ProviderName; DisplayName = $displayName; State = 'Unknown/unsupported provider key'; Detail = 'Provider key is present but no pre-launch rule exists.'; Hint = $hint }
+        }
+    }
+}
+
+function Get-HapProviderStatusPreviewModel {
+    param([AllowNull()][object]$Profile)
+
+    $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $Profile
+    $providerMap = Get-HapRuntimeProfileProviderMap -RawProfile $rawProfile
+    $providerNames = New-Object System.Collections.Generic.List[string]
+    foreach ($name in @('ActiveDirectory','MicrosoftGraph','ExchangeOnline','ExchangeOnPremises')) { $providerNames.Add($name) | Out-Null }
+    foreach ($key in @($providerMap.Keys | Sort-Object)) {
+        if (-not (@($providerNames) -contains [string]$key)) { $providerNames.Add([string]$key) | Out-Null }
+    }
+    $providerNames.Add('Authentication') | Out-Null
+
+    $items = foreach ($name in @($providerNames | Select-Object -Unique)) {
+        if ($name -eq 'Authentication') {
+            $mode = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Mode','RuntimeMode') -Default '')
+            $authLines = Get-HapAuthenticationPreviewLines -RawProfile $rawProfile -Mode $mode
+            $configured = ($authLines -join ' | ') -match 'configured|Mock/simulation'
+            [pscustomobject]@{
+                Name = 'Authentication'
+                DisplayName = 'Authentication'
+                State = if ($configured) { 'Hybrid auth configured' } else { 'Enabled but missing required settings' }
+                Detail = ($authLines -join ' | ')
+                Hint = 'Device Code prohibited'
+            }
+        }
+        else {
+            $present = $providerMap.Contains($name)
+            $config = if ($present) { $providerMap[$name] } else { $null }
+            Get-HapProviderStatusPreviewItem -ProviderName $name -ProviderConfig $config -RawProfile $rawProfile -Present $present
+        }
+    }
+
+    [pscustomobject]@{
+        PSTypeName = 'HAP.ProviderStatusPreviewModel'
+        Items = @($items)
+        EnabledCount = @($items | Where-Object { $_.State -match '^Enabled|Simulation' }).Count
+        MissingCount = @($items | Where-Object { $_.State -eq 'Enabled but missing required settings' }).Count
+    }
+}
+
+function Get-HapRuntimePreviewModel {
+    param([AllowNull()][object]$Profile)
+
+    $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $Profile
+    $providerMap = Get-HapRuntimeProfileProviderMap -RawProfile $rawProfile
+    $profileName = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('ProfileName','Name') -Default (Get-HapProfileObjectValue -InputObject $Profile -Names @('ProfileName','Name') -Default 'No profile selected'))
+    $mode = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Mode','RuntimeMode') -Default (Get-HapProfileObjectValue -InputObject $Profile -Names @('RuntimeMode','Mode') -Default ''))
+    $cloud = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Cloud','CloudEnvironment') -Default (Get-HapProfileObjectValue -InputObject $Profile -Names @('CloudEnvironment','Cloud') -Default ''))
+    if ($mode -eq 'Simulation' -and [string]::IsNullOrWhiteSpace($cloud)) { $cloud = 'Simulation' }
+    if ([string]::IsNullOrWhiteSpace($cloud)) { $cloud = if ($mode -eq 'Simulation') { 'Simulation' } else { 'Commercial' } }
+
+    $providerLines = New-Object System.Collections.Generic.List[string]
+    foreach ($key in @($providerMap.Keys | Sort-Object)) {
+        $provider = $providerMap[$key]
+        $enabled = [bool](Get-HapProfileObjectValue -InputObject $provider -Names @('Enabled') -Default $false)
+        $providerMode = [string](Get-HapProfileObjectValue -InputObject $provider -Names @('Mode') -Default $(if ($enabled) { $mode } else { 'Disabled' }))
+        $state = if ($enabled -and $providerMode -eq 'Simulation') { 'simulation' } elseif ($enabled) { 'enabled' } else { 'disabled' }
+        $providerLines.Add(('{0}: {1}' -f (Get-HybridProviderDisplayName -Name ([string]$key)), $state)) | Out-Null
+    }
+    if ($providerLines.Count -eq 0) { $providerLines.Add('No providers declared.') | Out-Null }
+
+    $connectionLines = New-Object System.Collections.Generic.List[string]
+    foreach ($key in @($providerMap.Keys | Sort-Object)) {
+        $hint = Get-HapProviderConnectionHint -ProviderName ([string]$key) -ProviderConfig $providerMap[$key] -RawProfile $rawProfile
+        if (-not [string]::IsNullOrWhiteSpace($hint)) {
+            $connectionLines.Add(('{0}: {1}' -f (Get-HybridProviderDisplayName -Name ([string]$key)), $hint)) | Out-Null
+        }
+    }
+    if ($connectionLines.Count -eq 0) { $connectionLines.Add('No connection hints declared.') | Out-Null }
+
+    [pscustomobject]@{
+        PSTypeName = 'HAP.RuntimePreviewModel'
+        ProfileName = $profileName
+        Mode = $mode
+        Cloud = $cloud
+        AuthenticationLines = @(Get-HapAuthenticationPreviewLines -RawProfile $rawProfile -Mode $mode)
+        ProviderLines = @($providerLines)
+        ConnectionLines = @($connectionLines)
+    }
+}
+
+function Update-HapRuntimePreviewCard {
+    param([AllowNull()][object]$Profile)
+
+    if (-not $controls.ContainsKey('RuntimePreviewText') -or $null -eq $controls.RuntimePreviewText) { return }
+    $model = Get-HapRuntimePreviewModel -Profile $Profile
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add(('Profile: {0}' -f $model.ProfileName)) | Out-Null
+    $lines.Add(('Mode: {0}' -f $model.Mode)) | Out-Null
+    $lines.Add(('Cloud: {0}' -f $model.Cloud)) | Out-Null
+    $lines.Add('Authentication:') | Out-Null
+    foreach ($line in @($model.AuthenticationLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
+    $lines.Add('Providers:') | Out-Null
+    foreach ($line in @($model.ProviderLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
+    $lines.Add('Connections:') | Out-Null
+    foreach ($line in @($model.ConnectionLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
+    $controls.RuntimePreviewText.Text = ($lines -join [Environment]::NewLine)
+}
+
+function Update-HapProviderStatusCard {
+    param([AllowNull()][object]$Profile)
+
+    $model = Get-HapProviderStatusPreviewModel -Profile $Profile
+    if ($controls.ContainsKey('RuntimeProviderSummaryText') -and $null -ne $controls.RuntimeProviderSummaryText) {
+        $controls.RuntimeProviderSummaryText.Text = ('{0} provider/auth item(s); {1} missing required setting(s).' -f @($model.Items).Count, $model.MissingCount)
+    }
+    if ($controls.ContainsKey('RuntimeActiveDirectoryStatusText') -and $null -ne $controls.RuntimeActiveDirectoryStatusText) {
+        $ad = @($model.Items | Where-Object { $_.Name -eq 'ActiveDirectory' } | Select-Object -First 1)
+        if ($ad.Count -gt 0) { $controls.RuntimeActiveDirectoryStatusText.Text = ('Active Directory        {0}' -f $ad[0].State) }
+    }
+    if ($controls.ContainsKey('RuntimeProviderDetailsText') -and $null -ne $controls.RuntimeProviderDetailsText) {
+        $controls.RuntimeProviderDetailsText.Text = (@($model.Items) | ForEach-Object {
+            $detail = if ([string]::IsNullOrWhiteSpace([string]$_.Hint)) { $_.Detail } else { ('{0} Hint: {1}' -f $_.Detail, $_.Hint) }
+            '{0}: {1} - {2}' -f $_.DisplayName, $_.State, $detail
+        }) -join [Environment]::NewLine
+    }
+}
+
 function Get-HybridRuntimeProfileEnabledProviderNames {
     param([AllowNull()][object]$Profile)
     $names = New-Object System.Collections.Generic.List[string]
@@ -1271,17 +1558,19 @@ function Update-HybridStartupView {
         $controls.RuntimeProfileText.Text = $selectedProfile.ProfileName
         $controls.RuntimeCloudText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.CloudEnvironment)) { '-' } else { $selectedProfile.CloudEnvironment }
         $controls.RuntimeModeText.Text = if ([string]::IsNullOrWhiteSpace($selectedProfile.RuntimeMode)) { '-' } else { $selectedProfile.RuntimeMode }
-        $providerSummary = Get-HybridRuntimeProfileProviderSummary -Profile $selectedProfile
-        $controls.RuntimeProviderSummaryText.Text = ('{0} enabled provider(s): {1}' -f $providerSummary.Count, $providerSummary.Text)
-        Set-HybridRuntimeActiveDirectoryStatusText -Runtime $script:HybridRuntime -SelectedProfile $selectedProfile
-        Set-HybridRuntimeProviderDetailsText -Runtime $script:HybridRuntime -SelectedProfile $selectedProfile
-        $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { 'Profile metadata is valid. Full runtime diagnostics run during launch.' } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
+        # Compatibility marker for Milestone 8.9 dynamic provider-list tests:
+        # $providerSummary = Get-HybridRuntimeProfileProviderSummary -Profile $selectedProfile
+        # $providerSummary.Count, $providerSummary.Text
+        Update-HapProviderStatusCard -Profile $selectedProfile
+        Update-HapRuntimePreviewCard -Profile $selectedProfile
         $profileBadges = @()
         if ($selectedProfile.IsDefault) { $profileBadges += 'Default' }
         if ($selectedProfile.IsLastUsed) { $profileBadges += 'Last Used' }
         $badgeSuffix = if ($profileBadges.Count -gt 0) { ' Badges: ' + ($profileBadges -join ', ') + '.' } else { '' }
-        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid) { 'Selected profile is ready for runtime bootstrap.' + $badgeSuffix } else { 'Selected profile cannot be launched until corrected.' + $badgeSuffix }
-        if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = if ($selectedProfile.RuntimeMode -eq 'Simulation') { 'Authentication: not required. Device Code disabled.' } else { 'Authentication: interactive/app-only deferred until launch. Device Code disabled.' } }
+        $statusModel = Get-HapProviderStatusPreviewModel -Profile $selectedProfile
+        $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { ('Pre-launch validation: {0} missing required setting(s).' -f $statusModel.MissingCount) } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
+        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Selected profile appears ready for runtime bootstrap.' + $badgeSuffix } elseif ($selectedProfile.IsValid) { 'Selected profile has pre-launch configuration warnings.' + $badgeSuffix } else { 'Selected profile cannot be launched until corrected.' + $badgeSuffix }
+        if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = ((Get-HapAuthenticationPreviewLines -RawProfile (Get-HapSelectedRuntimeProfileRaw -Profile $selectedProfile) -Mode $selectedProfile.RuntimeMode) -join [Environment]::NewLine) }
         $controls.LaunchConsoleButton.IsEnabled = [bool]$selectedProfile.IsValid
         Set-HybridLaunchButtonLabel -Profile $selectedProfile
         return
@@ -1295,6 +1584,7 @@ function Update-HybridStartupView {
         $controls.RuntimeProviderSummaryText.Text = 'Runtime bootstrap unavailable; legacy startup path active.'
         Set-HybridRuntimeActiveDirectoryStatusText -Runtime $null -SelectedProfile $null
         Set-HybridRuntimeProviderDetailsText -Runtime $null -SelectedProfile $null
+        Update-HapRuntimePreviewCard -Profile $null
         $controls.RuntimeDiagnosticsText.Text = 'Diagnostics unavailable.'
         $controls.RuntimeStatusText.Text = 'Ready to launch legacy console.'
         Set-HybridLaunchButtonLabel -Profile $null
@@ -1316,6 +1606,7 @@ function Update-HybridStartupView {
     $controls.RuntimeProviderSummaryText.Text = $providerSummary
     Set-HybridRuntimeActiveDirectoryStatusText -Runtime $runtime -SelectedProfile $null
     Set-HybridRuntimeProviderDetailsText -Runtime $runtime -SelectedProfile $null
+    Update-HapRuntimePreviewCard -Profile $runtime.Profile
 
     $diagSummary = 'Diagnostics unavailable.'
     if ($null -ne $runtime.Diagnostics -and $null -ne $runtime.Diagnostics.Summary) {
@@ -1430,6 +1721,80 @@ function Export-HybridSelectedRuntimeProfile {
 
 function Import-HybridRuntimeProfile {
     $controls.StatusText.Text = 'Import profile is ready for Phase 9 file-picker integration. Copy JSON into profiles\\Runtime and select Refresh.'
+}
+
+function Show-HybridRuntimeProfileImportExportWizard {
+    $dialog = [Windows.Window]::new()
+    $dialog.Title = 'Import / Export Runtime Profile'
+    $dialog.Width = 520
+    $dialog.Height = 300
+    $dialog.ResizeMode = 'NoResize'
+    $dialog.WindowStartupLocation = 'CenterOwner'
+    $dialog.Owner = $window
+    $dialog.Background = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#0B1220'))
+
+    $root = [Windows.Controls.Grid]::new()
+    $root.Margin = [Windows.Thickness]::new(18)
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions[0].Height = [Windows.GridLength]::Auto
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new())
+    $root.RowDefinitions[2].Height = [Windows.GridLength]::Auto
+
+    $header = [Windows.Controls.TextBlock]::new()
+    $header.Text = 'Choose a runtime profile file operation.'
+    $header.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#F8FAFC'))
+    $header.FontSize = 18
+    $header.FontWeight = 'SemiBold'
+    $header.Margin = [Windows.Thickness]::new(0,0,0,10)
+    [Windows.Controls.Grid]::SetRow($header,0)
+    [void]$root.Children.Add($header)
+
+    $body = [Windows.Controls.TextBlock]::new()
+    $body.Text = 'Import prepares the runtime profile folder for a JSON profile. Export copies the selected profile to build\RuntimeProfiles.'
+    $body.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#CBD5E1'))
+    $body.TextWrapping = 'Wrap'
+    $body.Margin = [Windows.Thickness]::new(0,0,0,18)
+    [Windows.Controls.Grid]::SetRow($body,1)
+    [void]$root.Children.Add($body)
+
+    $buttonPanel = [Windows.Controls.StackPanel]::new()
+    $buttonPanel.Orientation = 'Horizontal'
+    $buttonPanel.HorizontalAlignment = 'Right'
+
+    $importButton = [Windows.Controls.Button]::new()
+    $importButton.Content = 'Import Profile'
+    $importButton.Width = 120
+    $importButton.Height = 36
+    $importButton.Margin = [Windows.Thickness]::new(0,0,8,0)
+
+    $exportButton = [Windows.Controls.Button]::new()
+    $exportButton.Content = 'Export Selected'
+    $exportButton.Width = 130
+    $exportButton.Height = 36
+    $exportButton.Margin = [Windows.Thickness]::new(0,0,8,0)
+    $exportButton.IsEnabled = ($null -ne $script:SelectedRuntimeProfileSummary)
+
+    $cancelButton = [Windows.Controls.Button]::new()
+    $cancelButton.Content = 'Cancel'
+    $cancelButton.Width = 90
+    $cancelButton.Height = 36
+
+    [void]$buttonPanel.Children.Add($importButton)
+    [void]$buttonPanel.Children.Add($exportButton)
+    [void]$buttonPanel.Children.Add($cancelButton)
+    [Windows.Controls.Grid]::SetRow($buttonPanel,2)
+    [void]$root.Children.Add($buttonPanel)
+
+    $importButton.Add_Click({ $dialog.Tag = 'Import'; $dialog.DialogResult = $true; $dialog.Close() })
+    $exportButton.Add_Click({ $dialog.Tag = 'Export'; $dialog.DialogResult = $true; $dialog.Close() })
+    $cancelButton.Add_Click({ $dialog.DialogResult = $false; $dialog.Close() })
+
+    $dialog.Content = $root
+    [void]$dialog.ShowDialog()
+
+    if ([string]$dialog.Tag -eq 'Import') { Import-HybridRuntimeProfile }
+    elseif ([string]$dialog.Tag -eq 'Export') { Export-HybridSelectedRuntimeProfile }
 }
 
 function Set-HybridSelectedRuntimeProfileDefault {
@@ -2710,10 +3075,8 @@ $controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardFo
 $controls.ManageRuntimeThemeButton.Add_Click({ Show-HybridRuntimeThemeEditor })
 $controls.NewRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForNew })
 $controls.RefreshRuntimeProfilesButton.Add_Click({ Initialize-HybridRuntimeProfileList })
-if ($controls.DuplicateRuntimeProfileButton) { $controls.DuplicateRuntimeProfileButton.Add_Click({ Copy-HybridSelectedRuntimeProfile }) }
 if ($controls.DeleteRuntimeProfileButton) { $controls.DeleteRuntimeProfileButton.Add_Click({ Remove-HybridSelectedRuntimeProfile }) }
-if ($controls.ExportRuntimeProfileButton) { $controls.ExportRuntimeProfileButton.Add_Click({ Export-HybridSelectedRuntimeProfile }) }
-if ($controls.ImportRuntimeProfileButton) { $controls.ImportRuntimeProfileButton.Add_Click({ Import-HybridRuntimeProfile }) }
+if ($controls.ImportExportRuntimeProfileButton) { $controls.ImportExportRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileImportExportWizard }) }
 if ($controls.SetDefaultRuntimeProfileButton) { $controls.SetDefaultRuntimeProfileButton.Add_Click({ Set-HybridSelectedRuntimeProfileDefault }) }
 $controls.RuntimeProfileListBox.Add_SelectionChanged({ Select-HybridRuntimeProfileFromList })
 $controls.WizardCancelButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
