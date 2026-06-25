@@ -76,6 +76,7 @@ finally {
 }
 
 $ui = Get-Content -LiteralPath $uiPath -Raw
+$exchangeOnlineText = Get-Content -LiteralPath $exchangeOnlineModule -Raw
 Assert-ContainsText $ui 'WizardAppOnlyEnabledCheckBox' 'Runtime profile wizard exposes app-only enabled setting'
 Assert-ContainsText $ui 'WizardAppOnlyCredentialModeComboBox' 'Runtime profile wizard exposes app-only credential mode'
 Assert-ContainsText $ui 'WizardAppOnlyTenantDomainTextBox' 'Runtime profile wizard exposes tenant domain for Exchange Online organization'
@@ -95,8 +96,17 @@ Assert-ContainsText $ui 'Show-HybridRuntimeProfileImportExportWizard' 'Runtime h
 Assert-True (-not ($ui -match '<Button x:Name="DuplicateRuntimeProfileButton"')) 'Runtime home removes Duplicate from the footer'
 Assert-True ($ui -match '<Button x:Name="ExitButton" Style="\{StaticResource RuntimeActionButton\}"') 'Runtime home keeps Exit in the same dynamic button flow'
 Assert-ContainsText $ui 'HorizontalContentAlignment="Center"><WrapPanel HorizontalAlignment="Center"' 'Runtime home centers footer buttons in available space'
+Assert-ContainsText $ui 'BadgeIdText' 'Directory Facts displays Badge ID'
+Assert-ContainsText $ui 'StateText' 'Directory Facts displays state'
+Assert-ContainsText $ui 'PhoneNumberText' 'Directory Facts displays phone number'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange On-Prem'" 'Search progress includes Exchange On-Premises stage'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange Online'" 'Search progress includes Exchange Online stage'
+Assert-ContainsText $exchangeOnlineText 'Get-HybridExchangeOnlineMailboxDelegations' 'Exchange Online provider implements delegated mailbox lookup'
+Assert-ContainsText $exchangeOnlineText 'Get-HybridExchangeOnlineDistributionGroups' 'Exchange Online provider implements distribution group lookup'
+Assert-ContainsText $exchangeOnlineText 'Get-EXOMailboxPermission -User $Identity' 'Exchange Online provider queries mailboxes delegated to the selected user'
+Assert-ContainsText $exchangeOnlineText 'Get-RecipientPermission -Trustee $Identity' 'Exchange Online provider queries SendAs delegations for the selected user'
+Assert-True (-not ($exchangeOnlineText -match 'GetDistributionGroups = \(\{ param\(\[string\]\$Identity\) @\(\) \}\)')) 'Exchange Online distribution group operation is not a stub'
+Assert-True (-not ($exchangeOnlineText -match 'GetMailboxDelegations = \(\{ param\(\[string\]\$Identity\) @\(\) \}\)')) 'Exchange Online mailbox delegation operation is not a stub'
 
 $providerContext = New-HybridExchangeOnlineProviderContext -Cloud 'GCCHigh'
 $provider = Initialize-HybridExchangeOnlineProvider -Context $providerContext -DeferConnection
@@ -129,6 +139,10 @@ $adProvider = [pscustomobject]@{
             UserPrincipalName = 'alex.morgan@atlas.test'
             SamAccountName = 'amorgan'
             Mail = 'alex.morgan@atlas.test'
+            EmployeeId = 'E100'
+            BadgeId = 'B200'
+            State = 'WA'
+            PhoneNumber = '+1 555 0100'
             DistinguishedName = 'CN=Alex Morgan,OU=Users,DC=atlas,DC=test'
         }
     }.GetNewClosure()
@@ -145,6 +159,27 @@ $exoProvider = [pscustomobject]@{
         }
     }.GetNewClosure()
     GetProviderHealth = { [pscustomobject]@{ Available = $true; Connected = $true; Status = 'Connected' } }.GetNewClosure()
+    GetMailboxStatistics = {
+        param([string]$Identity)
+        [pscustomobject]@{ ItemCount = 42; TotalItemSize = '1 GB' }
+    }.GetNewClosure()
+    GetMailboxDelegations = {
+        param([string]$Identity)
+        [pscustomobject]@{
+            Mailbox = 'shared.finance@atlas.test'
+            Trustee = $Identity
+            AccessRights = @('FullAccess')
+            DelegationType = 'FullAccess'
+        }
+    }.GetNewClosure()
+    GetDistributionGroups = {
+        param([string]$Identity)
+        [pscustomobject]@{
+            DisplayName = 'Finance Notifications'
+            PrimarySmtpAddress = 'finance-notifications@atlas.test'
+            RecipientTypeDetails = 'MailUniversalDistributionGroup'
+        }
+    }.GetNewClosure()
 }
 $onPremProvider = [pscustomobject]@{
     GetRemoteMailbox = {
@@ -173,6 +208,9 @@ Assert-True ($null -ne $user.Mailbox.AdMailAttributes) 'HybridUserService mailbo
 Assert-True ($null -ne $user.Mailbox.ExchangeOnPremises) 'HybridUserService mailbox hydration preserves Exchange On-Premises data separately'
 Assert-True ($null -ne $user.Mailbox.ExchangeOnline) 'HybridUserService mailbox hydration preserves Exchange Online data separately'
 Assert-True ($user.Mailbox.Summary.SourcePriority -eq 'ExchangeOnline') 'HybridUserService mailbox summary prioritizes Exchange Online when cloud mailbox exists'
+Assert-True ($user.BadgeId -eq 'B200' -and $user.State -eq 'WA' -and $user.PhoneNumber -eq '+1 555 0100') 'HybridUserService composite user includes Badge ID, state, and phone number'
+Assert-True (@($user.MailboxDetails.Delegations).Count -eq 1 -and $user.MailboxDetails.Delegations[0].Mailbox -eq 'shared.finance@atlas.test') 'HybridUserService mailbox hydration includes delegated mailboxes from Exchange Online'
+Assert-True (@($user.MailboxDetails.DistributionGroups).Count -eq 1 -and $user.MailboxDetails.DistributionGroups[0].DisplayName -eq 'Finance Notifications') 'HybridUserService mailbox hydration includes Exchange Online distribution groups'
 
 $aggregate = Get-HybridUserAggregateProfile -Identity 'alex.morgan@atlas.test' -Refresh
 Assert-True (@($aggregate.Verticals | Where-Object { $_.Name -eq 'ExchangeOnPremisesRecipient' }).Count -eq 1) 'Aggregation includes Exchange On-Premises vertical status'
@@ -227,6 +265,39 @@ Initialize-HybridUserService -MicrosoftGraphProvider $exactOnlyGraphProvider | O
 $exactFallbackResults = @(Search-HybridUser -Query 'exact.user@atlas.test')
 Assert-True ($exactFallbackResults.Count -eq 1 -and $exactFallbackResults[0].UserPrincipalName -eq 'exact.user@atlas.test') 'HybridUserService search tries exact identity lookup before returning no users'
 
+$enrichedGraphProvider = [pscustomobject]@{
+    GetUser = {
+        param([string]$Identity)
+        [pscustomobject]@{
+            Id = 'graph-enriched-1'
+            DisplayName = 'Secure User'
+            UserPrincipalName = 'secure.user@atlas.test'
+            Mail = 'secure.user@atlas.test'
+            UserType = 'Member'
+            UsageLocation = 'US'
+            PreferredLanguage = 'en-US'
+            AuthenticationMethods = @('Microsoft Authenticator','FIDO2 security key')
+            MfaRegistered = $true
+            MfaCapable = $true
+            PasswordlessRegistered = $true
+            AuthenticationStrength = 'Multi-factor capable'
+            LastSignInDateTime = [datetime]'2026-06-24T12:00:00Z'
+            PasswordLastChangedDateTime = [datetime]'2026-06-01T12:00:00Z'
+            RiskState = 'atRisk'
+            SignInRiskState = 'atRisk'
+            ConditionalAccessState = 'success'
+            Source = 'MicrosoftGraph'
+        }
+    }.GetNewClosure()
+}
+Initialize-HybridUserService -MicrosoftGraphProvider $enrichedGraphProvider | Out-Null
+$graphProfile = Get-HybridUserGraphProfile -Identity 'secure.user@atlas.test'
+$authProfile = Get-HybridUserAuthenticationProfile -Identity 'secure.user@atlas.test'
+Assert-True (@($graphProfile.AuthenticationMethods).Count -eq 2 -and $graphProfile.RiskState -eq 'atRisk') 'Graph profile preserves authentication methods and risk state from provider data'
+Assert-True ($null -ne $graphProfile.LastSignInDateTime -and $null -ne $graphProfile.PasswordLastChangedDateTime) 'Graph profile preserves last sign-in and password last changed values'
+Assert-True ($authProfile.ConditionalAccessState -eq 'success' -and $authProfile.SignInRiskState -eq 'atRisk') 'Authentication profile preserves conditional access and sign-in risk values'
+Assert-True (@($authProfile.AuthenticationMethods).Count -eq 2 -and [bool]$authProfile.PasswordlessRegistered) 'Authentication profile preserves real methods and passwordless state'
+
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 $msalText = Get-Content -LiteralPath $msalModule -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
@@ -239,6 +310,9 @@ Assert-ContainsText $msalText 'client_assertion_type' 'MSAL adapter builds certi
 Assert-ContainsText $msalText 'Invoke-HybridMsalLoopbackInteractive' 'MSAL adapter prompts delegated auth with browser loopback flow'
 Assert-ContainsText $msalText 'Start-Process $authorizeUri' 'Delegated browser auth launches a sign-in prompt'
 Assert-ContainsText $runtimeText 'ProviderRegistry.ContainsKey(''ExchangeOnline'')' 'Exchange Online appears in provider diagnostics and service registration when enabled'
+Assert-ContainsText (Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw) '/authentication/methods' 'Microsoft Graph provider requests authentication methods for profile enrichment'
+Assert-ContainsText (Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw) '/auditLogs/signIns' 'Microsoft Graph provider requests sign-in records for conditional access and risk enrichment'
+Assert-ContainsText (Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw) '/identityProtection/riskyUsers' 'Microsoft Graph provider requests risky user state when available'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |
     Where-Object { $_.FullName -notlike '*\.git\*' } |

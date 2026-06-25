@@ -223,6 +223,52 @@ function ConvertTo-HybridExchangeOnlineMailboxModel {
     return $model
 }
 
+function ConvertTo-HybridExchangeOnlineDistributionGroupModel {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Group,
+        [string]$MatchedBy = ''
+    )
+
+    if ($null -eq $Group) { return $null }
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.DistributionGroup'
+        Name = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Group -Names @('DisplayName','Name') -Default '')
+        DisplayName = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Group -Names @('DisplayName','Name') -Default '')
+        PrimarySmtpAddress = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Group -Names @('PrimarySmtpAddress','WindowsEmailAddress','Mail') -Default '')
+        RecipientTypeDetails = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Group -Names @('RecipientTypeDetails','RecipientType') -Default 'DistributionGroup')
+        Identity = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Group -Names @('Identity','Id','ExternalDirectoryObjectId') -Default '')
+        MatchedBy = $MatchedBy
+        Source = 'ExchangeOnline'
+        Raw = $Group
+    }
+}
+
+function ConvertTo-HybridExchangeOnlineMailboxDelegationModel {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Delegation,
+        [string]$DelegationType = 'FullAccess'
+    )
+
+    if ($null -eq $Delegation) { return $null }
+    $mailbox = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Delegation -Names @('Identity','Mailbox','RecipientIdentity','Name') -Default '')
+    $trustee = [string](Get-HybridExchangeOnlineObjectValue -InputObject $Delegation -Names @('User','Trustee') -Default '')
+    $rights = @(Get-HybridExchangeOnlineObjectValue -InputObject $Delegation -Names @('AccessRights','AccessControlType','Rights') -Default @($DelegationType))
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.MailboxDelegation'
+        Mailbox = $mailbox
+        Identity = $mailbox
+        Trustee = $trustee
+        User = $trustee
+        AccessRights = @($rights)
+        Rights = (@($rights) -join ', ')
+        DelegationType = $DelegationType
+        Source = 'ExchangeOnline'
+        Raw = $Delegation
+    }
+}
+
 function Connect-HybridExchangeOnline {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][object]$Context)
@@ -344,9 +390,9 @@ function Initialize-HybridExchangeOnlineProvider {
         GetMailbox = ({ param([string]$Identity) Get-HybridExchangeOnlineMailbox -Identity $Identity }).GetNewClosure()
         GetUserMailbox = ({ param([string]$Identity) Get-HybridExchangeOnlineMailbox -Identity $Identity }).GetNewClosure()
         GetMailboxForwarding = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxForwarding -Identity $Identity }).GetNewClosure()
-        GetDistributionGroups = ({ param([string]$Identity) @() }).GetNewClosure()
-        GetMailboxStatistics = ({ param([string]$Identity) $null }).GetNewClosure()
-        GetMailboxDelegations = ({ param([string]$Identity) @() }).GetNewClosure()
+        GetDistributionGroups = ({ param([string]$Identity) Get-HybridExchangeOnlineDistributionGroups -Identity $Identity }).GetNewClosure()
+        GetMailboxStatistics = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxStatistics -Identity $Identity }).GetNewClosure()
+        GetMailboxDelegations = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxDelegations -Identity $Identity }).GetNewClosure()
     }
 }
 
@@ -375,7 +421,7 @@ function Get-HybridExchangeOnlineProviderHealth {
         ModuleStatus = $moduleStatus
         Configuration = $configuration
         AuthenticationStatus = if ($configuration.IsConfigured) { 'AppOnlySupported' } else { 'NotConfigured' }
-        Capabilities = @('MailboxRead','MailboxForwarding','MailboxDelegationDeferred','DelegatedRequired')
+        Capabilities = @('MailboxRead','MailboxForwarding','MailboxStatistics','MailboxDelegationRead','DistributionGroupRead','DelegatedRequired')
         LastError = $script:HybridExchangeOnlineState.LastError
     }
 }
@@ -412,6 +458,114 @@ function Get-HybridExchangeOnlineMailboxForwarding {
     }
 }
 
+function Get-HybridExchangeOnlineMailboxStatistics {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    Ensure-HybridExchangeOnlineConnection
+    $command = Get-Command -Name Get-EXOMailboxStatistics -ErrorAction SilentlyContinue
+    if ($null -eq $command) { $command = Get-Command -Name Get-MailboxStatistics -ErrorAction SilentlyContinue }
+    if ($null -eq $command) { return $null }
+
+    $statistics = & $command -Identity $Identity -ErrorAction Stop
+    return [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.MailboxStatistics'
+        Identity = $Identity
+        DisplayName = [string](Get-HybridExchangeOnlineObjectValue -InputObject $statistics -Names @('DisplayName') -Default '')
+        TotalItemSize = Get-HybridExchangeOnlineObjectValue -InputObject $statistics -Names @('TotalItemSize') -Default $null
+        ItemCount = Get-HybridExchangeOnlineObjectValue -InputObject $statistics -Names @('ItemCount') -Default $null
+        LastLogonTime = Get-HybridExchangeOnlineObjectValue -InputObject $statistics -Names @('LastLogonTime') -Default $null
+        Raw = $statistics
+    }
+}
+
+function Get-HybridExchangeOnlineMailboxDelegations {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    Ensure-HybridExchangeOnlineConnection
+    $delegations = New-Object System.Collections.Generic.List[object]
+
+    $exoPermission = Get-Command -Name Get-EXOMailboxPermission -ErrorAction SilentlyContinue
+    if ($null -ne $exoPermission -and $exoPermission.Parameters.ContainsKey('User')) {
+        try {
+            @(Get-EXOMailboxPermission -User $Identity -ResultSize Unlimited -ErrorAction Stop |
+                Where-Object { -not [bool](Get-HybridExchangeOnlineObjectValue -InputObject $_ -Names @('Deny','IsInherited') -Default $false) }) |
+                ForEach-Object { $delegations.Add((ConvertTo-HybridExchangeOnlineMailboxDelegationModel -Delegation $_ -DelegationType 'FullAccess')) | Out-Null }
+        }
+        catch { }
+    }
+
+    $recipientPermission = Get-Command -Name Get-RecipientPermission -ErrorAction SilentlyContinue
+    if ($null -ne $recipientPermission -and $recipientPermission.Parameters.ContainsKey('Trustee')) {
+        try {
+            @(Get-RecipientPermission -Trustee $Identity -ResultSize Unlimited -ErrorAction Stop |
+                Where-Object { -not [bool](Get-HybridExchangeOnlineObjectValue -InputObject $_ -Names @('Deny','IsInherited') -Default $false) }) |
+                ForEach-Object { $delegations.Add((ConvertTo-HybridExchangeOnlineMailboxDelegationModel -Delegation $_ -DelegationType 'SendAs')) | Out-Null }
+        }
+        catch { }
+    }
+
+    if ($delegations.Count -eq 0) {
+        $mailboxPermission = Get-Command -Name Get-MailboxPermission -ErrorAction SilentlyContinue
+        $mailboxCommand = Get-Command -Name Get-EXOMailbox -ErrorAction SilentlyContinue
+        if ($null -eq $mailboxCommand) { $mailboxCommand = Get-Command -Name Get-Mailbox -ErrorAction SilentlyContinue }
+        if ($null -ne $mailboxPermission -and $null -ne $mailboxCommand) {
+            try {
+                @(& $mailboxCommand -ResultSize Unlimited -ErrorAction Stop) | ForEach-Object {
+                    $mailboxIdentity = [string](Get-HybridExchangeOnlineObjectValue -InputObject $_ -Names @('UserPrincipalName','PrimarySmtpAddress','Identity') -Default '')
+                    if ([string]::IsNullOrWhiteSpace($mailboxIdentity)) { return }
+                    @(Get-MailboxPermission -Identity $mailboxIdentity -User $Identity -ErrorAction SilentlyContinue |
+                        Where-Object { -not [bool](Get-HybridExchangeOnlineObjectValue -InputObject $_ -Names @('Deny','IsInherited') -Default $false) }) |
+                        ForEach-Object { $delegations.Add((ConvertTo-HybridExchangeOnlineMailboxDelegationModel -Delegation $_ -DelegationType 'FullAccess')) | Out-Null }
+                }
+            }
+            catch { }
+        }
+    }
+
+    return @($delegations | Where-Object { $null -ne $_ } | Sort-Object Mailbox,DelegationType -Unique)
+}
+
+function Get-HybridExchangeOnlineDistributionGroups {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    Ensure-HybridExchangeOnlineConnection
+    $groups = New-Object System.Collections.Generic.List[object]
+    $recipient = $null
+
+    $recipientCommand = Get-Command -Name Get-EXORecipient -ErrorAction SilentlyContinue
+    if ($null -eq $recipientCommand) { $recipientCommand = Get-Command -Name Get-Recipient -ErrorAction SilentlyContinue }
+    if ($null -ne $recipientCommand) {
+        try { $recipient = @(& $recipientCommand -Identity $Identity -ErrorAction Stop | Select-Object -First 1)[0] } catch { $recipient = $null }
+    }
+
+    $candidateValues = @(
+        $Identity,
+        (Get-HybridExchangeOnlineObjectValue -InputObject $recipient -Names @('DistinguishedName') -Default $null),
+        (Get-HybridExchangeOnlineObjectValue -InputObject $recipient -Names @('PrimarySmtpAddress','WindowsEmailAddress') -Default $null),
+        (Get-HybridExchangeOnlineObjectValue -InputObject $recipient -Names @('ExternalDirectoryObjectId','Guid','Id') -Default $null)
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+
+    $distributionCommand = Get-Command -Name Get-EXODistributionGroup -ErrorAction SilentlyContinue
+    if ($null -eq $distributionCommand) { $distributionCommand = Get-Command -Name Get-DistributionGroup -ErrorAction SilentlyContinue }
+    if ($null -eq $distributionCommand) { return @() }
+
+    foreach ($candidate in $candidateValues) {
+        $escaped = ([string]$candidate).Replace("'", "''")
+        foreach ($filter in @("Members -eq '$escaped'", "ManagedBy -eq '$escaped'")) {
+            try {
+                @(& $distributionCommand -ResultSize Unlimited -Filter $filter -ErrorAction Stop) |
+                    ForEach-Object { $groups.Add((ConvertTo-HybridExchangeOnlineDistributionGroupModel -Group $_ -MatchedBy $filter)) | Out-Null }
+            }
+            catch { }
+        }
+    }
+
+    return @($groups | Where-Object { $null -ne $_ } | Sort-Object Identity,PrimarySmtpAddress -Unique)
+}
+
 Export-ModuleMember -Function `
     Resolve-HybridExchangeOnlineEndpoint,`
     Test-HybridExchangeOnlineModuleAvailable,`
@@ -420,4 +574,7 @@ Export-ModuleMember -Function `
     Initialize-HybridExchangeOnlineProvider,`
     Get-HybridExchangeOnlineProviderHealth,`
     Get-HybridExchangeOnlineMailbox,`
-    Get-HybridExchangeOnlineMailboxForwarding
+    Get-HybridExchangeOnlineMailboxForwarding,`
+    Get-HybridExchangeOnlineMailboxStatistics,`
+    Get-HybridExchangeOnlineMailboxDelegations,`
+    Get-HybridExchangeOnlineDistributionGroups

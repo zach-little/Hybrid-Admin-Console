@@ -120,7 +120,7 @@ function Get-HybridAuthenticationProfile {
     try {
         $profile = @(Invoke-HybridAuthenticationProviderOperation `
             -Provider $script:AuthenticationProfileServiceState.MicrosoftGraph `
-            -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile') `
+            -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','GetUser','GetGraphUser','Get') `
             -Arguments @($Identity) | Select-Object -First 1)
 
         if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }

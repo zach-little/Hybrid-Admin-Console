@@ -152,12 +152,44 @@ function ConvertTo-HybridMicrosoftGraphUser {
         return ConvertFrom-HybridGraphUser -GraphUser $GraphUser
     }
 
+    $signInActivity = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('signInActivity','SignInActivity') -Default $null
+    $lastSignIn = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LastSignInDateTime','LastSignIn') -Default (Get-HybridMicrosoftGraphObjectValue -InputObject $signInActivity -Names @('lastSignInDateTime','LastSignInDateTime') -Default $null)
+    $lastNonInteractive = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default (Get-HybridMicrosoftGraphObjectValue -InputObject $signInActivity -Names @('lastNonInteractiveSignInDateTime','LastNonInteractiveSignInDateTime') -Default $null)
+    $passwordChanged = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('lastPasswordChangeDateTime','PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null
+    $methods = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('AuthenticationMethods','Methods') -Default @())
+    $businessPhones = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('businessPhones','BusinessPhones') -Default @())
+    $phoneNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PhoneNumber','TelephoneNumber','mobilePhone','MobilePhone') -Default '')
+    if ([string]::IsNullOrWhiteSpace($phoneNumber) -and $businessPhones.Count -gt 0) { $phoneNumber = [string]$businessPhones[0] }
+
     [pscustomobject]@{
         PSTypeName          = 'Hybrid.User'
         Id                  = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('id','Id') -Default '')
         DisplayName         = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('displayName','DisplayName') -Default '')
         UserPrincipalName   = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('userPrincipalName','UserPrincipalName') -Default '')
         Mail                = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('mail','Mail') -Default '')
+        UserType            = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('userType','UserType') -Default 'Member')
+        PreferredLanguage   = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('preferredLanguage','PreferredLanguage') -Default '')
+        UsageLocation       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('usageLocation','UsageLocation') -Default '')
+        CompanyName         = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('companyName','CompanyName','Company') -Default '')
+        OfficeLocation      = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('officeLocation','OfficeLocation','Office') -Default '')
+        EmployeeId          = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('employeeId','EmployeeId','EmployeeID') -Default '')
+        BadgeId             = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('BadgeId','employeeNumber','EmployeeNumber','extensionAttribute1') -Default '')
+        State               = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('state','State') -Default '')
+        PhoneNumber         = $phoneNumber
+        MobilePhone         = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('mobilePhone','MobilePhone') -Default '')
+        BusinessPhones      = @($businessPhones)
+        AuthenticationMethods = @($methods)
+        DefaultMethod       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default $(if ($methods.Count -gt 0) { [string]$methods[0] } else { '' }))
+        MfaRegistered       = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default ($methods.Count -gt 1))
+        MfaCapable          = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaCapable','IsMfaCapable') -Default ($methods.Count -gt 0))
+        PasswordlessRegistered = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PasswordlessRegistered','IsPasswordlessRegistered') -Default (@($methods | Where-Object { $_ -match 'passwordless|fido|windows hello|temporary access pass' }).Count -gt 0))
+        AuthenticationStrength = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('AuthenticationStrength','StrongAuthenticationRequirement') -Default $(if ($methods.Count -gt 1) { 'Multi-factor capable' } else { 'Single-factor' }))
+        LastSignInDateTime  = $lastSignIn
+        LastNonInteractiveSignInDateTime = $lastNonInteractive
+        PasswordLastChangedDateTime = $passwordChanged
+        RiskState           = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('RiskState','UserRiskState','riskState') -Default 'not loaded')
+        SignInRiskState     = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('SignInRiskState','RiskState','UserRiskState','riskState') -Default 'not loaded')
+        ConditionalAccessState = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('ConditionalAccessState','ConditionalAccess','conditionalAccessStatus') -Default 'Not loaded')
         Source              = 'MicrosoftGraph'
         Attributes          = @{ GraphObject = $GraphUser }
     }
@@ -186,11 +218,115 @@ function Invoke-HybridMicrosoftGraphUserRequest {
     $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
     $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
     $escapedIdentity = [System.Uri]::EscapeDataString($Identity)
-    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation,companyName,officeLocation,employeeId,state,mobilePhone,businessPhones,signInActivity,lastPasswordChangeDateTime'
     $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
-    return Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    $user = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    return Add-HybridMicrosoftGraphUserSecurityEnrichment -GraphUser $user -Session $Session
+}
+
+function Invoke-HybridMicrosoftGraphOptionalRequest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Uri,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $token = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Session -Names @('AccessToken') -Default '')
+    if ([string]::IsNullOrWhiteSpace($token)) { return $null }
+
+    try {
+        return Invoke-RestMethod -Method Get -Uri $Uri -Headers @{ Authorization = ('Bearer {0}' -f $token) } -ErrorAction Stop
+    }
+    catch {
+        return $null
+    }
+}
+
+function ConvertTo-HybridMicrosoftGraphAuthenticationMethodName {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Method)
+
+    $odataType = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Method -Names @('@odata.type','odata.type') -Default '')
+    switch -Regex ($odataType) {
+        'microsoftAuthenticatorAuthenticationMethod' { return 'Microsoft Authenticator' }
+        'phoneAuthenticationMethod' { return 'Phone' }
+        'fido2AuthenticationMethod' { return 'FIDO2 security key' }
+        'windowsHelloForBusinessAuthenticationMethod' { return 'Windows Hello for Business' }
+        'emailAuthenticationMethod' { return 'Email' }
+        'temporaryAccessPassAuthenticationMethod' { return 'Temporary Access Pass' }
+        'passwordAuthenticationMethod' { return 'Password' }
+        'softwareOathAuthenticationMethod' { return 'Software OATH' }
+        default {
+            $displayName = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Method -Names @('displayName','DisplayName') -Default '')
+            if (-not [string]::IsNullOrWhiteSpace($displayName)) { return $displayName }
+            if (-not [string]::IsNullOrWhiteSpace($odataType)) { return ($odataType -replace '^#microsoft\.graph\.', '') }
+            return 'Authentication method'
+        }
+    }
+}
+
+function Add-HybridMicrosoftGraphUserSecurityEnrichment {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][object]$GraphUser,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+    $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+    $id = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('id','Id') -Default '')
+    $upn = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('userPrincipalName','UserPrincipalName') -Default '')
+
+    if (-not [string]::IsNullOrWhiteSpace($id)) {
+        $escapedId = [System.Uri]::EscapeDataString($id)
+        $methodsResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}/authentication/methods' -f $graphEndpoint, $escapedId) -Session $Session
+        $methodValues = @(Get-HybridMicrosoftGraphObjectValue -InputObject $methodsResponse -Names @('value','Value') -Default @())
+        if ($methodValues.Count -gt 0) {
+            $methodNames = @($methodValues | ForEach-Object { ConvertTo-HybridMicrosoftGraphAuthenticationMethodName -Method $_ } | Select-Object -Unique)
+            $GraphUser | Add-Member -NotePropertyName AuthenticationMethods -NotePropertyValue @($methodNames) -Force
+            $GraphUser | Add-Member -NotePropertyName MfaRegistered -NotePropertyValue ($methodNames.Count -gt 1) -Force
+            $GraphUser | Add-Member -NotePropertyName MfaCapable -NotePropertyValue ($methodNames.Count -gt 0) -Force
+            $GraphUser | Add-Member -NotePropertyName PasswordlessRegistered -NotePropertyValue (@($methodNames | Where-Object { $_ -match 'FIDO2|Windows Hello|Temporary Access Pass' }).Count -gt 0) -Force
+        }
+
+        $riskResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/identityProtection/riskyUsers/{1}' -f $graphEndpoint, $escapedId) -Session $Session
+        if ($null -ne $riskResponse) {
+            $riskState = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $riskResponse -Names @('riskState','RiskState') -Default '')
+            if (-not [string]::IsNullOrWhiteSpace($riskState)) {
+                $GraphUser | Add-Member -NotePropertyName RiskState -NotePropertyValue $riskState -Force
+                $GraphUser | Add-Member -NotePropertyName SignInRiskState -NotePropertyValue $riskState -Force
+            }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($upn)) {
+        $escapedUpn = $upn.Replace("'", "''")
+        $signInFilter = [System.Uri]::EscapeDataString("userPrincipalName eq '$escapedUpn'")
+        $signInUri = ('{0}/v1.0/auditLogs/signIns?$top=1&$orderby=createdDateTime%20desc&$filter={1}' -f $graphEndpoint, $signInFilter)
+        $signInResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $signInUri -Session $Session
+        $signIn = @(Get-HybridMicrosoftGraphObjectValue -InputObject $signInResponse -Names @('value','Value') -Default @() | Select-Object -First 1)
+        if ($signIn.Count -gt 0 -and $null -ne $signIn[0]) {
+            $latest = $signIn[0]
+            $created = Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('createdDateTime','CreatedDateTime') -Default $null
+            $conditionalAccess = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('conditionalAccessStatus','ConditionalAccessStatus') -Default '')
+            $riskState = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('riskState','RiskState') -Default '')
+            $methodsUsed = @(Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('authenticationMethodsUsed','AuthenticationMethodsUsed') -Default @())
+
+            if ($null -ne $created) { $GraphUser | Add-Member -NotePropertyName LastSignInDateTime -NotePropertyValue $created -Force }
+            if (-not [string]::IsNullOrWhiteSpace($conditionalAccess)) { $GraphUser | Add-Member -NotePropertyName ConditionalAccessState -NotePropertyValue $conditionalAccess -Force }
+            if (-not [string]::IsNullOrWhiteSpace($riskState)) {
+                $GraphUser | Add-Member -NotePropertyName RiskState -NotePropertyValue $riskState -Force
+                $GraphUser | Add-Member -NotePropertyName SignInRiskState -NotePropertyValue $riskState -Force
+            }
+            if ($methodsUsed.Count -gt 0 -and -not ($GraphUser.PSObject.Properties.Name -contains 'AuthenticationMethods')) {
+                $GraphUser | Add-Member -NotePropertyName AuthenticationMethods -NotePropertyValue @($methodsUsed) -Force
+            }
+        }
+    }
+
+    return $GraphUser
 }
 
 function Invoke-HybridMicrosoftGraphUserSearchRequest {
@@ -207,7 +343,7 @@ function Invoke-HybridMicrosoftGraphUserSearchRequest {
     $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
     $escapedQuery = $Query.Replace("'", "''")
     $filter = [System.Uri]::EscapeDataString("startswith(displayName,'$escapedQuery') or startswith(userPrincipalName,'$escapedQuery') or startswith(mail,'$escapedQuery')")
-    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation,companyName,officeLocation,employeeId,state,mobilePhone,businessPhones'
     $uri = ('{0}/v1.0/users?$top=25&$select={1}&$filter={2}' -f $graphEndpoint, $select, $filter)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 

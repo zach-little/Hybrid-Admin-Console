@@ -254,6 +254,9 @@ function Get-HybridADDefaultUserProperties {
         'employeeID',
         'employeeNumber',
         'extensionAttribute1',
+        'st',
+        'telephoneNumber',
+        'mobile',
         'directReports',
         'lockedOut',
         'enabled',
@@ -628,6 +631,21 @@ function ConvertTo-HybridADUser {
             $mail = [string]$InputObject.Mail
         }
 
+        $state = ''
+        if ($InputObject.PSObject.Properties.Name -contains 'st' -and $null -ne $InputObject.st) {
+            $state = [string]$InputObject.st
+        }
+
+        $phoneNumber = ''
+        if ($InputObject.PSObject.Properties.Name -contains 'telephoneNumber' -and $null -ne $InputObject.telephoneNumber) {
+            $phoneNumber = [string]$InputObject.telephoneNumber
+        }
+
+        $mobilePhone = ''
+        if ($InputObject.PSObject.Properties.Name -contains 'mobile' -and $null -ne $InputObject.mobile) {
+            $mobilePhone = [string]$InputObject.mobile
+        }
+
         $distinguishedName = ''
         if ($InputObject.PSObject.Properties.Name -contains 'DistinguishedName' -and $null -ne $InputObject.DistinguishedName) {
             $distinguishedName = [string]$InputObject.DistinguishedName
@@ -667,6 +685,10 @@ function ConvertTo-HybridADUser {
                 OrganizationalUnit = $organizationalUnit
                 ActiveDirectoryOrganizationalUnit = $organizationalUnit
                 ManagerDn         = $managerDn
+                State             = $state
+                TelephoneNumber   = $phoneNumber
+                PhoneNumber       = $phoneNumber
+                MobilePhone       = $mobilePhone
                 DirectReportDns   = @(ConvertTo-HybridArrayValue $InputObject.DirectReports)
             }
 
@@ -674,6 +696,9 @@ function ConvertTo-HybridADUser {
         $user | Add-Member -NotePropertyName ActiveDirectoryDistinguishedName -NotePropertyValue $distinguishedName -Force
         $user | Add-Member -NotePropertyName OrganizationalUnit -NotePropertyValue $organizationalUnit -Force
         $user | Add-Member -NotePropertyName ActiveDirectoryOrganizationalUnit -NotePropertyValue $organizationalUnit -Force
+        $user | Add-Member -NotePropertyName State -NotePropertyValue $state -Force
+        $user | Add-Member -NotePropertyName PhoneNumber -NotePropertyValue $phoneNumber -Force
+        $user | Add-Member -NotePropertyName MobilePhone -NotePropertyValue $mobilePhone -Force
         return $user
     }
 }

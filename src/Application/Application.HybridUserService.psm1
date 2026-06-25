@@ -417,6 +417,10 @@ function New-HybridCompositeUser {
         Company               = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('CompanyName','Company') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Company','CompanyName') -Default ''))
         Office                = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('OfficeLocation','Office') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Office','PhysicalDeliveryOfficeName','OfficeLocation') -Default ''))
         EmployeeId            = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('EmployeeId','EmployeeID') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('EmployeeId','EmployeeID') -Default ''))
+        BadgeId               = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('BadgeId','EmployeeNumber','employeeNumber','extensionAttribute1') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('BadgeId','EmployeeNumber','employeeNumber','extensionAttribute1') -Default ''))
+        State                 = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('State','state') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('State','st','StateOrProvince') -Default (Get-HybridObjectValue -InputObject (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Attributes') -Default $null) -Names @('State','st') -Default '')))
+        PhoneNumber           = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('PhoneNumber','TelephoneNumber','OfficePhone') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('PhoneNumber','TelephoneNumber','telephoneNumber','OfficePhone') -Default (Get-HybridObjectValue -InputObject (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Attributes') -Default $null) -Names @('PhoneNumber','TelephoneNumber','telephoneNumber') -Default '')))
+        MobilePhone           = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('MobilePhone','mobilePhone') -Default (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('MobilePhone','mobile') -Default (Get-HybridObjectValue -InputObject (Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('Attributes') -Default $null) -Names @('MobilePhone','mobile') -Default '')))
         Manager               = $manager
         ManagerDisplayName    = ConvertTo-HybridDisplayNameFromDn -DistinguishedName ([string]$manager)
         DistinguishedName     = $distinguishedName
@@ -964,7 +968,7 @@ function Get-HybridUserAuthenticationProfile {
     if ([string]::IsNullOrWhiteSpace($Identity)) { throw 'User identity cannot be empty.' }
 
     $provider = $script:HybridUserServiceState.MicrosoftGraph
-    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','Get') -Arguments @($Identity) | Select-Object -First 1)
+    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
     if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }
 
     $raw = $profile[0]
