@@ -82,20 +82,19 @@ The likely investigation areas are:
 
 ## Current Recommendation
 
-Do not begin Milestone 9 yet.
+Milestone 9 / v0.9.0 has started.
 
-Before Milestone 9, validate the v0.8.9 live-readiness stabilization pass:
-
-- Validate DN/OU display in live AD.
-- Validate the new on-premises Exchange provider against the live local Exchange server and wire it through runtime profile bootstrap if needed.
-- Register or explicitly mark Graph, Exchange, and Authentication verticals as deferred/unavailable with clear reason text.
-- Validate Back/Start navigation to Runtime Home/Profile selection.
-- Validate the bottom search progress bar stages.
-- Clean backup artifacts created during hotfix attempts before tagging a new release.
+The v0.8.9 live-readiness stabilization pass is considered validated enough to begin Background Runtime Services. Continue carrying forward live validation notes while building the v0.9 runtime foundation.
 
 ---
 
 ## Next Target
 
-v0.8.9 — Live Runtime UX & Vertical Stabilization
+v0.9.0 — Background Runtime Services
 
+Initial slice:
+
+- Runtime event bus.
+- Runtime bootstrap event publication.
+- Provider refresh scheduling foundation.
+- Non-blocking status synchronization.

@@ -21,13 +21,20 @@ v0.8.9
 
 ---
 
-## Current Pre-Milestone 9 Track
+## Current Track
 
-### v0.8.9 — Live Runtime UX & Vertical Stabilization
+### v0.9.0 — Background Runtime Services
 
-This stabilization release is the current validation target before Milestone 9.
+Milestone 9 has started after the v0.8.9 live-readiness stabilization pass was validated in the live environment.
 
-Implemented in this pass:
+First slice:
+
+- Runtime event bus module added.
+- Runtime bootstrap now registers a `RuntimeEventBus` service.
+- Runtime initialization emits structured events for future background services and status synchronization.
+- BadgeID compatibility was tightened so the legacy AD `BadgeID` attribute is requested and mapped.
+
+Completed in v0.8.9:
 
 - Active Directory Distinguished Name display path tightened.
 - Active Directory Organizational Unit display path tightened.
@@ -43,7 +50,7 @@ Implemented in this pass:
 - Runtime Home provider card now renders provider detail lines dynamically instead of using a hardcoded AD/Graph/EXO list.
 - Exchange mailbox hydration now accepts Exchange On-Premises remote mailbox data as valid mailbox detail data when Exchange Online is unavailable.
 
-Still planned before Milestone 9:
+Carried-forward validation notes:
 
 - Live-validate on-premises Exchange remote mailbox, forwarding, and distribution-group retrieval against the local Exchange server.
 - Improve Graph, Exchange, and Authentication vertical status messages when services are not registered, deferred, unavailable, or failed.
@@ -64,7 +71,7 @@ Suggested validation tests:
 
 ## Milestone 9 — Background Runtime Services
 
-Begin only after the v0.8.9 live-readiness pass is complete.
+Status: Started.
 
 Focus:
 
@@ -115,4 +122,3 @@ Milestone 9 should build on the search progress and hydration-stage instrumentat
 - Code signing
 - Documentation completion
 - Release packaging discipline
-

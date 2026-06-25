@@ -50,4 +50,11 @@ Summary:
 
 ## Release Policy
 
-Milestone 9 should not start until v0.8.9 live-readiness stabilization is validated in the live environment.
+Milestone 9 / v0.9.0 has started after the v0.8.9 live-readiness stabilization pass was validated in the live environment.
+
+Current v0.9.0 focus:
+
+- Background runtime services.
+- Runtime event bus.
+- Provider refresh scheduling.
+- Non-blocking status synchronization.

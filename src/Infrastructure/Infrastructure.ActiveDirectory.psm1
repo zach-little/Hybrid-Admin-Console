@@ -252,6 +252,7 @@ function Get-HybridADDefaultUserProperties {
         'physicalDeliveryOfficeName',
         'manager',
         'employeeID',
+        'BadgeID',
         'employeeNumber',
         'extensionAttribute1',
         'st',
@@ -614,7 +615,13 @@ function ConvertTo-HybridADUser {
         }
 
         $badgeId = ''
-        if ($InputObject.PSObject.Properties.Name -contains 'extensionAttribute1' -and $null -ne $InputObject.extensionAttribute1) {
+        if ($InputObject.PSObject.Properties.Name -contains 'BadgeID' -and $null -ne $InputObject.BadgeID) {
+            $badgeId = [string]$InputObject.BadgeID
+        }
+        elseif ($InputObject.PSObject.Properties.Name -contains 'BadgeId' -and $null -ne $InputObject.BadgeId) {
+            $badgeId = [string]$InputObject.BadgeId
+        }
+        elseif ($InputObject.PSObject.Properties.Name -contains 'extensionAttribute1' -and $null -ne $InputObject.extensionAttribute1) {
             $badgeId = [string]$InputObject.extensionAttribute1
         }
         elseif ($InputObject.PSObject.Properties.Name -contains 'EmployeeNumber' -and $null -ne $InputObject.EmployeeNumber) {

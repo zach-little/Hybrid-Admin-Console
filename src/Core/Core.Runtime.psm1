@@ -372,7 +372,13 @@ function Initialize-HybridRuntimeServiceRegistry {
     )
 
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.ServiceRegistry.psm1' -Required | Out-Null
+    Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.RuntimeEvents.psm1' -Required | Out-Null
     Initialize-HybridServiceRegistry -Context $Context | Out-Null
+    $eventBus = Initialize-HybridRuntimeEventBus
+    Register-HybridService -Name 'RuntimeEventBus' -Instance $eventBus -Description 'Runtime event bus for background services and status synchronization.' -Provider 'Core.RuntimeEvents' -Force | Out-Null
+    if ($Context.PSObject.Properties.Name -contains 'ServiceRegistry' -and $null -ne $Context.ServiceRegistry) {
+        $Context.ServiceRegistry['RuntimeEventBus'] = $eventBus
+    }
 }
 
 function Initialize-HybridRuntimeProfileInternal {
@@ -798,7 +804,7 @@ function Initialize-HybridRuntime {
     }
 
     $context = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeContext' -Properties @{
-        Version = 'v0.8.5'
+        Version = 'v0.9.0'
         RootPath = $resolvedRoot
         Paths = @{ Root = $resolvedRoot }
         Profile = $null
@@ -823,7 +829,10 @@ function Initialize-HybridRuntime {
 
     try {
         Initialize-HybridRuntimeServiceRegistry -RootPath $resolvedRoot -Context $context
-        $records.Add((New-HybridRuntimeBootstrapRecord -Name 'ServiceRegistry' -Kind 'Core' -Status 'Initialized' -Message 'Core service registry initialized.')) | Out-Null
+        $records.Add((New-HybridRuntimeBootstrapRecord -Name 'ServiceRegistry' -Kind 'Core' -Status 'Initialized' -Message 'Core service registry and runtime event bus initialized.')) | Out-Null
+        if (Get-Command Publish-HybridRuntimeEvent -ErrorAction SilentlyContinue) {
+            Publish-HybridRuntimeEvent -EventName 'Runtime.Initializing' -Source 'Core.Runtime' -Data ([pscustomobject]@{ RootPath = $resolvedRoot }) | Out-Null
+        }
 
         $profile = if ($PSCmdlet.ParameterSetName -eq 'ByPath') {
             Initialize-HybridRuntimeProfileInternal -RootPath $resolvedRoot -ProfilePath $ProfilePath -Context $context
@@ -896,6 +905,9 @@ function Initialize-HybridRuntime {
         Add-HybridRuntimeMember -InputObject $diagnostics -Name HasWarnings -Value ([bool]$diagnosticReport.HasWarnings)
         Add-HybridRuntimeMember -InputObject $diagnostics -Name Records -Value ([object[]]$records.ToArray())
         $script:HybridRuntimeState.Runtime = $context
+        if (Get-Command Publish-HybridRuntimeEvent -ErrorAction SilentlyContinue) {
+            Publish-HybridRuntimeEvent -EventName 'Runtime.Initialized' -Source 'Core.Runtime' -Data ([pscustomobject]@{ ProfileName = [string]$profile.ProfileName; DurationMs = $elapsed; OverallStatus = [string]$diagnosticReport.OverallStatus }) | Out-Null
+        }
         Write-HybridRuntimeLog -Message "Hybrid runtime initialized with profile '$($profile.ProfileName)' in $elapsed ms."
         return $context
     }

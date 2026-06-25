@@ -51,6 +51,7 @@ function New-TestADUser {
         UserPrincipalName = $UserPrincipalName
         Mail = $Mail
         EmployeeID = $EmployeeID
+        BadgeID = $EmployeeNumber
         EmployeeNumber = $EmployeeNumber
         extensionAttribute1 = $EmployeeNumber
         Department = $Department

@@ -2959,7 +2959,7 @@ function Invoke-HybridSelectedUserHydration {
     $controls.CompanyText.Text = Get-DisplayValue -InputObject $User -Names @('Company')
     $controls.OfficeText.Text = Get-DisplayValue -InputObject $User -Names @('Office')
     $controls.EmployeeIdText.Text = Get-DisplayValue -InputObject $User -Names @('EmployeeId','EmployeeID')
-    $controls.BadgeIdText.Text = Get-DisplayValue -InputObject $User -Names @('BadgeId','EmployeeNumber','employeeNumber','extensionAttribute1')
+    $controls.BadgeIdText.Text = Get-DisplayValue -InputObject $User -Names @('BadgeId','BadgeID','EmployeeNumber','employeeNumber','extensionAttribute1')
     $controls.StateText.Text = Get-DisplayValue -InputObject $User -Names @('State','st','StateOrProvince')
     $controls.PhoneNumberText.Text = Get-DisplayValue -InputObject $User -Names @('PhoneNumber','TelephoneNumber','telephoneNumber','OfficePhone','MobilePhone','mobile')
     $controls.DistinguishedNameText.Text = Resolve-HybridUserDistinguishedName -User $User
