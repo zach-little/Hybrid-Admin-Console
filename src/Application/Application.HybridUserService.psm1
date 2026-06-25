@@ -310,6 +310,20 @@ function New-HybridAdMailAttributeSnapshot {
     }
 }
 
+function Test-HybridAdMailAttributeSnapshotHasMailSignal {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Snapshot)
+
+    if ($null -eq $Snapshot) { return $false }
+    foreach ($name in @('Mail','TargetAddress','MailNickname')) {
+        $value = Get-HybridObjectValue -InputObject $Snapshot -Names @($name) -Default $null
+        if (-not [string]::IsNullOrWhiteSpace([string]$value)) { return $true }
+    }
+
+    $proxyAddresses = @(Get-HybridObjectValue -InputObject $Snapshot -Names @('ProxyAddresses') -Default @())
+    return (@($proxyAddresses | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }).Count -gt 0)
+}
+
 function New-HybridMailboxSourceEnvelope {
     [CmdletBinding()]
     param(
@@ -544,8 +558,9 @@ function Add-HybridUserMailboxDetails {
     $onPremForwarding = $null
     $onPremDistributionGroups = @()
     $adMailAttributes = New-HybridAdMailAttributeSnapshot -User $User
+    $hasAdMailSignal = Test-HybridAdMailAttributeSnapshotHasMailSignal -Snapshot $adMailAttributes
 
-    if ($null -ne $script:HybridUserServiceState.ExchangeOnPremises) {
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnPremises -and $hasAdMailSignal) {
         try {
             $onPremRemoteMailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetRemoteMailbox') -Arguments @($identity) | Select-Object -First 1)
             $onPremRemoteMailbox = ($onPremRemoteMailbox | Select-Object -First 1)
@@ -562,21 +577,26 @@ function Add-HybridUserMailboxDetails {
             Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Recipient lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
         }
 
-        try {
-            $onPremForwarding = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetMailboxForwarding','GetForwarding') -Arguments @($identity) | Select-Object -First 1)
-            $onPremForwarding = ($onPremForwarding | Select-Object -First 1)
-        }
-        catch {
-            Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Forwarding lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
-        }
+        if ($null -ne $onPremRemoteMailbox -or $null -ne $onPremRecipient) {
+            try {
+                $onPremForwarding = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetMailboxForwarding','GetForwarding') -Arguments @($identity) | Select-Object -First 1)
+                $onPremForwarding = ($onPremForwarding | Select-Object -First 1)
+            }
+            catch {
+                Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Forwarding lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
+            }
 
-        try {
-            $onPremDistributionGroups = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetDistributionGroups','GetOwnedDistributionGroups','GetRecipientGroups') -Arguments @($identity))
+            try {
+                $onPremDistributionGroups = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnPremises -OperationNames @('GetDistributionGroups','GetOwnedDistributionGroups','GetRecipientGroups') -Arguments @($identity))
+            }
+            catch {
+                Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Distribution group lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
+                $onPremDistributionGroups = @()
+            }
         }
-        catch {
-            Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Distribution group lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
-            $onPremDistributionGroups = @()
-        }
+    }
+    elseif ($null -ne $script:HybridUserServiceState.ExchangeOnPremises) {
+        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnPremises' -Message "Skipped on-premises Exchange lookup for '$identity' because the directory record has no mail, proxy, target address, or alias signal." -Level INFO
     }
 
     $mailbox = $null
