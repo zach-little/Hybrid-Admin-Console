@@ -32,6 +32,9 @@
 - Completed runtime/start-page provider display so enabled providers are rendered dynamically from the selected profile/runtime registry, including Exchange On-Premises.
 - Completed Exchange On-Premises mailbox hydration fallback for remote mailbox, forwarding, distribution groups, and aggregation source reporting.
 - Replaced the static Bootstrap Preview with a profile-aware Runtime Preview and dynamic Provider Status pre-launch validation on Runtime Home.
+- Simplified delegated authentication in the Runtime Profile Wizard to an on/off setting, with delegated client details inherited from app-only settings for compatibility.
+- Added lazy live Microsoft Graph runtime registration so Graph Profile and Authentication Posture services receive a provider without authenticating during bootstrap.
+- Added Exchange Online tenant-domain passthrough for `Connect-ExchangeOnline -Organization` while preserving tenant ID fallback behavior.
 
 
 ## v0.8.2 - Runtime Platform Hardening

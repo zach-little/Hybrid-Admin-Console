@@ -38,6 +38,7 @@ $profileJson = @{
         AppOnly = @{
             Enabled = $true
             TenantId = '11111111-1111-1111-1111-111111111111'
+            TenantDomain = 'tenant.onmicrosoft.us'
             ClientId = '22222222-2222-2222-2222-222222222222'
             CredentialMode = 'Certificate'
             CertificateThumbprint = 'ABC123'
@@ -46,7 +47,6 @@ $profileJson = @{
         }
         Delegated = @{
             Enabled = $true
-            ClientId = '33333333-3333-3333-3333-333333333333'
             PromptWhenRequired = $true
         }
     }
@@ -64,7 +64,9 @@ try {
     Assert-True ([string]$profile.Authentication.Cloud -eq 'GCCHigh') 'Runtime profile parser preserves authentication cloud'
     Assert-True ([bool]$profile.Authentication.AppOnly.Enabled) 'Runtime profile parser preserves app-only enabled setting'
     Assert-True ([string]$profile.Authentication.AppOnly.ClientId -eq '22222222-2222-2222-2222-222222222222') 'Runtime profile parser preserves app-only client ID'
+    Assert-True ([string]$profile.Authentication.AppOnly.TenantDomain -eq 'tenant.onmicrosoft.us') 'Runtime profile parser preserves app-only tenant domain'
     Assert-True ([string]$profile.Authentication.AppOnly.CertificateThumbprint -eq 'ABC123') 'Runtime profile parser preserves certificate thumbprint'
+    Assert-True ([string]$profile.Authentication.Delegated.ClientId -eq '22222222-2222-2222-2222-222222222222') 'Runtime profile parser defaults delegated client ID from app-only client ID'
     Assert-True ([bool]$profile.Authentication.Delegated.PromptWhenRequired) 'Runtime profile parser preserves delegated prompt setting'
     Assert-True (@($profile.Providers | Where-Object { $_.Name -eq 'ExchangeOnline' -and $_.Enabled -and $_.Authentication -eq 'AppOnly' }).Count -eq 1) 'Runtime profile parser preserves Exchange Online provider settings'
 }
@@ -75,7 +77,9 @@ finally {
 $ui = Get-Content -LiteralPath $uiPath -Raw
 Assert-ContainsText $ui 'WizardAppOnlyEnabledCheckBox' 'Runtime profile wizard exposes app-only enabled setting'
 Assert-ContainsText $ui 'WizardAppOnlyCredentialModeComboBox' 'Runtime profile wizard exposes app-only credential mode'
-Assert-ContainsText $ui 'WizardDelegatedPromptWhenRequiredCheckBox' 'Runtime profile wizard exposes delegated prompt setting'
+Assert-ContainsText $ui 'Text="Dashboard layout foundation | Runtime Profile Wizard ready"' 'Runtime profile header uses pipe separator'
+Assert-ContainsText $ui 'WizardDelegatedEnabledCheckBox' 'Runtime profile wizard exposes delegated as on/off'
+Assert-True (-not ($ui -match 'WizardDelegatedPromptWhenRequiredCheckBox|WizardDelegatedClientIdTextBox')) 'Runtime profile wizard does not require delegated client details'
 Assert-ContainsText $ui 'Authentication = $authentication' 'Runtime profile wizard saves hybrid authentication block'
 Assert-ContainsText $ui 'ToolTip="Thumbprint of a certificate installed in the Windows certificate store' 'Runtime profile wizard explains certificate thumbprint'
 Assert-ContainsText $ui 'ToolTip="Path to a local certificate file for app-only auth' 'Runtime profile wizard explains certificate path'
@@ -104,6 +108,10 @@ Assert-True ($configuredHealth.Status -in @('Deferred','ModuleMissing')) 'Exchan
 $spacedThumbprintContext = New-HybridExchangeOnlineProviderContext -Cloud 'Commercial' -AppOnlyEnabled -TenantId 'tenant.onmicrosoft.com' -ClientId '22222222-2222-2222-2222-222222222222' -CredentialMode 'Certificate' -CertificateThumbprint 'ab cd:12 34'
 $spacedThumbprintHealth = & (Initialize-HybridExchangeOnlineProvider -Context $spacedThumbprintContext -DeferConnection).GetHealth
 Assert-True ($spacedThumbprintHealth.Configuration.CertificateThumbprint -eq 'ABCD1234') 'Exchange Online provider normalizes certificate thumbprint delimiters and casing'
+
+$tenantDomainContext = New-HybridExchangeOnlineProviderContext -Cloud 'Commercial' -AppOnlyEnabled -TenantId '11111111-1111-1111-1111-111111111111' -TenantDomain 'tenant.onmicrosoft.com' -ClientId '22222222-2222-2222-2222-222222222222' -CredentialMode 'Certificate' -CertificateThumbprint 'ABC123'
+$tenantDomainHealth = & (Initialize-HybridExchangeOnlineProvider -Context $tenantDomainContext -DeferConnection).GetHealth
+Assert-True ($tenantDomainHealth.Configuration.Organization -eq 'tenant.onmicrosoft.com') 'Exchange Online provider uses tenant domain as Connect-ExchangeOnline organization when supplied'
 
 $adProvider = [pscustomobject]@{
     GetUser = {
@@ -164,6 +172,8 @@ Assert-True (@($aggregate.Verticals | Where-Object { $_.Name -eq 'ExchangeOnline
 
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
+Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
+Assert-ContainsText $runtimeText 'Authentication is deferred until Graph profile data is requested' 'Microsoft Graph bootstrap defers live authentication until data access'
 Assert-ContainsText $runtimeText 'ProviderRegistry.ContainsKey(''ExchangeOnline'')' 'Exchange Online appears in provider diagnostics and service registration when enabled'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |

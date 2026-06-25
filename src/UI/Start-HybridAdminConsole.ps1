@@ -442,7 +442,7 @@ $xaml = @"
                         </Border>
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
-                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation â€¢ Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
+                            <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation | Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
                     <Border Grid.Column="1" Background="#0F172A" CornerRadius="12" Padding="14,10" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -834,15 +834,9 @@ $xaml = @"
                                         <TextBox x:Name="WizardSecretReferenceTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center" ToolTip="Expected: a future vault/secret-store reference such as a key vault URI or managed secret name, not the secret value."/>
                                     </Grid>
                                     <Grid Margin="0,8,0,0">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="Delegated Enabled" Foreground="#E5E7EB" VerticalAlignment="Center"/>
                                         <CheckBox x:Name="WizardDelegatedEnabledCheckBox" Grid.Column="1" IsChecked="False" VerticalAlignment="Center"/>
-                                        <CheckBox x:Name="WizardDelegatedPromptWhenRequiredCheckBox" Grid.Column="2" Content="Prompt when required" IsChecked="True" Foreground="#CBD5E1"/>
-                                    </Grid>
-                                    <Grid Margin="22,8,0,0">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Delegated Client ID" Foreground="#CBD5E1" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="WizardDelegatedClientIdTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
                                     </Grid>
                                 </StackPanel>
 
@@ -891,7 +885,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardDelegatedPromptWhenRequiredCheckBox','WizardDelegatedClientIdTextBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CompanyText','OfficeText','EmployeeIdText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1222,11 +1216,10 @@ function Get-HapAuthenticationPreviewLines {
     $appOnlyConfigured = Test-HapCloudAppOnlyConfigured -Authentication $authentication
     $appOnlyEnabled = [bool](Get-HapProfileObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
     $delegatedEnabled = [bool](Get-HapProfileObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
-    $delegatedClientId = [string](Get-HapProfileObjectValue -InputObject $delegated -Names @('ClientId') -Default '')
 
     @(
         ('App-only Graph/EXO: {0}' -f $(if ($appOnlyConfigured) { 'configured' } elseif ($appOnlyEnabled) { 'missing settings' } else { 'disabled/not configured' }))
-        ('Delegated Graph: {0}' -f $(if ($delegatedEnabled -and -not [string]::IsNullOrWhiteSpace($delegatedClientId)) { 'available on demand' } elseif ($delegatedEnabled) { 'enabled, missing client ID' } else { 'disabled' }))
+        ('Delegated Graph: {0}' -f $(if ($delegatedEnabled) { 'available on demand' } else { 'disabled' }))
         'Device Code: prohibited'
     )
 }
@@ -2050,8 +2043,6 @@ function Reset-HybridRuntimeProfileWizardFields {
     $controls.WizardCertificatePathTextBox.Text = ''
     $controls.WizardSecretReferenceTextBox.Text = ''
     $controls.WizardDelegatedEnabledCheckBox.IsChecked = $false
-    $controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked = $true
-    $controls.WizardDelegatedClientIdTextBox.Text = ''
 }
 
 function Load-HybridRuntimeProfileIntoWizard {
@@ -2116,8 +2107,6 @@ function Load-HybridRuntimeProfileIntoWizard {
             }
             if ($null -ne $delegated) {
                 if ($delegated.PSObject.Properties.Name -contains 'Enabled') { $controls.WizardDelegatedEnabledCheckBox.IsChecked = [bool]$delegated.Enabled }
-                if ($delegated.PSObject.Properties.Name -contains 'ClientId') { $controls.WizardDelegatedClientIdTextBox.Text = [string]$delegated.ClientId }
-                if ($delegated.PSObject.Properties.Name -contains 'PromptWhenRequired') { $controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked = [bool]$delegated.PromptWhenRequired }
             }
         }
 
@@ -2247,8 +2236,7 @@ function New-HybridRuntimeProfileFromWizard {
         }
         Delegated = [ordered]@{
             Enabled = [bool]$controls.WizardDelegatedEnabledCheckBox.IsChecked
-            ClientId = $controls.WizardDelegatedClientIdTextBox.Text.Trim()
-            PromptWhenRequired = [bool]$controls.WizardDelegatedPromptWhenRequiredCheckBox.IsChecked
+            PromptWhenRequired = $true
         }
     }
 

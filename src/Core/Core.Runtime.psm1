@@ -70,6 +70,28 @@ function Import-HybridRuntimeModule {
     return $false
 }
 
+function Get-HybridRuntimeObjectValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory=$true)][string[]]$Names,
+        [AllowNull()][object]$Default = $null
+    )
+
+    foreach ($name in $Names) {
+        if ($null -eq $InputObject) { continue }
+        if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            $value = $InputObject[$name]
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+        }
+        if ($InputObject.PSObject.Properties.Name -contains $name) {
+            $value = $InputObject.$name
+            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+        }
+    }
+
+    return $Default
+}
+
 function Write-HybridRuntimeLog {
     param(
         [string]$Level = 'Information',
@@ -499,6 +521,116 @@ function Initialize-HybridRuntimeLiveExchangeOnPremisesProvider {
     }
 }
 
+function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$RootPath,
+        [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
+        [Parameter(Mandatory=$true)][object]$ProviderSettings,
+        [Parameter(Mandatory=$true)][object]$Context,
+        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
+    )
+
+    $providerName = [string]$ProviderSettings.Name
+    try {
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.CloudEnvironment.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.TenantContext.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.Manager.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Authentication.MSAL.psm1' -Required | Out-Null
+        Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.Provider.MicrosoftGraph.psm1' -Required | Out-Null
+
+        Register-HybridMsalAuthenticationAdapters -Force -RuntimeMode Auto | Out-Null
+
+        $profile = $Context.Profile
+        $authenticationSettings = Get-HybridRuntimeObjectValue -InputObject $profile -Names @('Authentication') -Default $null
+        $appOnly = Get-HybridRuntimeObjectValue -InputObject $authenticationSettings -Names @('AppOnly') -Default $null
+        $delegated = Get-HybridRuntimeObjectValue -InputObject $authenticationSettings -Names @('Delegated') -Default $null
+        $cloudName = [string](Get-HybridRuntimeObjectValue -InputObject $profile -Names @('Cloud','CloudEnvironment') -Default 'Commercial')
+        $cloud = Get-HybridCloudEnvironment -Name $cloudName
+        $tenantId = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('TenantId') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('TenantId') -Default ''))
+        $tenantName = [string](Get-HybridRuntimeObjectValue -InputObject $profile -Names @('Organization','ProfileName') -Default $tenantId)
+        $tenantDomain = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('TenantDomain','PrimaryDomain') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('TenantDomain','PrimaryDomain','Domain') -Default ''))
+        $clientId = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('ClientId') -Default (Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('ClientId') -Default ''))
+        $delegatedEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
+        $appOnlyEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
+        $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyEnabled) { 'AppOnly' } else { 'InteractiveBrowser' }
+        $graphScopeSuffix = [string](Get-HybridRuntimeObjectValue -InputObject $cloud.Endpoints -Names @('GraphScopeSuffix') -Default 'https://graph.microsoft.com/.default')
+        $scopes = if ($methodName -eq 'AppOnly') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All') }
+        $verifiedDomains = if ([string]::IsNullOrWhiteSpace($tenantDomain)) { @() } else { @($tenantDomain) }
+
+        if ([string]::IsNullOrWhiteSpace($tenantId)) { throw 'Microsoft Graph live provider requires a tenant ID in the runtime profile authentication settings.' }
+        if ([string]::IsNullOrWhiteSpace($tenantName)) { $tenantName = $tenantId }
+
+        $tenantContext = New-HybridTenantContext -TenantId $tenantId -TenantName $tenantName -CloudEnvironment $cloud -VerifiedDomains $verifiedDomains -DefaultDomain $tenantDomain
+        $providerContext = New-HybridMicrosoftGraphProviderContext -TenantContext $tenantContext -AuthenticationMethod $methodName -Scopes $scopes -Attributes @{
+            ClientId = $clientId
+            AppOnlyEnabled = $appOnlyEnabled
+            DelegatedEnabled = $delegatedEnabled
+        }
+
+        $lazyState = @{ Service = $null; LastError = $null }
+        $getInnerService = {
+            if ($null -eq $lazyState.Service) {
+                $lazyState.Service = Initialize-HybridMicrosoftGraphProvider -Context $providerContext
+            }
+            return $lazyState.Service
+        }.GetNewClosure()
+        $invokeGraphUser = {
+            param([string]$Identity)
+            try {
+                $inner = & $getInnerService
+                if ($null -eq $inner) { return $null }
+                if ($inner.PSObject.Properties.Name -contains 'GetUser' -and $inner.GetUser -is [scriptblock]) { return & $inner.GetUser $Identity }
+                if ($inner.PSObject.Properties.Name -contains 'Get' -and $inner.Get -is [scriptblock]) { return & $inner.Get $Identity }
+                return $null
+            }
+            catch {
+                $lazyState.LastError = $_.Exception.Message
+                throw
+            }
+        }.GetNewClosure()
+        $getGraphHealth = {
+            if ($null -ne $lazyState.Service -and $lazyState.Service.PSObject.Properties.Name -contains 'GetHealth' -and $lazyState.Service.GetHealth -is [scriptblock]) {
+                return & $lazyState.Service.GetHealth
+            }
+            [pscustomobject]@{
+                PSTypeName = 'Hybrid.MicrosoftGraphProviderHealth'
+                Name = 'MicrosoftGraph'
+                Initialized = $true
+                Available = $true
+                Connected = $false
+                Status = 'Deferred'
+                LastError = $lazyState.LastError
+            }
+        }.GetNewClosure()
+
+        $service = [pscustomobject]@{
+            PSTypeName = 'Hybrid.MicrosoftGraphRuntimeLazyProviderService'
+            ProviderName = 'MicrosoftGraph'
+            ProviderAvailable = $true
+            ProviderConnected = $false
+            AuthenticationMethod = $methodName
+            Scopes = @($scopes)
+            GetUser = $invokeGraphUser
+            Get = $invokeGraphUser
+            GetGraphProfile = $invokeGraphUser
+            GetAuthenticationProfile = $invokeGraphUser
+            GetHealth = $getGraphHealth
+            GetProviderHealth = $getGraphHealth
+        }
+
+        $message = 'Microsoft Graph provider registered. Authentication is deferred until Graph profile data is requested.'
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Deferred' -Service $service -Message $message -CapabilityStates @('GraphProfile','AuthenticationPosture','Deferred') | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Deferred' -Message $message)) | Out-Null
+    }
+    catch {
+        $message = 'Microsoft Graph provider failed during runtime binding: ' + $_.Exception.Message
+        Register-HybridRuntimeProviderRecord -Registry $ProviderRegistry -Name $providerName -Mode ([string]$ProviderSettings.Mode) -Enabled ([bool]$ProviderSettings.Enabled) -Required ([bool]$ProviderSettings.Required) -Authentication ([string]$ProviderSettings.Authentication) -Status 'Failed' -Service $null -Message $message -CapabilityStates @('Failed') | Out-Null
+        $Records.Add((New-HybridRuntimeBootstrapRecord -Name $providerName -Kind 'Provider' -Status 'Failed' -Message $message)) | Out-Null
+    }
+}
+
 function Initialize-HybridRuntimeLiveExchangeOnlineProvider {
     [CmdletBinding()]
     param(
@@ -701,6 +833,9 @@ function Initialize-HybridRuntime {
             }
             elseif ([string]$provider.Name -eq 'ActiveDirectory' -and [string]$provider.Mode -eq 'Live') {
                 Initialize-HybridRuntimeLiveActiveDirectoryProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Context $context -Records $records
+            }
+            elseif ([string]$provider.Name -eq 'MicrosoftGraph' -and [string]$provider.Mode -eq 'Live') {
+                Initialize-HybridRuntimeLiveMicrosoftGraphProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Context $context -Records $records
             }
             elseif ([string]$provider.Name -eq 'ExchangeOnPremises' -and [string]$provider.Mode -eq 'Live') {
                 Initialize-HybridRuntimeLiveExchangeOnPremisesProvider -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records

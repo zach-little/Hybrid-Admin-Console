@@ -159,6 +159,7 @@ function ConvertTo-HybridRuntimeAuthenticationSettings {
 
     $appOnlyTenantId = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'TenantId' -Default $DefaultTenantId)
     $appOnlyClientId = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'ClientId' -Default '')
+    $appOnlyTenantDomain = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'TenantDomain' -Default (Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'PrimaryDomain' -Default ''))
     $delegatedClientId = [string](Get-HybridObjectPropertyValue -InputObject $delegated -Name 'ClientId' -Default $appOnlyClientId)
 
     New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeAuthenticationSettings' -Properties @{
@@ -166,6 +167,7 @@ function ConvertTo-HybridRuntimeAuthenticationSettings {
         AppOnly = (New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeAuthentication.AppOnly' -Properties @{
             Enabled = [bool](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'Enabled' -Default $false)
             TenantId = $appOnlyTenantId
+            TenantDomain = $appOnlyTenantDomain
             ClientId = $appOnlyClientId
             CredentialMode = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CredentialMode' -Default 'Certificate')
             CertificateThumbprint = [string](Get-HybridObjectPropertyValue -InputObject $appOnly -Name 'CertificateThumbprint' -Default '')

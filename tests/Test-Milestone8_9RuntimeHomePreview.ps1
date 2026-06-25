@@ -69,7 +69,6 @@ $liveProfile = [pscustomobject]@{
         }
         Delegated = [pscustomobject]@{
             Enabled = $true
-            ClientId = 'delegated-client-id'
             PromptWhenRequired = $true
         }
     }
@@ -125,6 +124,7 @@ Assert-True (($livePreview.ProviderLines -join '|') -match 'Exchange Online: ena
 Assert-True (($livePreview.ConnectionLines -join '|') -match 'exchange01\.atlas-tech\.com') 'Runtime Preview displays Exchange On-Premises connection hint'
 Assert-True ($simPreview.ProfileName -eq 'Simulation' -and $simPreview.Mode -eq 'Simulation') 'Runtime Preview changes when selected profile changes'
 Assert-True (($simPreview.AuthenticationLines -join '|') -match 'Mock/simulation') 'Simulation profile renders mock authentication posture'
+Assert-True (($livePreview.AuthenticationLines -join '|') -match 'Delegated Graph: available on demand') 'Delegated authentication preview only requires on/off'
 
 $liveStatus = Get-HapProviderStatusPreviewModel -Profile $liveProfile
 $missingOnPremStatus = Get-HapProviderStatusPreviewModel -Profile $missingOnPremProfile

@@ -100,6 +100,7 @@ function Test-HybridExchangeOnlineConfiguration {
     $messages = New-Object System.Collections.Generic.List[string]
     $appOnly = Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('AppOnly') -Default $null
     $tenantId = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('TenantId') -Default (Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('TenantId') -Default ''))
+    $organization = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('TenantDomain','PrimaryDomain','Organization') -Default (Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('TenantDomain','PrimaryDomain','Organization') -Default $tenantId))
     $clientId = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('ClientId') -Default (Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('ClientId') -Default ''))
     $credentialMode = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CredentialMode') -Default 'Certificate')
     $certificateThumbprint = Normalize-HybridExchangeOnlineCertificateThumbprint -Thumbprint ([string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default ''))
@@ -123,6 +124,7 @@ function Test-HybridExchangeOnlineConfiguration {
         Messages = @($messages)
         Message = if ($messages.Count -eq 0) { 'Exchange Online app-only authentication is configured.' } else { $messages -join ' ' }
         TenantId = $tenantId
+        Organization = $organization
         ClientId = $clientId
         CredentialMode = $credentialMode
         CertificateThumbprint = $certificateThumbprint
@@ -138,6 +140,7 @@ function New-HybridExchangeOnlineProviderContext {
         [AllowNull()][object]$Authentication = $null,
         [AllowNull()][object]$ProviderSettings = $null,
         [string]$TenantId = '',
+        [string]$TenantDomain = '',
         [string]$ClientId = '',
         [string]$CredentialMode = 'Certificate',
         [string]$CertificateThumbprint = '',
@@ -156,6 +159,7 @@ function New-HybridExchangeOnlineProviderContext {
             AppOnly = [pscustomobject]@{
                 Enabled = [bool]$AppOnlyEnabled
                 TenantId = $TenantId
+                TenantDomain = $TenantDomain
                 ClientId = $ClientId
                 CredentialMode = $CredentialMode
                 CertificateThumbprint = Normalize-HybridExchangeOnlineCertificateThumbprint -Thumbprint $CertificateThumbprint
@@ -182,6 +186,7 @@ function New-HybridExchangeOnlineProviderContext {
         Authentication = $auth
         AppOnly = $appOnly
         Delegated = $delegated
+        TenantDomain = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('TenantDomain','PrimaryDomain','Organization') -Default $TenantDomain)
         ProviderSettings = $ProviderSettings
     }
 }
@@ -233,7 +238,7 @@ function Connect-HybridExchangeOnline {
 
     $params = @{
         AppId = $configuration.ClientId
-        Organization = $configuration.TenantId
+        Organization = $configuration.Organization
         ShowBanner = $false
         ErrorAction = 'Stop'
     }

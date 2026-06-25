@@ -65,6 +65,9 @@ function Get-HybridMicrosoftGraphObjectValue {
     )
 
     foreach ($name in $Names) {
+        if ($null -ne $InputObject -and $InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            return $InputObject[$name]
+        }
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             return $InputObject.$name
         }
@@ -113,12 +116,14 @@ function New-HybridMicrosoftGraphAuthenticationRequest {
     $tenantContext = Get-HybridMicrosoftGraphObjectValue -InputObject $Context -Names @('TenantContext')
     $methodName = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Context -Names @('AuthenticationMethod','MethodName','Method') -Default 'Interactive')
     $scopes = @((Get-HybridMicrosoftGraphObjectValue -InputObject $Context -Names @('Scopes','RequiredScopes') -Default @('User.Read.All')))
+    $attributes = Get-HybridMicrosoftGraphObjectValue -InputObject $Context -Names @('Attributes') -Default @{}
+    $clientId = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Context -Names @('ClientId') -Default (Get-HybridMicrosoftGraphObjectValue -InputObject $attributes -Names @('ClientId') -Default ''))
 
     if (-not (Get-Command New-HybridAuthenticationRequest -ErrorAction SilentlyContinue)) {
         throw 'Core.Authentication is required to create a Microsoft Graph authentication request.'
     }
 
-    return New-HybridAuthenticationRequest -TenantContext $tenantContext -MethodName $methodName -Scopes $scopes
+    return New-HybridAuthenticationRequest -TenantContext $tenantContext -MethodName $methodName -ClientId $clientId -Scopes $scopes -Attributes $attributes
 }
 
 function Get-HybridMicrosoftGraphAuthenticationSession {
@@ -156,6 +161,36 @@ function ConvertTo-HybridMicrosoftGraphUser {
         Source              = 'MicrosoftGraph'
         Attributes          = @{ GraphObject = $GraphUser }
     }
+}
+
+function Get-HybridMicrosoftGraphEndpoint {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][object]$TenantContext)
+
+    $cloud = Get-HybridMicrosoftGraphObjectValue -InputObject $TenantContext -Names @('CloudEnvironment') -Default $null
+    $endpoints = Get-HybridMicrosoftGraphObjectValue -InputObject $cloud -Names @('Endpoints') -Default $null
+    $graphEndpoint = Get-HybridMicrosoftGraphObjectValue -InputObject $endpoints -Names @('Graph') -Default 'https://graph.microsoft.com'
+    return ([string]$graphEndpoint).TrimEnd('/')
+}
+
+function Invoke-HybridMicrosoftGraphUserRequest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $token = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Session -Names @('AccessToken') -Default '')
+    if ([string]::IsNullOrWhiteSpace($token)) { throw 'Microsoft Graph authentication session did not include an access token.' }
+
+    $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+    $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+    $escapedIdentity = [System.Uri]::EscapeDataString($Identity)
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
+    $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
+    $headers = @{ Authorization = ('Bearer {0}' -f $token) }
+
+    return Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
 }
 
 function Get-HybridMicrosoftGraphUserCacheKey {
@@ -235,7 +270,10 @@ function Get-HybridMicrosoftGraphUser {
         } | Select-Object -First 1)
 
         if ($match.Count -eq 0) {
-            return $null
+            $liveUser = Invoke-HybridMicrosoftGraphUserRequest -Identity $Identity -Session $session
+            $user = ConvertTo-HybridMicrosoftGraphUser -GraphUser $liveUser
+            $script:HybridMicrosoftGraphState.Cache.Users[$cacheKey] = $user
+            return $user
         }
 
         $user = ConvertTo-HybridMicrosoftGraphUser -GraphUser $match[0]
