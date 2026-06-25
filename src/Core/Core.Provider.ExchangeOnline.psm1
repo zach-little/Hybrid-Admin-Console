@@ -67,6 +67,14 @@ function Resolve-HybridExchangeOnlineEndpoint {
     }
 }
 
+function Normalize-HybridExchangeOnlineCertificateThumbprint {
+    [CmdletBinding()]
+    param([AllowNull()][string]$Thumbprint)
+
+    if ([string]::IsNullOrWhiteSpace($Thumbprint)) { return '' }
+    return ([regex]::Replace($Thumbprint.Trim(), '[^0-9A-Fa-f]', '')).ToUpperInvariant()
+}
+
 function Test-HybridExchangeOnlineModuleAvailable {
     [CmdletBinding()]
     param()
@@ -94,7 +102,7 @@ function Test-HybridExchangeOnlineConfiguration {
     $tenantId = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('TenantId') -Default (Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('TenantId') -Default ''))
     $clientId = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('ClientId') -Default (Get-HybridExchangeOnlineObjectValue -InputObject $Context -Names @('ClientId') -Default ''))
     $credentialMode = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CredentialMode') -Default 'Certificate')
-    $certificateThumbprint = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default '')
+    $certificateThumbprint = Normalize-HybridExchangeOnlineCertificateThumbprint -Thumbprint ([string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default ''))
     $certificatePath = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
     $secretReference = [string](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('SecretReference') -Default '')
     $appOnlyEnabled = [bool](Get-HybridExchangeOnlineObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
@@ -150,7 +158,7 @@ function New-HybridExchangeOnlineProviderContext {
                 TenantId = $TenantId
                 ClientId = $ClientId
                 CredentialMode = $CredentialMode
-                CertificateThumbprint = $CertificateThumbprint
+                CertificateThumbprint = Normalize-HybridExchangeOnlineCertificateThumbprint -Thumbprint $CertificateThumbprint
                 CertificatePath = $CertificatePath
                 SecretReference = $SecretReference
             }

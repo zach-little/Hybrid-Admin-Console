@@ -77,6 +77,10 @@ Assert-ContainsText $ui 'WizardAppOnlyEnabledCheckBox' 'Runtime profile wizard e
 Assert-ContainsText $ui 'WizardAppOnlyCredentialModeComboBox' 'Runtime profile wizard exposes app-only credential mode'
 Assert-ContainsText $ui 'WizardDelegatedPromptWhenRequiredCheckBox' 'Runtime profile wizard exposes delegated prompt setting'
 Assert-ContainsText $ui 'Authentication = $authentication' 'Runtime profile wizard saves hybrid authentication block'
+Assert-ContainsText $ui 'ToolTip="Thumbprint of a certificate installed in the Windows certificate store' 'Runtime profile wizard explains certificate thumbprint'
+Assert-ContainsText $ui 'ToolTip="Path to a local certificate file for app-only auth' 'Runtime profile wizard explains certificate path'
+Assert-ContainsText $ui 'ToolTip="Name or URI of a secret stored outside this profile' 'Runtime profile wizard explains secret reference'
+Assert-ContainsText $ui 'Normalize-HybridWizardCertificateThumbprint' 'Runtime profile wizard normalizes pasted certificate thumbprints'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange On-Prem'" 'Search progress includes Exchange On-Premises stage'
 Assert-ContainsText $ui "Set-HybridSearchProgressStage -Stage 'Exchange Online'" 'Search progress includes Exchange Online stage'
 
@@ -90,6 +94,10 @@ $configuredContext = New-HybridExchangeOnlineProviderContext -Cloud 'GCCHigh' -A
 $configuredProvider = Initialize-HybridExchangeOnlineProvider -Context $configuredContext -DeferConnection
 $configuredHealth = & $configuredProvider.GetHealth
 Assert-True ($configuredHealth.Status -in @('Deferred','ModuleMissing')) 'Exchange Online provider reports Deferred or ModuleMissing distinctly when configured'
+
+$spacedThumbprintContext = New-HybridExchangeOnlineProviderContext -Cloud 'Commercial' -AppOnlyEnabled -TenantId 'tenant.onmicrosoft.com' -ClientId '22222222-2222-2222-2222-222222222222' -CredentialMode 'Certificate' -CertificateThumbprint 'ab cd:12 34'
+$spacedThumbprintHealth = & (Initialize-HybridExchangeOnlineProvider -Context $spacedThumbprintContext -DeferConnection).GetHealth
+Assert-True ($spacedThumbprintHealth.Configuration.CertificateThumbprint -eq 'ABCD1234') 'Exchange Online provider normalizes certificate thumbprint delimiters and casing'
 
 $adProvider = [pscustomobject]@{
     GetUser = {

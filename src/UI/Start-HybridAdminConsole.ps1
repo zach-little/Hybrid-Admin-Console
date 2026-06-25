@@ -830,18 +830,18 @@ $xaml = @"
                                     </Grid>
                                     <Grid Margin="22,8,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Certificate Thumbprint" Foreground="#CBD5E1" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="WizardCertificateThumbprintTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="Certificate Thumbprint" Foreground="#CBD5E1" VerticalAlignment="Center" ToolTip="Thumbprint of a certificate installed in the Windows certificate store. Paste with or without spaces or colons; HAP saves uppercase hex."/>
+                                        <TextBox x:Name="WizardCertificateThumbprintTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center" ToolTip="Expected: certificate thumbprint from CurrentUser\My or LocalMachine\My, for example ABCDEF1234567890ABCDEF1234567890ABCDEF12."/>
                                     </Grid>
                                     <Grid Margin="22,8,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Certificate Path" Foreground="#CBD5E1" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="WizardCertificatePathTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="Certificate Path" Foreground="#CBD5E1" VerticalAlignment="Center" ToolTip="Path to a local certificate file for app-only auth, typically a .pfx. Do not put the PFX password in this profile."/>
+                                        <TextBox x:Name="WizardCertificatePathTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center" ToolTip="Expected: full local path such as C:\Certs\hap-exo-apponly.pfx. Password handling requires a future secure secret resolver."/>
                                     </Grid>
                                     <Grid Margin="22,8,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Secret Reference" Foreground="#CBD5E1" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="WizardSecretReferenceTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="Secret Reference" Foreground="#CBD5E1" VerticalAlignment="Center" ToolTip="Name or URI of a secret stored outside this profile. Plaintext client secrets are not supported."/>
+                                        <TextBox x:Name="WizardSecretReferenceTextBox" Grid.Column="1" Height="34" Background="#0B1220" Foreground="#E5E7EB" BorderBrush="#26364F" Padding="8,0" VerticalContentAlignment="Center" ToolTip="Expected: a future vault/secret-store reference such as a key vault URI or managed secret name, not the secret value."/>
                                     </Grid>
                                     <Grid Margin="0,8,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -1789,6 +1789,12 @@ function Get-HybridWizardComboValue {
     return [string]$ComboBox.Text
 }
 
+function Normalize-HybridWizardCertificateThumbprint {
+    param([AllowNull()][string]$Thumbprint)
+    if ([string]::IsNullOrWhiteSpace($Thumbprint)) { return '' }
+    return ([regex]::Replace($Thumbprint.Trim(), '[^0-9A-Fa-f]', '')).ToUpperInvariant()
+}
+
 function New-HybridRuntimeProfileFromWizard {
     $profileName = $controls.WizardProfileNameTextBox.Text.Trim()
     if ([string]::IsNullOrWhiteSpace($profileName)) { throw 'Profile name is required.' }
@@ -1863,7 +1869,7 @@ function New-HybridRuntimeProfileFromWizard {
             TenantId = $controls.WizardAppOnlyTenantIdTextBox.Text.Trim()
             ClientId = $controls.WizardAppOnlyClientIdTextBox.Text.Trim()
             CredentialMode = Get-HybridWizardComboValue -ComboBox $controls.WizardAppOnlyCredentialModeComboBox
-            CertificateThumbprint = $controls.WizardCertificateThumbprintTextBox.Text.Trim()
+            CertificateThumbprint = Normalize-HybridWizardCertificateThumbprint -Thumbprint $controls.WizardCertificateThumbprintTextBox.Text
             CertificatePath = $controls.WizardCertificatePathTextBox.Text.Trim()
             SecretReference = $controls.WizardSecretReferenceTextBox.Text.Trim()
         }
