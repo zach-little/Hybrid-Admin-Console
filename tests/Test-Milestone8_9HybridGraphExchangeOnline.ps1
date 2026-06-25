@@ -15,6 +15,7 @@ function Assert-ContainsText {
 
 $profileModule = Join-Path $repoRoot 'src\Core\Core.RuntimeProfile.psm1'
 $runtimeModule = Join-Path $repoRoot 'src\Core\Core.Runtime.psm1'
+$msalModule = Join-Path $repoRoot 'src\Core\Core.Authentication.MSAL.psm1'
 $exchangeOnlineModule = Join-Path $repoRoot 'src\Core\Core.Provider.ExchangeOnline.psm1'
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
 $aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
@@ -77,6 +78,8 @@ finally {
 $ui = Get-Content -LiteralPath $uiPath -Raw
 Assert-ContainsText $ui 'WizardAppOnlyEnabledCheckBox' 'Runtime profile wizard exposes app-only enabled setting'
 Assert-ContainsText $ui 'WizardAppOnlyCredentialModeComboBox' 'Runtime profile wizard exposes app-only credential mode'
+Assert-ContainsText $ui 'WizardAppOnlyTenantDomainTextBox' 'Runtime profile wizard exposes tenant domain for Exchange Online organization'
+Assert-ContainsText $ui 'TenantDomain = $controls.WizardAppOnlyTenantDomainTextBox.Text.Trim()' 'Runtime profile wizard saves tenant domain in app-only settings'
 Assert-ContainsText $ui 'Text="Dashboard layout foundation | Runtime Profile Wizard ready"' 'Runtime profile header uses pipe separator'
 Assert-ContainsText $ui 'WizardDelegatedEnabledCheckBox' 'Runtime profile wizard exposes delegated as on/off'
 Assert-True (-not ($ui -match 'WizardDelegatedPromptWhenRequiredCheckBox|WizardDelegatedClientIdTextBox')) 'Runtime profile wizard does not require delegated client details'
@@ -112,6 +115,10 @@ Assert-True ($spacedThumbprintHealth.Configuration.CertificateThumbprint -eq 'AB
 $tenantDomainContext = New-HybridExchangeOnlineProviderContext -Cloud 'Commercial' -AppOnlyEnabled -TenantId '11111111-1111-1111-1111-111111111111' -TenantDomain 'tenant.onmicrosoft.com' -ClientId '22222222-2222-2222-2222-222222222222' -CredentialMode 'Certificate' -CertificateThumbprint 'ABC123'
 $tenantDomainHealth = & (Initialize-HybridExchangeOnlineProvider -Context $tenantDomainContext -DeferConnection).GetHealth
 Assert-True ($tenantDomainHealth.Configuration.Organization -eq 'tenant.onmicrosoft.com') 'Exchange Online provider uses tenant domain as Connect-ExchangeOnline organization when supplied'
+
+$guidOnlyContext = New-HybridExchangeOnlineProviderContext -Cloud 'Commercial' -AppOnlyEnabled -TenantId '11111111-1111-1111-1111-111111111111' -ClientId '22222222-2222-2222-2222-222222222222' -CredentialMode 'Certificate' -CertificateThumbprint 'ABC123'
+$guidOnlyHealth = & (Initialize-HybridExchangeOnlineProvider -Context $guidOnlyContext -DeferConnection).GetHealth
+Assert-True ($guidOnlyHealth.Status -eq 'NotConfigured' -and $guidOnlyHealth.Configuration.Message -match 'TenantDomain is required') 'Exchange Online provider requires tenant domain when TenantId is a GUID'
 
 $adProvider = [pscustomobject]@{
     GetUser = {
@@ -201,10 +208,14 @@ $fallbackResults = @(Search-HybridUser -Query 'cloud.only')
 Assert-True ($fallbackResults.Count -eq 1 -and $fallbackResults[0].UserPrincipalName -eq 'cloud.only@atlas.test') 'HybridUserService search continues with Graph results when AD search fails'
 
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
+$msalText = Get-Content -LiteralPath $msalModule -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
 Assert-ContainsText $runtimeText 'Authentication is deferred until Graph profile data is requested' 'Microsoft Graph bootstrap defers live authentication until data access'
 Assert-ContainsText $runtimeText 'SearchUser = $searchGraphUsers' 'Microsoft Graph lazy provider exposes search fallback'
+Assert-ContainsText $runtimeText "'AppOnlyClientCredentials'" 'Microsoft Graph runtime prefers app-only client credentials when certificate auth is configured'
+Assert-ContainsText $msalText 'Invoke-HybridMsalCertificateClientCredentials' 'MSAL adapter supports certificate client credentials for Graph app-only auth'
+Assert-ContainsText $msalText 'client_assertion_type' 'MSAL adapter builds certificate client assertions instead of delegated desktop auth'
 Assert-ContainsText $runtimeText 'ProviderRegistry.ContainsKey(''ExchangeOnline'')' 'Exchange Online appears in provider diagnostics and service registration when enabled'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |

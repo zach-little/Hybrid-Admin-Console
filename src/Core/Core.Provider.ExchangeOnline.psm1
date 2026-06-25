@@ -110,6 +110,9 @@ function Test-HybridExchangeOnlineConfiguration {
 
     if (-not $appOnlyEnabled) { $messages.Add('App-only authentication is disabled.') | Out-Null }
     if ([string]::IsNullOrWhiteSpace($tenantId)) { $messages.Add('TenantId is required for Exchange Online app-only authentication.') | Out-Null }
+    if (-not [string]::IsNullOrWhiteSpace($tenantId) -and $tenantId -match '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' -and $organization -eq $tenantId) {
+        $messages.Add('TenantDomain is required for Exchange Online when TenantId is a GUID. Use the tenant onmicrosoft.com or primary accepted domain for Organization.') | Out-Null
+    }
     if ([string]::IsNullOrWhiteSpace($clientId)) { $messages.Add('ClientId is required for Exchange Online app-only authentication.') | Out-Null }
     if ($credentialMode -eq 'Certificate' -and [string]::IsNullOrWhiteSpace($certificateThumbprint) -and [string]::IsNullOrWhiteSpace($certificatePath)) {
         $messages.Add('CertificateThumbprint or CertificatePath is required for certificate app-only authentication.') | Out-Null

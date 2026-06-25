@@ -554,9 +554,12 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $clientId = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('ClientId') -Default (Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('ClientId') -Default ''))
         $delegatedEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
         $appOnlyEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
-        $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyEnabled) { 'AppOnly' } else { 'InteractiveBrowser' }
+        $credentialMode = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CredentialMode') -Default 'Certificate')
+        $certificateThumbprint = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default '')
+        $certificatePath = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
+        $methodName = if ($appOnlyEnabled -and $credentialMode -eq 'Certificate') { 'AppOnlyClientCredentials' } elseif ($delegatedEnabled) { 'Interactive' } else { 'Interactive' }
         $graphScopeSuffix = [string](Get-HybridRuntimeObjectValue -InputObject $cloud.Endpoints -Names @('GraphScopeSuffix') -Default 'https://graph.microsoft.com/.default')
-        $scopes = if ($methodName -eq 'AppOnly') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All') }
+        $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All') }
         $verifiedDomains = if ([string]::IsNullOrWhiteSpace($tenantDomain)) { @() } else { @($tenantDomain) }
 
         if ([string]::IsNullOrWhiteSpace($tenantId)) { throw 'Microsoft Graph live provider requires a tenant ID in the runtime profile authentication settings.' }
@@ -565,6 +568,9 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $tenantContext = New-HybridTenantContext -TenantId $tenantId -TenantName $tenantName -CloudEnvironment $cloud -VerifiedDomains $verifiedDomains -DefaultDomain $tenantDomain
         $providerContext = New-HybridMicrosoftGraphProviderContext -TenantContext $tenantContext -AuthenticationMethod $methodName -Scopes $scopes -Attributes @{
             ClientId = $clientId
+            CertificateThumbprint = $certificateThumbprint
+            CertificatePath = $certificatePath
+            CredentialMode = $credentialMode
             AppOnlyEnabled = $appOnlyEnabled
             DelegatedEnabled = $delegatedEnabled
         }

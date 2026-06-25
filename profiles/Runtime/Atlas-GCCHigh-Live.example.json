@@ -8,17 +8,17 @@
     "Authentication":  {
                            "Cloud":  "GCCHigh",
                            "AppOnly":  {
-                                           "Enabled":  false,
+                                           "Enabled":  true,
                                            "TenantId":  "ea26f921-331e-4244-948d-d4d13598bbf5",
-                                           "ClientId":  "",
+                                           "TenantDomain":  "atlastechcloud.onmicrosoft.com",
+                                           "ClientId":  "94e76399-fbd5-4aa3-9efd-b658efe42baf",
                                            "CredentialMode":  "Certificate",
-                                           "CertificateThumbprint":  "",
+                                           "CertificateThumbprint":  "97C28F9D94EE9013286A5723B9C21901FA1FC862",
                                            "CertificatePath":  "",
                                            "SecretReference":  ""
                                        },
                            "Delegated":  {
                                              "Enabled":  true,
-                                             "ClientId":  "",
                                              "PromptWhenRequired":  true
                                          }
                        },

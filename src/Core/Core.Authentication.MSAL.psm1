@@ -9,6 +9,9 @@ function Get-HybridMsalObjectValue {
     )
 
     foreach ($name in $Names) {
+        if ($null -ne $InputObject -and $InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
+            return $InputObject[$name]
+        }
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             return $InputObject.$name
         }
@@ -21,7 +24,7 @@ function New-HybridMsalAuthenticationAdapter {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','ManagedIdentity')]
+        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','AppOnlyClientCredentials','ManagedIdentity')]
         [string]$MethodName,
 
         [ValidateSet('Contract','Live','Auto')]
@@ -62,7 +65,7 @@ function New-HybridMsalTokenRequest {
         [object]$AuthenticationRequest,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','ManagedIdentity')]
+        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','AppOnlyClientCredentials','ManagedIdentity')]
         [string]$MethodName
     )
 
@@ -84,7 +87,7 @@ function New-HybridMsalTokenRequest {
     }
 
     $mode = switch ($MethodName) {
-        'AppOnly'         { 'Application' }
+        { $_ -in @('AppOnly','AppOnlyClientCredentials') } { 'Application' }
         'ManagedIdentity' { 'ManagedIdentity' }
         default           { 'Delegated' }
     }
@@ -102,6 +105,109 @@ function New-HybridMsalTokenRequest {
         CloudEnvironmentName = $cloudName
         IsInteractive        = ($MethodName -in @('Interactive','InteractiveBrowser'))
         Attributes           = if ($AuthenticationRequest.PSObject.Properties.Name -contains 'Attributes') { $AuthenticationRequest.Attributes } else { @{} }
+    }
+}
+
+function ConvertTo-HybridMsalBase64Url {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][byte[]]$Bytes)
+
+    return ([Convert]::ToBase64String($Bytes).TrimEnd('=').Replace('+','-').Replace('/','_'))
+}
+
+function Get-HybridMsalCertificate {
+    [CmdletBinding()]
+    param(
+        [string]$Thumbprint = '',
+        [string]$CertificatePath = ''
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Thumbprint)) {
+        $normalizedThumbprint = ([regex]::Replace($Thumbprint.Trim(), '[^0-9A-Fa-f]', '')).ToUpperInvariant()
+        foreach ($storeName in @('Cert:\CurrentUser\My','Cert:\LocalMachine\My')) {
+            $certificate = @(Get-ChildItem -Path $storeName -ErrorAction SilentlyContinue | Where-Object {
+                ([regex]::Replace(([string]$_.Thumbprint), '[^0-9A-Fa-f]', '')).ToUpperInvariant() -eq $normalizedThumbprint
+            } | Select-Object -First 1)
+            if ($certificate.Count -gt 0 -and $null -ne $certificate[0]) { return $certificate[0] }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($CertificatePath) -and (Test-Path -LiteralPath $CertificatePath -PathType Leaf)) {
+        return [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($CertificatePath)
+    }
+
+    return $null
+}
+
+function New-HybridMsalCertificateClientAssertion {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$TokenEndpoint,
+        [Parameter(Mandatory)][System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate
+    )
+
+    $now = [DateTimeOffset]::UtcNow
+    $header = @{
+        alg = 'RS256'
+        typ = 'JWT'
+        x5t = ConvertTo-HybridMsalBase64Url -Bytes $Certificate.GetCertHash()
+    }
+    $payload = @{
+        aud = $TokenEndpoint
+        iss = $ClientId
+        sub = $ClientId
+        jti = [guid]::NewGuid().ToString()
+        nbf = [int]$now.ToUnixTimeSeconds()
+        exp = [int]$now.AddMinutes(10).ToUnixTimeSeconds()
+    }
+
+    $headerJson = $header | ConvertTo-Json -Compress
+    $payloadJson = $payload | ConvertTo-Json -Compress
+    $unsignedToken = '{0}.{1}' -f (ConvertTo-HybridMsalBase64Url -Bytes ([Text.Encoding]::UTF8.GetBytes($headerJson))), (ConvertTo-HybridMsalBase64Url -Bytes ([Text.Encoding]::UTF8.GetBytes($payloadJson)))
+    $rsa = $Certificate.GetRSAPrivateKey()
+    if ($null -eq $rsa) { throw 'Certificate does not expose an RSA private key for app-only authentication.' }
+    $signature = $rsa.SignData([Text.Encoding]::UTF8.GetBytes($unsignedToken), [Security.Cryptography.HashAlgorithmName]::SHA256, [Security.Cryptography.RSASignaturePadding]::Pkcs1)
+    return '{0}.{1}' -f $unsignedToken, (ConvertTo-HybridMsalBase64Url -Bytes $signature)
+}
+
+function Invoke-HybridMsalCertificateClientCredentials {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$TokenRequest)
+
+    $attributes = Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('Attributes') -Default @{}
+    $clientId = [string](Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('ClientId') -Default '')
+    $tenantId = [string](Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('TenantId') -Default '')
+    $authority = [string](Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('Authority') -Default '')
+    $thumbprint = [string](Get-HybridMsalObjectValue -InputObject $attributes -Names @('CertificateThumbprint') -Default '')
+    $certificatePath = [string](Get-HybridMsalObjectValue -InputObject $attributes -Names @('CertificatePath') -Default '')
+
+    if ([string]::IsNullOrWhiteSpace($clientId)) { throw 'App-only Microsoft Graph authentication requires ClientId.' }
+    if ([string]::IsNullOrWhiteSpace($tenantId) -and [string]::IsNullOrWhiteSpace($authority)) { throw 'App-only Microsoft Graph authentication requires TenantId or Authority.' }
+
+    $certificate = Get-HybridMsalCertificate -Thumbprint $thumbprint -CertificatePath $certificatePath
+    if ($null -eq $certificate) { throw 'App-only Microsoft Graph authentication could not find the configured certificate.' }
+    if (-not $certificate.HasPrivateKey) { throw 'App-only Microsoft Graph authentication certificate does not include a private key.' }
+
+    if ([string]::IsNullOrWhiteSpace($authority)) { $authority = 'https://login.microsoftonline.com/{0}' -f $tenantId }
+    $tokenEndpoint = $authority.TrimEnd('/') + '/oauth2/v2.0/token'
+    $assertion = New-HybridMsalCertificateClientAssertion -ClientId $clientId -TokenEndpoint $tokenEndpoint -Certificate $certificate
+    $body = @{
+        client_id = $clientId
+        scope = (@($TokenRequest.Scopes) -join ' ')
+        grant_type = 'client_credentials'
+        client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+        client_assertion = $assertion
+    }
+
+    $response = Invoke-RestMethod -Method Post -Uri $tokenEndpoint -Body $body -ContentType 'application/x-www-form-urlencoded' -ErrorAction Stop
+    $expiresIn = [int](Get-HybridMsalObjectValue -InputObject $response -Names @('expires_in','ExpiresIn') -Default 3600)
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.MsalCertificateClientCredentialsTokenResult'
+        AccessToken = [string](Get-HybridMsalObjectValue -InputObject $response -Names @('access_token','AccessToken') -Default '')
+        TokenType = [string](Get-HybridMsalObjectValue -InputObject $response -Names @('token_type','TokenType') -Default 'Bearer')
+        ExpiresOn = [datetime]::UtcNow.AddSeconds($expiresIn)
+        RuntimeMode = 'CertificateClientCredentials'
     }
 }
 
@@ -152,6 +258,15 @@ function Invoke-HybridMsalTokenAcquisition {
     }
 
     $runtime = Test-HybridMsalRuntimeAvailable
+    if ($TokenRequest.MethodName -in @('AppOnly','AppOnlyClientCredentials')) {
+        $attributes = Get-HybridMsalObjectValue -InputObject $TokenRequest -Names @('Attributes') -Default @{}
+        $thumbprint = [string](Get-HybridMsalObjectValue -InputObject $attributes -Names @('CertificateThumbprint') -Default '')
+        $certificatePath = [string](Get-HybridMsalObjectValue -InputObject $attributes -Names @('CertificatePath') -Default '')
+        if (-not [string]::IsNullOrWhiteSpace($thumbprint) -or -not [string]::IsNullOrWhiteSpace($certificatePath)) {
+            return Invoke-HybridMsalCertificateClientCredentials -TokenRequest $TokenRequest
+        }
+    }
+
     if ($RuntimeMode -eq 'Contract' -or ($RuntimeMode -eq 'Auto' -and -not $runtime.IsAvailable)) {
         return [pscustomobject]@{
             PSTypeName   = 'Hybrid.MsalContractTokenResult'
@@ -190,7 +305,7 @@ function New-HybridMsalAuthenticationSession {
         [object]$AuthenticationRequest,
 
         [Parameter(Mandatory)]
-        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','ManagedIdentity')]
+        [ValidateSet('Interactive','InteractiveBrowser','AppOnly','AppOnlyClientCredentials','ManagedIdentity')]
         [string]$MethodName,
 
         [ValidateSet('Contract','Live','Auto')]
@@ -224,7 +339,7 @@ function Register-HybridMsalAuthenticationAdapters {
         [scriptblock]$TokenAcquisitionScript
     )
 
-    foreach ($method in 'Interactive','InteractiveBrowser','AppOnly','ManagedIdentity') {
+    foreach ($method in 'Interactive','InteractiveBrowser','AppOnly','AppOnlyClientCredentials','ManagedIdentity') {
         $methodName = $method
         $runtimeModeValue = $RuntimeMode
         $tokenScriptValue = $TokenAcquisitionScript
