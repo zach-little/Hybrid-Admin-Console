@@ -101,3 +101,7 @@ Completed:
 - Provider status synchronization events.
 - Cache invalidation events.
 - Runtime task lifecycle and cooperative cancellation tracking.
+
+## v0.9C Status - Workflow Framework
+
+v0.9C introduces HAP workflows after profile launch. User Lookup remains the existing console path. New User Wizard is available as a new workflow shell with validation and preview-only planning. Live write execution is intentionally deferred to the next implementation phase.

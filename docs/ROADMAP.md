@@ -125,3 +125,12 @@ Milestone 9 built the runtime-services foundation. Full worker-threaded non-bloc
 - Code signing
 - Documentation completion
 - Release packaging discipline
+
+## v0.9C - Workflow Framework and New User Wizard Shell
+
+- Add a post-profile workflow selector.
+- Preserve User Lookup as the current Hybrid Admin Console workflow.
+- Add New User Wizard as a service-backed workflow shell.
+- Migrate legacy wizard mappings into an application service.
+- Provide validation and preview-only planned actions.
+- Defer destructive user creation/write execution until the preview plan is verified.

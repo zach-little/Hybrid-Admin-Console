@@ -70,3 +70,10 @@
 - Fixed WPF startup failure caused by declaring a PNG file as the `Window.Icon` in XAML.
 - Centralized HAP brand asset resolution.
 - Uses PNG branding inside the UI and ICO branding for the native window/taskbar icon.
+
+## v0.9C - Workflow Framework and New User Wizard Shell
+
+- Added post-runtime workflow selection so a launched profile can open either User Lookup or New User Wizard.
+- Added service-backed New User Wizard shell based on legacy NewUserWizard mappings and validation logic.
+- Added validated preview plan for account creation, OU targeting, group assignment, remote mailbox routing, and onboarding notice intent.
+- Kept write execution disabled for v0.9C to protect live environments while the preview plan is verified.

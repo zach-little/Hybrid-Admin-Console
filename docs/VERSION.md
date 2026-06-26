@@ -61,3 +61,7 @@ v0.9.0 delivered:
 - Provider status synchronization events.
 - Cache invalidation events.
 - Runtime task lifecycle and cooperative cancellation tracking.
+
+## Current Development Target
+
+v0.9C - Workflow Framework and New User Wizard Shell
