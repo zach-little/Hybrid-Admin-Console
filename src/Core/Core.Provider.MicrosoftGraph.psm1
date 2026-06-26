@@ -52,7 +52,7 @@ $script:HybridMicrosoftGraphState = @{
     MockUsers                 = @()
     LastAuthenticationSession = $null
     RequestTimeoutSeconds     = 12
-    OptionalRequestTimeoutSeconds = 2
+    OptionalRequestTimeoutSeconds = 10
     Cache                     = @{ Users = @{} }
 }
 
@@ -168,6 +168,11 @@ function ConvertTo-HybridMicrosoftGraphUser {
     $lastNonInteractive = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default (Get-HybridMicrosoftGraphObjectValue -InputObject $signInActivity -Names @('lastNonInteractiveSignInDateTime','LastNonInteractiveSignInDateTime') -Default $null)
     $passwordChanged = Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('lastPasswordChangeDateTime','PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null
     $methods = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('AuthenticationMethods','Methods') -Default @())
+    $licenses = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('Licenses','AssignedLicenses','assignedLicenses') -Default @())
+    $licenseAssignmentStates = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
+    $pimRoles = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
+    $licenseDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+    $pimRoleDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
     $businessPhones = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('businessPhones','BusinessPhones') -Default @())
     $phoneNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PhoneNumber','TelephoneNumber','mobilePhone','MobilePhone') -Default '')
     if ([string]::IsNullOrWhiteSpace($phoneNumber) -and $businessPhones.Count -gt 0) { $phoneNumber = [string]$businessPhones[0] }
@@ -190,6 +195,12 @@ function ConvertTo-HybridMicrosoftGraphUser {
         MobilePhone         = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('mobilePhone','MobilePhone') -Default '')
         BusinessPhones      = @($businessPhones)
         AuthenticationMethods = @($methods)
+        Licenses            = @($licenses)
+        AssignedLicenses    = @($licenses)
+        LicenseAssignmentStates = @($licenseAssignmentStates)
+        PimRoles            = @($pimRoles)
+        LicenseDiagnostic   = $licenseDiagnostic
+        PimRoleDiagnostic   = $pimRoleDiagnostic
         DefaultMethod       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default $(if ($methods.Count -gt 0) { [string]$methods[0] } else { '' }))
         MfaRegistered       = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default ($methods.Count -gt 1))
         MfaCapable          = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaCapable','IsMfaCapable') -Default ($methods.Count -gt 0))
@@ -298,7 +309,10 @@ function Get-HybridMicrosoftGraphSubscribedSkuMap {
     foreach ($sku in @(Get-HybridMicrosoftGraphObjectValue -InputObject $response -Names @('value','Value') -Default @())) {
         $skuId = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $sku -Names @('skuId','SkuId') -Default '')
         $skuPartNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $sku -Names @('skuPartNumber','SkuPartNumber') -Default '')
-        if (-not [string]::IsNullOrWhiteSpace($skuId) -and -not [string]::IsNullOrWhiteSpace($skuPartNumber)) { $map[$skuId] = $skuPartNumber }
+        if (-not [string]::IsNullOrWhiteSpace($skuId) -and -not [string]::IsNullOrWhiteSpace($skuPartNumber)) {
+            $map[$skuId] = $skuPartNumber
+            $map[$skuId.ToLowerInvariant()] = $skuPartNumber
+        }
     }
 
     return $map
@@ -316,7 +330,10 @@ function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
 
     $skuId = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('skuId','SkuId') -Default '')
     $skuPartNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('skuPartNumber','SkuPartNumber') -Default '')
-    if ([string]::IsNullOrWhiteSpace($skuPartNumber) -and -not [string]::IsNullOrWhiteSpace($skuId) -and $SkuMap.ContainsKey($skuId)) { $skuPartNumber = [string]$SkuMap[$skuId] }
+    if ([string]::IsNullOrWhiteSpace($skuPartNumber) -and -not [string]::IsNullOrWhiteSpace($skuId)) {
+        if ($SkuMap.ContainsKey($skuId)) { $skuPartNumber = [string]$SkuMap[$skuId] }
+        elseif ($SkuMap.ContainsKey($skuId.ToLowerInvariant())) { $skuPartNumber = [string]$SkuMap[$skuId.ToLowerInvariant()] }
+    }
     if ([string]::IsNullOrWhiteSpace($skuPartNumber)) { $skuPartNumber = $skuId }
 
     $state = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('state','State') -Default '')
@@ -434,6 +451,27 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                 }) | Out-Null
             }
         }
+        if ($pimRoles.Count -eq 0) {
+            foreach ($membershipPath in @('memberOf/microsoft.graph.directoryRole','transitiveMemberOf/microsoft.graph.directoryRole')) {
+                $roleMembershipResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}/{2}?$select=id,displayName,roleTemplateId' -f $graphEndpoint, $escapedId, $membershipPath) -Session $Session
+                foreach ($roleMembership in @(Get-HybridMicrosoftGraphObjectValue -InputObject $roleMembershipResponse -Names @('value','Value') -Default @())) {
+                    $roleName = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $roleMembership -Names @('displayName','DisplayName') -Default '')
+                    $roleId = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $roleMembership -Names @('roleTemplateId','RoleTemplateId','id','Id') -Default '')
+                    if ([string]::IsNullOrWhiteSpace($roleName) -and [string]::IsNullOrWhiteSpace($roleId)) { continue }
+                    if ([string]::IsNullOrWhiteSpace($roleName)) { $roleName = $roleId }
+                    $pimRoles.Add([pscustomobject]@{
+                        PSTypeName = 'Hybrid.MicrosoftGraph.PimRole'
+                        RoleDefinitionId = $roleId
+                        DisplayName = $roleName
+                        RoleDefinitionName = $roleName
+                        AssignmentType = 'Directory role membership'
+                        Status = 'Active'
+                    }) | Out-Null
+                }
+                if ($pimRoles.Count -gt 0) { break }
+            }
+        }
+
         if ($pimRoles.Count -gt 0) {
             $definitionResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName' -f $graphEndpoint) -Session $Session
             $definitionMap = @{}
@@ -443,15 +481,15 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                 if (-not [string]::IsNullOrWhiteSpace($definitionId) -and -not [string]::IsNullOrWhiteSpace($definitionName)) { $definitionMap[$definitionId] = $definitionName }
             }
             foreach ($role in @($pimRoles)) {
-                if ($definitionMap.ContainsKey($role.RoleDefinitionId)) {
+                if (-not [string]::IsNullOrWhiteSpace($role.RoleDefinitionId) -and $definitionMap.ContainsKey($role.RoleDefinitionId)) {
                     $role.DisplayName = $definitionMap[$role.RoleDefinitionId]
                     $role.RoleDefinitionName = $definitionMap[$role.RoleDefinitionId]
                 }
             }
-            $GraphUser | Add-Member -NotePropertyName PimRoles -NotePropertyValue @($pimRoles) -Force
+            $GraphUser | Add-Member -NotePropertyName PimRoles -NotePropertyValue @($pimRoles | Sort-Object DisplayName,AssignmentType -Unique) -Force
         }
         else {
-            $GraphUser | Add-Member -NotePropertyName PimRoleDiagnostic -NotePropertyValue 'No directory role/PIM assignments returned. Verify RoleManagement.Read.Directory and Directory.Read.All consent, and confirm the user has assigned or eligible roles.' -Force
+            $GraphUser | Add-Member -NotePropertyName PimRoleDiagnostic -NotePropertyValue 'No directory role/PIM assignments returned from roleManagement or directoryRole membership endpoints. Verify RoleManagement.Read.Directory and Directory.Read.All admin consent, and confirm the user has assigned, active, or eligible roles.' -Force
         }
     }
 

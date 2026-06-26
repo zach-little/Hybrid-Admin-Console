@@ -61,7 +61,8 @@ function ConvertTo-HybridGraphProfile {
     if ($InputObject.PSObject.TypeNames -contains 'Hybrid.GraphProfile') { return $InputObject }
 
     $methods = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('AuthenticationMethods','Methods') -Default @())
-    $licenses = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('Licenses','AssignedLicenses','assignedLicenses','LicenseAssignmentStates','licenseAssignmentStates') -Default @())
+    $licenses = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('Licenses','AssignedLicenses','assignedLicenses') -Default @())
+    $licenseAssignmentStates = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
     $pimRoles = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
     $lastSignIn = Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LastSignInDateTime','LastSignIn','SignInActivity') -Default $null
     $lastNonInteractive = Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default $null
@@ -81,7 +82,10 @@ function ConvertTo-HybridGraphProfile {
         AuthenticationMethods = @($methods)
         Licenses = @($licenses)
         AssignedLicenses = @($licenses)
+        LicenseAssignmentStates = @($licenseAssignmentStates)
         PimRoles = @($pimRoles)
+        LicenseDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+        PimRoleDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
         MfaRegistered = [bool](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
         MfaCapable = [bool](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('MfaCapable','IsMfaCapable') -Default $false)
         RiskState = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('RiskState','UserRiskState') -Default 'none')
