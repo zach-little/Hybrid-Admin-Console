@@ -527,6 +527,7 @@ function Initialize-HybridActiveDirectoryProvider {
         SetEnabled           = { param([string]$Identity, [bool]$Enabled) Set-HybridADUserEnabled -Identity $Identity -Enabled $Enabled }
         UnlockUser           = { param([string]$Identity) Unlock-HybridADUser -Identity $Identity }
         MoveUserOU           = { param([string]$Identity, [string]$TargetPath) Move-HybridADUserOU -Identity $Identity -TargetPath $TargetPath }
+        SetUserAttributes    = { param([string]$Identity, [hashtable]$Attributes) Set-HybridADUserAttributes -Identity $Identity -Attributes $Attributes }
         SetUserManager       = { param([string]$Identity, [string]$ManagerIdentity) Set-HybridADUserManager -Identity $Identity -ManagerIdentity $ManagerIdentity }
         AddUserToGroup       = { param([string]$Identity, [string]$GroupIdentity) Add-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
         RemoveUserFromGroup  = { param([string]$Identity, [string]$GroupIdentity) Remove-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
@@ -564,6 +565,7 @@ function Initialize-HybridActiveDirectoryProvider {
             SetEnabled           = $operations.SetEnabled
             UnlockUser           = $operations.UnlockUser
             MoveUserOU           = $operations.MoveUserOU
+            SetUserAttributes    = $operations.SetUserAttributes
             SetUserManager       = $operations.SetUserManager
             AddUserToGroup       = $operations.AddUserToGroup
             RemoveUserFromGroup  = $operations.RemoveUserFromGroup
@@ -958,6 +960,40 @@ function Set-HybridADUserManager {
     return New-HybridResult -Success $true -Message "Manager for '$Identity' set to '$ManagerIdentity'."
 }
 
+function Set-HybridADUserAttributes {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][hashtable]$Attributes
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $replace = @{}
+    foreach ($key in @($Attributes.Keys)) {
+        if ([string]::IsNullOrWhiteSpace([string]$key)) { continue }
+        $value = $Attributes[$key]
+        if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+            $replace[[string]$key] = $value
+        }
+    }
+
+    if ($replace.Count -eq 0) {
+        return New-HybridResult -Success $true -Message "No directory attributes supplied for '$Identity'."
+    }
+
+    $adParams = New-HybridADCommonParameters
+    if ($PSCmdlet.ShouldProcess($Identity, 'Set AD user attributes')) {
+        $setParams = $adParams.Clone()
+        $setParams.Identity = $Identity
+        $setParams.Replace = $replace
+        Invoke-HybridADCommand -CommandName 'Set-ADUser' -Parameters $setParams -Operation 'Set user attributes' | Out-Null
+    }
+
+    Clear-HybridADProviderCache -Identity $Identity
+    return New-HybridResult -Success $true -Message "Updated $($replace.Count) directory attribute(s) for '$Identity'."
+}
+
 function Add-HybridADUserGroupMembership {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
@@ -1087,6 +1123,7 @@ Export-ModuleMember -Function @(
     'Set-HybridADUserEnabled',
     'Unlock-HybridADUser',
     'Move-HybridADUserOU',
+    'Set-HybridADUserAttributes',
     'Set-HybridADUserManager',
     'Add-HybridADUserGroupMembership',
     'Remove-HybridADUserGroupMembership',

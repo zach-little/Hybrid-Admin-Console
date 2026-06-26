@@ -746,6 +746,7 @@ function Initialize-HybridRuntimeApplicationServices {
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.GraphProfileService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.AuthenticationProfileService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.HybridUserAggregationService.psm1' -Required | Out-Null
+    Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.UserAdministrationService.psm1' -Required | Out-Null
 
     $adProvider = $null
     $graphProvider = $null
@@ -768,10 +769,14 @@ function Initialize-HybridRuntimeApplicationServices {
     $aggregationService = Initialize-HybridUserAggregationService
     Register-HybridService -Name 'UserAggregation' -Instance $aggregationService -Description 'Hybrid user aggregation application service.' -Provider 'Application' -Force | Out-Null
 
+    $userAdministrationService = Initialize-HybridUserAdministrationService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider -MicrosoftGraphProvider $graphProvider
+    Register-HybridService -Name 'UserAdministration' -Instance $userAdministrationService -Description 'Selected-user administration command service.' -Provider 'Application' -Force | Out-Null
+
     $ServiceRegistry['HybridUser'] = $userService
     $ServiceRegistry['GraphProfile'] = $graphService
     $ServiceRegistry['AuthenticationProfile'] = $authService
     $ServiceRegistry['UserAggregation'] = $aggregationService
+    $ServiceRegistry['UserAdministration'] = $userAdministrationService
 
     $Records.Add((New-HybridRuntimeBootstrapRecord -Name 'ApplicationServices' -Kind 'Service' -Status 'Initialized' -Message 'Application services initialized in dependency order.')) | Out-Null
 }

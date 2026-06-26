@@ -18,6 +18,8 @@ function New-HybridGraphProfile {
         [AllowNull()][datetime]$LastNonInteractiveSignInDateTime = $null,
         [AllowNull()][datetime]$PasswordLastChangedDateTime = $null,
         [string[]]$AuthenticationMethods = @(),
+        [object[]]$Licenses = @(),
+        [object[]]$PimRoles = @(),
         [bool]$MfaRegistered = $false,
         [bool]$MfaCapable = $false,
         [string]$RiskState = 'none',
@@ -37,6 +39,9 @@ function New-HybridGraphProfile {
         LastNonInteractiveSignInDateTime = $LastNonInteractiveSignInDateTime
         PasswordLastChangedDateTime = $PasswordLastChangedDateTime
         AuthenticationMethods = @($AuthenticationMethods)
+        Licenses = @($Licenses)
+        AssignedLicenses = @($Licenses)
+        PimRoles = @($PimRoles)
         MfaRegistered = [bool]$MfaRegistered
         MfaCapable = [bool]$MfaCapable
         RiskState = $RiskState
