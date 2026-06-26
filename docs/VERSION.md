@@ -1,6 +1,6 @@
 # Version
 
-Current Version: v0.8.9
+Current Version: v0.9.0
 
 Status: Live Runtime UX & Vertical Stabilization.
 
@@ -50,11 +50,14 @@ Summary:
 
 ## Release Policy
 
-Milestone 9 / v0.9.0 has started after the v0.8.9 live-readiness stabilization pass was validated in the live environment.
+Milestone 9 / v0.9.0 is complete after the v0.8.9 live-readiness stabilization pass.
 
-Current v0.9.0 focus:
+v0.9.0 delivered:
 
 - Background runtime services.
 - Runtime event bus.
 - Provider refresh scheduling.
-- Non-blocking status synchronization.
+- Runtime service orchestrator.
+- Provider status synchronization events.
+- Cache invalidation events.
+- Runtime task lifecycle and cooperative cancellation tracking.

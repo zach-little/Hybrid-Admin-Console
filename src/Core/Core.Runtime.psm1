@@ -373,11 +373,15 @@ function Initialize-HybridRuntimeServiceRegistry {
 
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.ServiceRegistry.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.RuntimeEvents.psm1' -Required | Out-Null
+    Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Core\Core.RuntimeServices.psm1' -Required | Out-Null
     Initialize-HybridServiceRegistry -Context $Context | Out-Null
     $eventBus = Initialize-HybridRuntimeEventBus
     Register-HybridService -Name 'RuntimeEventBus' -Instance $eventBus -Description 'Runtime event bus for background services and status synchronization.' -Provider 'Core.RuntimeEvents' -Force | Out-Null
+    $runtimeServices = Initialize-HybridRuntimeServiceOrchestrator
+    Register-HybridService -Name 'RuntimeServices' -Instance $runtimeServices -Description 'Runtime service orchestrator for refresh scheduling, cache invalidation, and long-running task tracking.' -Provider 'Core.RuntimeServices' -Force | Out-Null
     if ($Context.PSObject.Properties.Name -contains 'ServiceRegistry' -and $null -ne $Context.ServiceRegistry) {
         $Context.ServiceRegistry['RuntimeEventBus'] = $eventBus
+        $Context.ServiceRegistry['RuntimeServices'] = $runtimeServices
     }
 }
 
@@ -887,6 +891,16 @@ function Initialize-HybridRuntime {
             }
             else {
                 Register-HybridRuntimeDeferredProvider -ProviderRegistry $providerRegistry -ProviderSettings $provider -Records $records
+            }
+        }
+
+        if (Get-Command Initialize-HybridRuntimeServiceOrchestrator -ErrorAction SilentlyContinue) {
+            $runtimeServices = Initialize-HybridRuntimeServiceOrchestrator -ProviderRegistry $providerRegistry
+            Register-HybridService -Name 'RuntimeServices' -Instance $runtimeServices -Description 'Runtime service orchestrator for refresh scheduling, cache invalidation, and long-running task tracking.' -Provider 'Core.RuntimeServices' -Force | Out-Null
+            $serviceRegistry['RuntimeServices'] = $runtimeServices
+            Add-HybridRuntimeMember -InputObject $context -Name RuntimeServices -Value $runtimeServices
+            foreach ($providerName in @($providerRegistry.Keys)) {
+                Register-HybridRuntimeProviderRefreshSchedule -ProviderName ([string]$providerName) -IntervalSeconds 300 -Enabled | Out-Null
             }
         }
 

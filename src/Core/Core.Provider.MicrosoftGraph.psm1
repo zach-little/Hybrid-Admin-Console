@@ -51,6 +51,8 @@ $script:HybridMicrosoftGraphState = @{
     Scopes                    = @('User.Read.All')
     MockUsers                 = @()
     LastAuthenticationSession = $null
+    RequestTimeoutSeconds     = 20
+    OptionalRequestTimeoutSeconds = 5
     Cache                     = @{ Users = @{} }
 }
 
@@ -249,7 +251,7 @@ function Invoke-HybridMicrosoftGraphUserRequest {
     $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
-    $user = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    $user = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec ([int]$script:HybridMicrosoftGraphState.RequestTimeoutSeconds) -ErrorAction Stop
     $profileSelects = @(
         'companyName,officeLocation,employeeId,mobilePhone,businessPhones',
         'state',
@@ -276,7 +278,7 @@ function Invoke-HybridMicrosoftGraphOptionalRequest {
     if ([string]::IsNullOrWhiteSpace($token)) { return $null }
 
     try {
-        return Invoke-RestMethod -Method Get -Uri $Uri -Headers @{ Authorization = ('Bearer {0}' -f $token) } -ErrorAction Stop
+        return Invoke-RestMethod -Method Get -Uri $Uri -Headers @{ Authorization = ('Bearer {0}' -f $token) } -TimeoutSec ([int]$script:HybridMicrosoftGraphState.OptionalRequestTimeoutSeconds) -ErrorAction Stop
     }
     catch {
         return $null

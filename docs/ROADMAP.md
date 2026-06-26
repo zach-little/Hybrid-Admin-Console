@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.9
+v0.9.0
 
 ---
 
@@ -25,13 +25,19 @@ v0.8.9
 
 ### v0.9.0 — Background Runtime Services
 
-Milestone 9 has started after the v0.8.9 live-readiness stabilization pass was validated in the live environment.
+Milestone 9 is complete after the v0.8.9 live-readiness stabilization pass.
 
-First slice:
+Completed:
 
 - Runtime event bus module added.
 - Runtime bootstrap now registers a `RuntimeEventBus` service.
 - Runtime initialization emits structured events for future background services and status synchronization.
+- Runtime service orchestrator module added.
+- Runtime bootstrap now registers a `RuntimeServices` service.
+- Provider refresh schedules are registered during runtime bootstrap.
+- Provider refreshes publish started, completed, failed, and status synchronization events.
+- Cache invalidation publishes structured runtime events.
+- Runtime tasks are tracked with started, completed, failed, cancellation-requested, and cancelled events.
 - BadgeID compatibility was tightened so the legacy AD `BadgeID` attribute is requested and mapped.
 
 Completed in v0.8.9:
@@ -71,22 +77,19 @@ Suggested validation tests:
 
 ## Milestone 9 — Background Runtime Services
 
-Status: Started.
+Status: Complete.
 
 Focus:
 
-- Background refresh engine
 - Runtime event bus
-- Provider refresh scheduling
-- Automatic cache invalidation
-- Live provider reconnection
-- Runtime notifications
-- Status synchronization
+- Provider refresh scheduling foundation
+- Automatic cache invalidation events
+- Provider status synchronization events
+- Runtime notifications event foundation
 - Long-running task framework
-- Non-blocking card refresh
-- Cancellation and progress reporting
+- Cancellation and progress reporting event foundation
 
-Milestone 9 should build on the search progress and hydration-stage instrumentation introduced during the live-readiness stabilization work.
+Milestone 9 built the runtime-services foundation. Full worker-threaded non-blocking card refresh remains a future UI implementation task because live provider modules and authentication sessions need a dedicated runspace design.
 
 ---
 

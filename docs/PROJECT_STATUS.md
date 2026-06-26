@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.8.9
+v0.9.0
 
 ---
 
@@ -82,9 +82,9 @@ The likely investigation areas are:
 
 ## Current Recommendation
 
-Milestone 9 / v0.9.0 has started.
+Milestone 9 / v0.9.0 is complete.
 
-The v0.8.9 live-readiness stabilization pass is considered validated enough to begin Background Runtime Services. Continue carrying forward live validation notes while building the v0.9 runtime foundation.
+The v0.9 runtime foundation is in place. Continue carrying forward live validation notes while planning the next enterprise feature slices.
 
 ---
 
@@ -92,9 +92,12 @@ The v0.8.9 live-readiness stabilization pass is considered validated enough to b
 
 v0.9.0 — Background Runtime Services
 
-Initial slice:
+Completed:
 
 - Runtime event bus.
 - Runtime bootstrap event publication.
 - Provider refresh scheduling foundation.
-- Non-blocking status synchronization.
+- Runtime service orchestrator.
+- Provider status synchronization events.
+- Cache invalidation events.
+- Runtime task lifecycle and cooperative cancellation tracking.
