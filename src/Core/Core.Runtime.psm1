@@ -569,7 +569,7 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $certificatePath = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
         $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyEnabled -and $credentialMode -eq 'Certificate') { 'AppOnlyClientCredentials' } else { 'InteractiveBrowser' }
         $graphScopeSuffix = [string](Get-HybridRuntimeObjectValue -InputObject $cloud.Endpoints -Names @('GraphScopeSuffix') -Default 'https://graph.microsoft.com/.default')
-        $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All') }
+        $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory') }
         $verifiedDomains = if ([string]::IsNullOrWhiteSpace($tenantDomain)) { @() } else { @($tenantDomain) }
 
         if ([string]::IsNullOrWhiteSpace($tenantId)) { throw 'Microsoft Graph live provider requires a tenant ID in the runtime profile authentication settings.' }

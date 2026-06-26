@@ -588,7 +588,13 @@ function Search-HybridExchangeOnlineDistributionGroups {
     }
     else {
         $escaped = $Query.Replace("'", "''")
-        foreach ($filter in @("DisplayName -like '*$escaped*'", "Name -like '*$escaped*'", "PrimarySmtpAddress -like '*$escaped*'")) {
+        try {
+            @(& $distributionCommand -Identity $Query -ErrorAction Stop) |
+                ForEach-Object { $groups.Add((ConvertTo-HybridExchangeOnlineDistributionGroupModel -Group $_ -MatchedBy 'Identity')) | Out-Null }
+        }
+        catch { }
+
+        foreach ($filter in @("DisplayName -like '*$escaped*'", "Name -like '*$escaped*'", "Alias -like '*$escaped*'", "PrimarySmtpAddress -like '*$escaped*'")) {
             try {
                 @(& $distributionCommand -ResultSize $ResultSize -Filter $filter -ErrorAction Stop) |
                     ForEach-Object { $groups.Add((ConvertTo-HybridExchangeOnlineDistributionGroupModel -Group $_ -MatchedBy $filter)) | Out-Null }

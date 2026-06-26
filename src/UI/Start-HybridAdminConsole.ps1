@@ -199,6 +199,41 @@ $xaml = @"
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style TargetType="Menu">
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Foreground" Value="#E5E7EB"/>
+            <Setter Property="BorderBrush" Value="#26364F"/>
+        </Style>
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#E5E7EB"/>
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextElement.Foreground" Value="#E5E7EB"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#1E293B"/>
+                    <Setter Property="Foreground" Value="#F8FAFC"/>
+                    <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                </Trigger>
+                <Trigger Property="IsSubmenuOpen" Value="True">
+                    <Setter Property="Background" Value="#1E293B"/>
+                    <Setter Property="Foreground" Value="#F8FAFC"/>
+                    <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="#94A3B8"/>
+                    <Setter Property="TextElement.Foreground" Value="#94A3B8"/>
+                    <Setter Property="Opacity" Value="0.75"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Separator">
+            <Setter Property="Background" Value="#26364F"/>
+            <Setter Property="Margin" Value="4,4"/>
+            <Setter Property="Height" Value="1"/>
+        </Style>
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="#0F172A"/>
             <Setter Property="Foreground" Value="#38BDF8"/>
@@ -3230,23 +3265,49 @@ function Show-HybridSelectedUserDistributionGroupsDialog {
         $currentList.DisplayMemberPath = 'Display'
     }
 
-    $searchButton.Add_Click({
+    $invokeGroupLookup = {
         $searchList.Items.Clear()
-        $result = Search-HybridUserDistributionGroups -Query $searchBox.Text
+        $query = [string]$searchBox.Text
+        if ([string]::IsNullOrWhiteSpace($query)) {
+            $searchList.Items.Add([pscustomobject]@{ Display = 'Type a distribution group name, alias, identity, or SMTP address.'; Raw = $null }) | Out-Null
+            $searchList.DisplayMemberPath = 'Display'
+            return
+        }
+
+        $result = Search-HybridUserDistributionGroups -Query $query
         if ($result.Status -ne 'Completed') {
             $searchList.Items.Add([pscustomobject]@{ Display = $result.Message; Raw = $null }) | Out-Null
+            $searchList.DisplayMemberPath = 'Display'
             return
         }
         foreach ($group in @($result.Data)) {
             $searchList.Items.Add([pscustomobject]@{ Display = (Format-HybridGroupDisplay -Group $group); Raw = $group }) | Out-Null
         }
-        if ($searchList.Items.Count -eq 0) { $searchList.Items.Add([pscustomobject]@{ Display = 'No matching distribution groups'; Raw = $null }) | Out-Null }
+        if ($searchList.Items.Count -eq 0) { $searchList.Items.Add([pscustomobject]@{ Display = 'No matching distribution groups; typed add will use the text exactly as entered.'; Raw = $null }) | Out-Null }
         $searchList.DisplayMemberPath = 'Display'
+    }
+
+    $searchButton.Add_Click({ & $invokeGroupLookup })
+    $searchBox.Add_KeyDown({
+        param($sender, $eventArgs)
+        if ($eventArgs.Key -eq [System.Windows.Input.Key]::Enter) {
+            $eventArgs.Handled = $true
+            & $invokeGroupLookup
+        }
     })
+    $addButton.Content = 'Add Selected / Typed'
+    $addButton.Width = 170
     $addButton.Add_Click({
-        if ($null -eq $searchList.SelectedItem -or $null -eq $searchList.SelectedItem.Raw) { return }
-        $groupIdentity = Get-HybridDistributionGroupIdentity -Group $searchList.SelectedItem.Raw
-        Show-HybridUserAdminResult -Result (Add-HybridUserDistributionGroupMembership -Identity $identity -GroupIdentity $groupIdentity) -Title 'Update Distribution Groups'
+        $groupIdentity = ''
+        if ($null -ne $searchList.SelectedItem -and $null -ne $searchList.SelectedItem.Raw) {
+            $groupIdentity = Get-HybridDistributionGroupIdentity -Group $searchList.SelectedItem.Raw
+        }
+        if ([string]::IsNullOrWhiteSpace($groupIdentity)) {
+            $groupIdentity = [string]$searchBox.Text
+        }
+        if ([string]::IsNullOrWhiteSpace($groupIdentity)) { return }
+
+        Show-HybridUserAdminResult -Result (Add-HybridUserDistributionGroupMembership -Identity $identity -GroupIdentity $groupIdentity.Trim()) -Title 'Update Distribution Groups'
         & $loadCurrent
     })
     $removeButton.Add_Click({
@@ -3517,7 +3578,11 @@ function Update-GraphPanels {
         foreach ($license in @($licenses | ForEach-Object { Format-HybridGraphListItem -Item $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Sort-Object -Unique)) {
             [void]$controls.GraphLicensesList.Items.Add($license)
         }
-        if ($controls.GraphLicensesList.Items.Count -eq 0) { [void]$controls.GraphLicensesList.Items.Add('No licenses returned') }
+        if ($controls.GraphLicensesList.Items.Count -eq 0) {
+            $licenseDiagnostic = Get-DisplayValue -InputObject $graphProfile -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default ''
+            if (-not [string]::IsNullOrWhiteSpace($licenseDiagnostic)) { [void]$controls.GraphLicensesList.Items.Add($licenseDiagnostic) }
+            else { [void]$controls.GraphLicensesList.Items.Add('No licenses returned') }
+        }
 
         $pimRoles = @()
         foreach ($propertyName in @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles')) {
@@ -3526,7 +3591,11 @@ function Update-GraphPanels {
         foreach ($role in @($pimRoles | ForEach-Object { Format-HybridGraphListItem -Item $_ } | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Sort-Object -Unique)) {
             [void]$controls.GraphPimRolesList.Items.Add($role)
         }
-        if ($controls.GraphPimRolesList.Items.Count -eq 0) { [void]$controls.GraphPimRolesList.Items.Add('No PIM roles returned') }
+        if ($controls.GraphPimRolesList.Items.Count -eq 0) {
+            $pimDiagnostic = Get-DisplayValue -InputObject $graphProfile -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default ''
+            if (-not [string]::IsNullOrWhiteSpace($pimDiagnostic)) { [void]$controls.GraphPimRolesList.Items.Add($pimDiagnostic) }
+            else { [void]$controls.GraphPimRolesList.Items.Add('No PIM roles returned') }
+        }
         $controls.GraphSummaryText.Text = "Microsoft Graph loaded for $($controls.UpnText.Text)."
     }
     catch {
