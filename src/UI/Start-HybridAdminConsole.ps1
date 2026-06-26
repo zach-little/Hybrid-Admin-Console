@@ -48,15 +48,12 @@ $script:HybridHydrationToken = $null
 if (Test-Path $profileManagerModule) { Import-Module $profileManagerModule -Force -Global }
 if (Test-Path $runtimeModule) {
     Import-Module $runtimeModule -Force -Global
-    $profileName = if (-not [string]::IsNullOrWhiteSpace($Profile)) { $Profile } elseif ($Mock) { 'Simulation' } else { 'Simulation' }
+    $profileName = 'Simulation'
     try {
         $script:HybridRuntime = Initialize-HybridRuntime -ProfileName $profileName -RootPath $repoRoot
     }
     catch {
-        if (-not [string]::Equals($profileName, 'Simulation', [System.StringComparison]::OrdinalIgnoreCase)) {
-            $script:HybridRuntime = Initialize-HybridRuntime -ProfileName 'Simulation' -RootPath $repoRoot
-        }
-        else { throw }
+        throw
     }
 }
 else {
@@ -2449,21 +2446,24 @@ function Start-HybridHydrationStageQueue {
     foreach ($stage in $Stages) { $script:HybridHydrationQueue.Enqueue($stage) }
     $script:HybridHydrationToken = $Token
 
-    if ($null -eq $script:HybridHydrationTimer) {
-        $script:HybridHydrationTimer = [System.Windows.Threading.DispatcherTimer]::new()
-        $script:HybridHydrationTimer.Interval = [TimeSpan]::FromMilliseconds(25)
-        $script:HybridHydrationTimer.Add_Tick({ Invoke-HybridHydrationStageQueueTick })
+    while (
+        (Test-HybridSearchTokenActive -Token $script:HybridHydrationToken) -and
+        $null -ne $script:HybridHydrationQueue -and
+        $script:HybridHydrationQueue.Count -gt 0
+    ) {
+        Invoke-HybridHydrationStageQueueTick
+        [System.Windows.Forms.Application]::DoEvents()
     }
 
-    $script:HybridHydrationTimer.Stop()
-    $script:HybridHydrationTimer.Start()
+    if (-not (Test-HybridSearchTokenActive -Token $script:HybridHydrationToken)) {
+        Stop-HybridHydrationStageQueue
+        Set-HybridUiBusyState -Busy $false
+    }
 }
 
 function Invoke-HybridHydrationStageQueueTick {
     [CmdletBinding()]
     param()
-
-    if ($null -ne $script:HybridHydrationTimer) { $script:HybridHydrationTimer.Stop() }
 
     if (-not (Test-HybridSearchTokenActive -Token $script:HybridHydrationToken)) {
         Stop-HybridHydrationStageQueue
@@ -2499,10 +2499,7 @@ function Invoke-HybridHydrationStageQueueTick {
         return
     }
 
-    if ($script:HybridHydrationQueue.Count -gt 0) {
-        $script:HybridHydrationTimer.Start()
-        return
-    }
+    if ($script:HybridHydrationQueue.Count -gt 0) { return }
 
     Publish-HybridUiRuntimeEvent -EventName 'Hydration.Completed' -Data ([pscustomobject]@{ Query = $script:HybridHydrationToken.Query })
     Stop-HybridHydrationStageQueue

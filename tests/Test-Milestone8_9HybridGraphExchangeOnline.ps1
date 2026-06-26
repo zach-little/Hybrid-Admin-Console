@@ -324,6 +324,8 @@ Assert-ContainsText $graphProviderText 'LastAuthenticationSession' 'Microsoft Gr
 Assert-ContainsText $authManagerText '$tenantId,$cloudName,$methodName,$clientId,$scopeText' 'Authentication manager cache key includes client ID'
 Assert-ContainsText $ui '$script:HybridRuntimeLaunchInProgress' 'Runtime launch guards against repeated launch clicks'
 Assert-ContainsText $ui '$controls.LaunchConsoleButton.IsEnabled = $false' 'Runtime launch disables launch button while authentication is in progress'
+Assert-ContainsText $ui '$profileName = ''Simulation''' 'Console startup initializes simulation runtime before launch to avoid pre-launch delegated MFA prompts'
+Assert-True (-not ($ui -match '\$profileName = if \(-not \[string\]::IsNullOrWhiteSpace\(\$Profile\)')) 'Console startup does not initialize a live profile before launch'
 
 $allText = Get-ChildItem -Path $repoRoot -Recurse -File -Include *.ps1,*.psm1,*.psd1,*.json,*.md |
     Where-Object { $_.FullName -notlike '*\.git\*' } |
