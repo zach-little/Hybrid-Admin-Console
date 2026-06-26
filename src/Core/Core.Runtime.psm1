@@ -747,6 +747,7 @@ function Initialize-HybridRuntimeApplicationServices {
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.AuthenticationProfileService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.HybridUserAggregationService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.UserAdministrationService.psm1' -Required | Out-Null
+    Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.NewUserWizardService.psm1' -Required | Out-Null
 
     $adProvider = $null
     $graphProvider = $null
@@ -772,11 +773,15 @@ function Initialize-HybridRuntimeApplicationServices {
     $userAdministrationService = Initialize-HybridUserAdministrationService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider -MicrosoftGraphProvider $graphProvider
     Register-HybridService -Name 'UserAdministration' -Instance $userAdministrationService -Description 'Selected-user administration command service.' -Provider 'Application' -Force | Out-Null
 
+    $newUserWizardService = Initialize-HybridNewUserWizardService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider
+    Register-HybridService -Name 'NewUserWizard' -Instance $newUserWizardService -Description 'New user onboarding wizard application service.' -Provider 'Application' -Force | Out-Null
+
     $ServiceRegistry['HybridUser'] = $userService
     $ServiceRegistry['GraphProfile'] = $graphService
     $ServiceRegistry['AuthenticationProfile'] = $authService
     $ServiceRegistry['UserAggregation'] = $aggregationService
     $ServiceRegistry['UserAdministration'] = $userAdministrationService
+    $ServiceRegistry['NewUserWizard'] = $newUserWizardService
 
     $Records.Add((New-HybridRuntimeBootstrapRecord -Name 'ApplicationServices' -Kind 'Service' -Status 'Initialized' -Message 'Application services initialized in dependency order.')) | Out-Null
 }

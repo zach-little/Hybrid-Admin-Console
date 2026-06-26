@@ -171,8 +171,9 @@ function ConvertTo-HybridMicrosoftGraphUser {
     $licenses = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('Licenses','AssignedLicenses','assignedLicenses') -Default @())
     $licenseAssignmentStates = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
     $pimRoles = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
+    $graphDiagnostics = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('GraphDiagnostics','Diagnostics') -Default @())
     $licenseDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
-    $pimRoleDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+    $pimRoleDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
     $businessPhones = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('businessPhones','BusinessPhones') -Default @())
     $phoneNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PhoneNumber','TelephoneNumber','mobilePhone','MobilePhone') -Default '')
     if ([string]::IsNullOrWhiteSpace($phoneNumber) -and $businessPhones.Count -gt 0) { $phoneNumber = [string]$businessPhones[0] }
@@ -199,8 +200,13 @@ function ConvertTo-HybridMicrosoftGraphUser {
         AssignedLicenses    = @($licenses)
         LicenseAssignmentStates = @($licenseAssignmentStates)
         PimRoles            = @($pimRoles)
+        DirectoryRoles      = @($pimRoles)
+        GraphDiagnostics    = @($graphDiagnostics)
         LicenseDiagnostic   = $licenseDiagnostic
+        LicenseDiagnostics  = $licenseDiagnostic
         PimRoleDiagnostic   = $pimRoleDiagnostic
+        PimRoleDiagnostics  = $pimRoleDiagnostic
+        PimDiagnostics      = $pimRoleDiagnostic
         DefaultMethod       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default $(if ($methods.Count -gt 0) { [string]$methods[0] } else { '' }))
         MfaRegistered       = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default ($methods.Count -gt 1))
         MfaCapable          = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaCapable','IsMfaCapable') -Default ($methods.Count -gt 0))
@@ -407,24 +413,37 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
             }
         }
 
+        $skuMap = Get-HybridMicrosoftGraphSubscribedSkuMap -Session $Session
+        $licenseDetailsResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}/licenseDetails' -f $graphEndpoint, $escapedId) -Session $Session
+        $licenseDetailValues = @(Get-HybridMicrosoftGraphObjectValue -InputObject $licenseDetailsResponse -Names @('value','Value') -Default @() | ForEach-Object { ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License $_ -SkuMap $skuMap } | Where-Object { $null -ne $_ })
         $licenseResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}?$select=assignedLicenses,licenseAssignmentStates' -f $graphEndpoint, $escapedId) -Session $Session
+        $assignedLicenses = @()
+        $licenseAssignmentStates = @()
         if ($null -ne $licenseResponse) {
-            $skuMap = Get-HybridMicrosoftGraphSubscribedSkuMap -Session $Session
             $assignedLicenses = @(Get-HybridMicrosoftGraphObjectValue -InputObject $licenseResponse -Names @('assignedLicenses','AssignedLicenses') -Default @() | ForEach-Object { ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License $_ -SkuMap $skuMap } | Where-Object { $null -ne $_ })
             $licenseAssignmentStates = @(Get-HybridMicrosoftGraphObjectValue -InputObject $licenseResponse -Names @('licenseAssignmentStates','LicenseAssignmentStates') -Default @() | ForEach-Object { ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License $_ -SkuMap $skuMap } | Where-Object { $null -ne $_ })
-            if ($assignedLicenses.Count -gt 0) {
-                $GraphUser | Add-Member -NotePropertyName AssignedLicenses -NotePropertyValue @($assignedLicenses) -Force
-                $GraphUser | Add-Member -NotePropertyName Licenses -NotePropertyValue @($assignedLicenses) -Force
-            }
-            if ($licenseAssignmentStates.Count -gt 0) {
-                $GraphUser | Add-Member -NotePropertyName LicenseAssignmentStates -NotePropertyValue @($licenseAssignmentStates) -Force
-            }
-            if ($assignedLicenses.Count -eq 0 -and $licenseAssignmentStates.Count -eq 0) {
-                $GraphUser | Add-Member -NotePropertyName LicenseDiagnostic -NotePropertyValue 'Graph returned no assigned license records for this user.' -Force
-            }
         }
-        else {
-            $GraphUser | Add-Member -NotePropertyName LicenseDiagnostic -NotePropertyValue 'License lookup did not return data. Verify Directory.Read.All/User.Read.All consent and Graph cloud endpoint.' -Force
+        $displayLicenses = if ($licenseDetailValues.Count -gt 0) { @($licenseDetailValues) } else { @($assignedLicenses) }
+        if ($displayLicenses.Count -gt 0) {
+            $GraphUser | Add-Member -NotePropertyName Licenses -NotePropertyValue @($displayLicenses) -Force
+            $GraphUser | Add-Member -NotePropertyName AssignedLicenses -NotePropertyValue @($displayLicenses) -Force
+        }
+        elseif ($licenseAssignmentStates.Count -gt 0) {
+            $GraphUser | Add-Member -NotePropertyName Licenses -NotePropertyValue @($licenseAssignmentStates) -Force
+            $GraphUser | Add-Member -NotePropertyName AssignedLicenses -NotePropertyValue @($licenseAssignmentStates) -Force
+        }
+        if ($licenseAssignmentStates.Count -gt 0) {
+            $GraphUser | Add-Member -NotePropertyName LicenseAssignmentStates -NotePropertyValue @($licenseAssignmentStates) -Force
+        }
+        if ($licenseDetailValues.Count -eq 0 -and $assignedLicenses.Count -eq 0 -and $licenseAssignmentStates.Count -eq 0) {
+            $licenseMessage = if ($null -eq $licenseDetailsResponse -and $null -eq $licenseResponse) {
+                'License lookup did not return data. Verify Directory.Read.All/User.Read.All consent and Graph cloud endpoint.'
+            }
+            else {
+                'Graph returned no licenseDetails, assignedLicenses, or licenseAssignmentStates records for this user.'
+            }
+            $GraphUser | Add-Member -NotePropertyName LicenseDiagnostic -NotePropertyValue $licenseMessage -Force
+            $GraphUser | Add-Member -NotePropertyName LicenseDiagnostics -NotePropertyValue $licenseMessage -Force
         }
 
         $pimRoles = New-Object System.Collections.Generic.List[object]
@@ -486,10 +505,15 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                     $role.RoleDefinitionName = $definitionMap[$role.RoleDefinitionId]
                 }
             }
-            $GraphUser | Add-Member -NotePropertyName PimRoles -NotePropertyValue @($pimRoles | Sort-Object DisplayName,AssignmentType -Unique) -Force
+            $roleValues = @($pimRoles | Sort-Object DisplayName,AssignmentType -Unique)
+            $GraphUser | Add-Member -NotePropertyName PimRoles -NotePropertyValue @($roleValues) -Force
+            $GraphUser | Add-Member -NotePropertyName DirectoryRoles -NotePropertyValue @($roleValues) -Force
         }
         else {
-            $GraphUser | Add-Member -NotePropertyName PimRoleDiagnostic -NotePropertyValue 'No directory role/PIM assignments returned from roleManagement or directoryRole membership endpoints. Verify RoleManagement.Read.Directory and Directory.Read.All admin consent, and confirm the user has assigned, active, or eligible roles.' -Force
+            $pimMessage = 'No directory role/PIM assignments returned from roleManagement or directoryRole membership endpoints. Verify RoleManagement.Read.Directory and Directory.Read.All admin consent, and confirm the user has assigned, active, or eligible roles.'
+            $GraphUser | Add-Member -NotePropertyName PimRoleDiagnostic -NotePropertyValue $pimMessage -Force
+            $GraphUser | Add-Member -NotePropertyName PimRoleDiagnostics -NotePropertyValue $pimMessage -Force
+            $GraphUser | Add-Member -NotePropertyName PimDiagnostics -NotePropertyValue $pimMessage -Force
         }
     }
 

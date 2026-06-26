@@ -683,8 +683,8 @@ $xaml = @"
                         <Button x:Name="WorkflowNewUserWizardButton" Margin="12,0,0,0" MinHeight="210" Background="#111827" BorderBrush="#22C55E" Foreground="#E5E7EB">
                             <StackPanel Margin="18">
                                 <TextBlock Text="New User Wizard" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Start the new onboarding workflow shell based on the legacy NewUserWizard logic. v0.9C validates and previews actions before any write execution." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
-                                <TextBlock Text="v0.9C preview workflow" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                                <TextBlock Text="Start the onboarding workflow ported from the legacy NewUserWizard logic. v0.9C validates, previews, then executes only after explicit confirmation." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
+                                <TextBlock Text="v0.9C provider-backed workflow" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,22,0,0"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>
@@ -694,14 +694,14 @@ $xaml = @"
                     </StackPanel>
                 </Grid>
 
-                <!-- v0.9C NewUserWizardShell: service-backed intake and preview, no write execution yet. -->
-                <Grid x:Name="NewUserWizardView" Width="980" MinHeight="700" Visibility="Collapsed">
+                <!-- v0.9C NewUserWizardShell: service-backed intake, preview, and explicit confirmed execution. -->
+                <Grid x:Name="NewUserWizardView" Width="700" MinHeight="700" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="0,0,0,18">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="New User Wizard" Foreground="#F8FAFC" FontSize="28" FontWeight="SemiBold"/>
-                            <TextBlock Text="v0.9C migrates the legacy wizard into HAP as a validated preview workflow. Execution will be enabled after the plan is verified." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <TextBlock Text="v0.9C migrates the legacy wizard into HAP with provider-backed validation, preview, manager lookup, and confirmed create execution." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
                         </StackPanel>
                         <Button x:Name="NewUserWizardCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
                     </Grid>
@@ -726,12 +726,40 @@ $xaml = @"
                                     <TextBlock Text="Location" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserLocationComboBox" Height="34" SelectedIndex="0" Margin="0,4,0,12"><ComboBoxItem Content="1. Rivers"/><ComboBoxItem Content="2. Remount"/><ComboBoxItem Content="3. Virginia Beach"/><ComboBoxItem Content="4. San Diego"/><ComboBoxItem Content="5. Alexandria"/><ComboBoxItem Content="6. Lexington"/></ComboBox>
                                     <TextBlock Text="Department" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserDepartmentComboBox" Height="34" SelectedIndex="1" Margin="0,4,0,12"><ComboBoxItem Content="1. Dept 00 - Accounting"/><ComboBoxItem Content="2. Dept 00 - Information Technology"/><ComboBoxItem Content="3. Dept 00 - Executive"/><ComboBoxItem Content="4. Dept 00 - Human Resources"/><ComboBoxItem Content="5. Dept 01 - Contracts"/><ComboBoxItem Content="6. Dept 01 - Operations"/><ComboBoxItem Content="7. Dept 02 - DC/PAX/Charleston Division"/><ComboBoxItem Content="8. Dept 03 - VABeach Division"/><ComboBoxItem Content="9. Dept 04 - San Diego Division"/><ComboBoxItem Content="10. Service Account"/></ComboBox>
                                     <TextBlock Text="Job Title" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserJobTitleTextBox" Height="34" Margin="0,4,0,12"/>
-                                    <TextBlock Text="Manager SamAccountName / Identity" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserManagerTextBox" Height="34" Margin="0,4,0,12" ToolTip="v0.9C accepts typed manager identity. A live lookup picker can be added in the execution phase."/>
+                                    <TextBlock Text="Manager" Style="{StaticResource LabelText}"/>
+                                    <Grid Margin="0,4,0,12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <ComboBox x:Name="NewUserManagerComboBox" Grid.Column="0" Height="34" IsEditable="True" IsTextSearchEnabled="True" ToolTip="Managers are loaded from Active Directory users with direct reports. You can type a SamAccountName or select a manager."/>
+                                        <Button x:Name="NewUserRefreshManagersButton" Grid.Column="1" Content="Refresh" Width="82" Height="34" Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <TextBlock Text="Portfolio" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserPortfolioComboBox" Height="34" SelectedIndex="0" Margin="0,4,0,12"><ComboBoxItem Content=""/><ComboBoxItem Content="Corporate"/><ComboBoxItem Content="Contracts"/><ComboBoxItem Content="Operations"/><ComboBoxItem Content="Information Technology"/><ComboBoxItem Content="Human Resources"/></ComboBox>
                                     <UniformGrid Columns="2" Rows="2">
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Office Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserOfficePhoneTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Mobile Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserMobilePhoneTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Create Mailbox" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCreateMailboxCheckBox" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Send Notice" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserSendNoticeCheckBox" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock Text="Temporary Password" Style="{StaticResource LabelText}"/><PasswordBox x:Name="NewUserTemporaryPasswordBox" Height="34" Margin="0,4,0,12" ToolTip="Required only when you press Create User. Preview never uses or stores this value."/>
+                                    <TextBlock Text="Notification" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
+                                    <UniformGrid Columns="2" Rows="1">
+                                        <StackPanel Margin="0,0,10,12"><TextBlock Text="Recipient" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationRecipientTextBox" Height="34" Text="ITSupport@atlas-tech.com"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Sender" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationSenderTextBox" Height="34" Text="NEW-HIRE-INFO@atlas-tech.com"/></StackPanel>
+                                    </UniformGrid>
+                                    <TextBlock Text="Equipment" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
+                                    <UniformGrid Columns="2" Rows="7">
+                                        <CheckBox x:Name="NewUserNothingRequestedCheckBox" Content="Nothing Requested" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserTemporaryOfficeSpaceCheckBox" Content="Temporary Office Space" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserPermanentOfficeSpaceCheckBox" Content="Permanent Office Space" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDesktopCheckBox" Content="Desktop" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserLaptopCheckBox" Content="Laptop" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDockingStationCheckBox" Content="Docking Station" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserMouseKeyboardCheckBox" Content="Mouse/Keyboard" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserMonitorCheckBox" Content="Monitor" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserDualMonitorCheckBox" Content="Dual Monitor" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDeskPhoneCheckBox" Content="Desk Phone" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserCellPhoneCheckBox" Content="Cell Phone" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserSpeakersCheckBox" Content="Speakers" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserJamisClaimSetupCheckBox" Content="JAMIS Claim Setup" Margin="0,0,10,8"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </ScrollViewer>
@@ -752,17 +780,20 @@ $xaml = @"
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,16,0,12">
                                     <Button x:Name="NewUserValidateButton" Content="Validate / Preview" MinWidth="140" Height="36" Margin="0,0,10,0"/>
+                                    <Button x:Name="NewUserExecuteButton" Content="Create User" MinWidth="108" Height="36" Margin="0,0,10,0"/>
                                     <Button x:Name="NewUserClearButton" Content="Clear" MinWidth="80" Height="36"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2">
                                     <TextBlock Text="Planned Actions" Style="{StaticResource SectionTitle}"/>
-                                    <ListBox x:Name="NewUserPlannedActionsList" MinHeight="260" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F"/>
+                                    <ListBox x:Name="NewUserPlannedActionsList" MinHeight="190" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F"/>
+                                    <TextBlock Text="Execution Log" Style="{StaticResource SectionTitle}" Margin="0,14,0,8"/>
+                                    <ListBox x:Name="NewUserExecutionLogList" MinHeight="92" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
                     </Grid>
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-                        <TextBlock Text="Execution disabled in v0.9C by design." Foreground="#FACC15" VerticalAlignment="Center" Margin="0,0,18,0"/>
+                        <TextBlock Text="Create requires a second confirmation and uses the loaded runtime providers." Foreground="#FACC15" VerticalAlignment="Center" Margin="0,0,18,0"/>
                         <Button x:Name="NewUserBackToWorkflowButton" Content="Back to Workflows" MinWidth="132" Height="36" Margin="0,0,10,0"/>
                         <Button x:Name="NewUserOpenLookupButton" Content="Open User Lookup" MinWidth="132" Height="36"/>
                     </StackPanel>
@@ -1055,7 +1086,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowBackToProfilesButton','WorkflowCloseButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerTextBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserClearButton','NewUserPlannedActionsList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowBackToProfilesButton','WorkflowCloseButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserPlannedActionsList','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -2008,6 +2039,7 @@ function Show-HybridNewUserWizardView {
     $controls.NewUserWizardView.Visibility = 'Visible'
     $controls.StatusText.Text = 'New User Wizard opened.'
     Reset-HybridNewUserWizardFields -PreserveDefaults
+    Update-HybridNewUserManagerOptions
 }
 
 function Hide-HybridWorkflowOverlay {
@@ -2021,6 +2053,15 @@ function Get-HybridNewUserComboText {
     return [string]$ComboBox.Text
 }
 
+function Get-HybridNewUserManagerIdentityFromUi {
+    if ($null -eq $controls.NewUserManagerComboBox) { return '' }
+    $selected = $controls.NewUserManagerComboBox.SelectedItem
+    if ($null -ne $selected -and $selected.PSObject.Properties.Name -contains 'Identity') {
+        return [string]$selected.Identity
+    }
+    return [string]$controls.NewUserManagerComboBox.Text
+}
+
 function Get-HybridNewUserRequestFromUi {
     if (-not (Get-Command New-HybridNewUserRequest -ErrorAction SilentlyContinue)) { throw 'New User Wizard service is not loaded.' }
     return New-HybridNewUserRequest `
@@ -2032,7 +2073,7 @@ function Get-HybridNewUserRequestFromUi {
         -Location (Get-HybridNewUserComboText -ComboBox $controls.NewUserLocationComboBox) `
         -Department (Get-HybridNewUserComboText -ComboBox $controls.NewUserDepartmentComboBox) `
         -JobTitle $controls.NewUserJobTitleTextBox.Text `
-        -ManagerIdentity $controls.NewUserManagerTextBox.Text `
+        -ManagerIdentity (Get-HybridNewUserManagerIdentityFromUi) `
         -EmployeeId $controls.NewUserEmployeeIdTextBox.Text `
         -BadgeId $controls.NewUserBadgeIdTextBox.Text `
         -OfficePhone $controls.NewUserOfficePhoneTextBox.Text `
@@ -2040,7 +2081,23 @@ function Get-HybridNewUserRequestFromUi {
         -StartDate $controls.NewUserStartDatePicker.SelectedDate `
         -CreateMailbox ([bool]$controls.NewUserCreateMailboxCheckBox.IsChecked) `
         -SendNewHireNotice ([bool]$controls.NewUserSendNoticeCheckBox.IsChecked) `
-        -CacRequired ([bool]$controls.NewUserCacCheckBox.IsChecked)
+        -CacRequired ([bool]$controls.NewUserCacCheckBox.IsChecked) `
+        -Portfolio (Get-HybridNewUserComboText -ComboBox $controls.NewUserPortfolioComboBox) `
+        -NotificationRecipient $controls.NewUserNotificationRecipientTextBox.Text `
+        -NotificationSender $controls.NewUserNotificationSenderTextBox.Text `
+        -NothingRequested ([bool]$controls.NewUserNothingRequestedCheckBox.IsChecked) `
+        -TemporaryOfficeSpace ([bool]$controls.NewUserTemporaryOfficeSpaceCheckBox.IsChecked) `
+        -PermanentOfficeSpace ([bool]$controls.NewUserPermanentOfficeSpaceCheckBox.IsChecked) `
+        -Desktop ([bool]$controls.NewUserDesktopCheckBox.IsChecked) `
+        -Laptop ([bool]$controls.NewUserLaptopCheckBox.IsChecked) `
+        -DockingStation ([bool]$controls.NewUserDockingStationCheckBox.IsChecked) `
+        -MouseKeyboard ([bool]$controls.NewUserMouseKeyboardCheckBox.IsChecked) `
+        -Monitor ([bool]$controls.NewUserMonitorCheckBox.IsChecked) `
+        -DualMonitor ([bool]$controls.NewUserDualMonitorCheckBox.IsChecked) `
+        -DeskPhone ([bool]$controls.NewUserDeskPhoneCheckBox.IsChecked) `
+        -CellPhone ([bool]$controls.NewUserCellPhoneCheckBox.IsChecked) `
+        -Speakers ([bool]$controls.NewUserSpeakersCheckBox.IsChecked) `
+        -JamisClaimSetup ([bool]$controls.NewUserJamisClaimSetupCheckBox.IsChecked)
 }
 
 function Update-HybridNewUserPreviewFromUi {
@@ -2055,7 +2112,7 @@ function Update-HybridNewUserPreviewFromUi {
         $controls.NewUserPlannedActionsList.Items.Clear()
         foreach ($action in @($plan.Actions)) { [void]$controls.NewUserPlannedActionsList.Items.Add($action) }
         if ($validation.IsValid) {
-            $controls.NewUserValidationText.Text = 'Validation passed. Review the planned actions. Execution remains disabled for v0.9C.'
+            $controls.NewUserValidationText.Text = 'Validation passed. Review the planned actions, then press Create User only when ready.'
             $controls.StatusText.Text = 'New User Wizard preview generated.'
         }
         else {
@@ -2069,11 +2126,71 @@ function Update-HybridNewUserPreviewFromUi {
     }
 }
 
+function Update-HybridNewUserManagerOptions {
+    if ($null -eq $controls.NewUserManagerComboBox) { return }
+    try {
+        $controls.NewUserManagerComboBox.ItemsSource = $null
+        $controls.NewUserManagerComboBox.DisplayMemberPath = 'Name'
+        $controls.NewUserManagerComboBox.SelectedValuePath = 'Identity'
+        $managers = @(Get-HybridNewUserManagerOptions)
+        $controls.NewUserManagerComboBox.ItemsSource = $managers
+        if ($managers.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$managers[0].Identity)) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
+        $controls.StatusText.Text = "Loaded $($managers.Count) manager option(s)."
+    }
+    catch {
+        $controls.NewUserManagerComboBox.ItemsSource = @([pscustomobject]@{ Name = 'Manager lookup failed'; Identity = ''; Enabled = $false })
+        $controls.NewUserManagerComboBox.SelectedIndex = 0
+        $controls.StatusText.Text = "Manager lookup failed: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-HybridNewUserExecutionFromUi {
+    try {
+        $request = Get-HybridNewUserRequestFromUi
+        $validation = Test-HybridNewUserRequest -Request $request
+        if (-not $validation.IsValid) {
+            $controls.NewUserValidationText.Text = "Validation reminders:`n - " + (@($validation.Errors) -join "`n - ")
+            $controls.StatusText.Text = 'New User Wizard validation failed.'
+            return
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$controls.NewUserTemporaryPasswordBox.Password)) {
+            $controls.NewUserValidationText.Text = 'Temporary password is required before Create User. Preview remains available without it.'
+            $controls.StatusText.Text = 'New User Wizard create blocked until password is entered.'
+            return
+        }
+
+        $plan = Get-HybridNewUserPreviewPlan -Request $request
+        $message = "Create AD user '$($plan.DisplayName)' as '$($plan.SamAccountName)' and execute the planned provider actions?"
+        $confirm = [System.Windows.MessageBox]::Show($message, 'Confirm New User Creation', 'YesNo', 'Warning')
+        if ($confirm -ne 'Yes') {
+            $controls.StatusText.Text = 'New User Wizard create cancelled.'
+            return
+        }
+
+        $securePassword = ConvertTo-SecureString $controls.NewUserTemporaryPasswordBox.Password -AsPlainText -Force
+        $result = Invoke-HybridNewUserCreation -Request $request -AccountPassword $securePassword
+        $controls.NewUserExecutionLogList.Items.Clear()
+        foreach ($step in @($result.Steps)) {
+            [void]$controls.NewUserExecutionLogList.Items.Add(("{0}: {1} - {2}" -f $step.Step,$step.Status,$step.Message))
+        }
+        $controls.NewUserValidationText.Text = if ($result.Success) { "Create completed for $($result.SamAccountName)." } else { "Create finished with failures for $($result.SamAccountName). Review the execution log." }
+        $controls.StatusText.Text = 'New User Wizard create finished.'
+    }
+    catch {
+        $controls.NewUserValidationText.Text = "Create failed: $($_.Exception.Message)"
+        $controls.StatusText.Text = 'New User Wizard create failed.'
+    }
+}
+
 function Reset-HybridNewUserWizardFields {
     param([switch]$PreserveDefaults)
-    foreach ($name in @('NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserJobTitleTextBox','NewUserManagerTextBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox')) {
+    foreach ($name in @('NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserJobTitleTextBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox')) {
         if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Text = '' }
     }
+    if ($controls.NewUserManagerComboBox) { $controls.NewUserManagerComboBox.Text = ''; $controls.NewUserManagerComboBox.SelectedIndex = -1 }
+    if ($controls.NewUserTemporaryPasswordBox) { $controls.NewUserTemporaryPasswordBox.Password = '' }
+    if ($controls.NewUserNotificationRecipientTextBox) { $controls.NewUserNotificationRecipientTextBox.Text = 'ITSupport@atlas-tech.com' }
+    if ($controls.NewUserNotificationSenderTextBox) { $controls.NewUserNotificationSenderTextBox.Text = 'NEW-HIRE-INFO@atlas-tech.com' }
     $controls.NewUserIncludeMiddleInitialCheckBox.IsChecked = $false
     $controls.NewUserCacCheckBox.IsChecked = $false
     $controls.NewUserCreateMailboxCheckBox.IsChecked = $true
@@ -2081,6 +2198,10 @@ function Reset-HybridNewUserWizardFields {
     $controls.NewUserHomeOrgComboBox.SelectedIndex = 0
     $controls.NewUserLocationComboBox.SelectedIndex = 0
     $controls.NewUserDepartmentComboBox.SelectedIndex = 1
+    if ($controls.NewUserPortfolioComboBox) { $controls.NewUserPortfolioComboBox.SelectedIndex = 0 }
+    foreach ($name in @('NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox')) {
+        if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].IsChecked = $false }
+    }
     $controls.NewUserStartDatePicker.SelectedDate = [DateTime]::Today
     $controls.NewUserPreviewDisplayNameText.Text = '-'
     $controls.NewUserPreviewSamText.Text = '-'
@@ -2088,6 +2209,7 @@ function Reset-HybridNewUserWizardFields {
     $controls.NewUserPreviewOuText.Text = '-'
     $controls.NewUserValidationText.Text = 'Enter new-user information, then validate and preview the action plan.'
     $controls.NewUserPlannedActionsList.Items.Clear()
+    if ($controls.NewUserExecutionLogList) { $controls.NewUserExecutionLogList.Items.Clear() }
 }
 
 function Show-HybridConsoleView {
@@ -3803,7 +3925,7 @@ function Update-GraphPanels {
             [void]$controls.GraphPimRolesList.Items.Add($role)
         }
         if ($controls.GraphPimRolesList.Items.Count -eq 0) {
-            $pimDiagnostic = Get-DisplayValue -InputObject $graphProfile -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default ''
+            $pimDiagnostic = Get-DisplayValue -InputObject $graphProfile -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default ''
             if (-not [string]::IsNullOrWhiteSpace($pimDiagnostic)) { [void]$controls.GraphPimRolesList.Items.Add($pimDiagnostic) }
             else { [void]$controls.GraphPimRolesList.Items.Add('No PIM roles returned') }
         }
@@ -4235,6 +4357,8 @@ if ($controls.NewUserWizardCloseButton) { $controls.NewUserWizardCloseButton.Add
 if ($controls.NewUserBackToWorkflowButton) { $controls.NewUserBackToWorkflowButton.Add_Click({ Show-HybridWorkflowSelector }) }
 if ($controls.NewUserOpenLookupButton) { $controls.NewUserOpenLookupButton.Add_Click({ Show-HybridConsoleView }) }
 if ($controls.NewUserValidateButton) { $controls.NewUserValidateButton.Add_Click({ Update-HybridNewUserPreviewFromUi }) }
+if ($controls.NewUserExecuteButton) { $controls.NewUserExecuteButton.Add_Click({ Invoke-HybridNewUserExecutionFromUi }) }
+if ($controls.NewUserRefreshManagersButton) { $controls.NewUserRefreshManagersButton.Add_Click({ Update-HybridNewUserManagerOptions }) }
 if ($controls.NewUserClearButton) { $controls.NewUserClearButton.Add_Click({ Reset-HybridNewUserWizardFields }) }
 $controls.EditRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileWizardForSelectedProfile })
 $controls.ManageRuntimeThemeButton.Add_Click({ Show-HybridRuntimeThemeEditor })
@@ -4268,4 +4392,3 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
-

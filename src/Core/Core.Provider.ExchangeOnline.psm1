@@ -394,6 +394,7 @@ function Initialize-HybridExchangeOnlineProvider {
         SearchDistributionGroups = ({ param([string]$Query) Search-HybridExchangeOnlineDistributionGroups -Query $Query }).GetNewClosure()
         AddDistributionGroupMember = ({ param([string]$Identity, [string]$GroupIdentity) Add-HybridExchangeOnlineDistributionGroupMember -Identity $Identity -GroupIdentity $GroupIdentity }).GetNewClosure()
         RemoveDistributionGroupMember = ({ param([string]$Identity, [string]$GroupIdentity) Remove-HybridExchangeOnlineDistributionGroupMember -Identity $Identity -GroupIdentity $GroupIdentity }).GetNewClosure()
+        EnableRemoteMailbox = ({ param([string]$Identity, [string]$RemoteRoutingAddress, [string]$Alias, [guid]$ExchangeGuid) Enable-HybridExchangeOnlineRemoteMailbox -Identity $Identity -RemoteRoutingAddress $RemoteRoutingAddress -Alias $Alias -ExchangeGuid $ExchangeGuid }).GetNewClosure()
         GetMailboxStatistics = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxStatistics -Identity $Identity }).GetNewClosure()
         GetMailboxDelegations = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxDelegations -Identity $Identity }).GetNewClosure()
     }
@@ -648,6 +649,38 @@ function Remove-HybridExchangeOnlineDistributionGroupMember {
     }
 }
 
+function Enable-HybridExchangeOnlineRemoteMailbox {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$RemoteRoutingAddress,
+        [Parameter(Mandatory=$true)][string]$Alias,
+        [Parameter(Mandatory=$true)][guid]$ExchangeGuid
+    )
+
+    Ensure-HybridExchangeOnlineConnection
+    $command = Get-Command -Name Enable-RemoteMailbox -ErrorAction SilentlyContinue
+    if ($null -eq $command) { throw 'Enable-RemoteMailbox is not available after connecting to Exchange.' }
+
+    $params = @{
+        Identity = $Identity
+        RemoteRoutingAddress = $RemoteRoutingAddress
+        Alias = $Alias
+        ExchangeGuid = $ExchangeGuid
+        ErrorAction = 'Stop'
+    }
+    & $command @params
+
+    return [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.RemoteMailboxResult'
+        Identity = $Identity
+        Alias = $Alias
+        RemoteRoutingAddress = $RemoteRoutingAddress
+        ExchangeGuid = $ExchangeGuid
+        Success = $true
+    }
+}
+
 Export-ModuleMember -Function `
     Resolve-HybridExchangeOnlineEndpoint,`
     Test-HybridExchangeOnlineModuleAvailable,`
@@ -662,4 +695,5 @@ Export-ModuleMember -Function `
     Get-HybridExchangeOnlineDistributionGroups,`
     Search-HybridExchangeOnlineDistributionGroups,`
     Add-HybridExchangeOnlineDistributionGroupMember,`
-    Remove-HybridExchangeOnlineDistributionGroupMember
+    Remove-HybridExchangeOnlineDistributionGroupMember,`
+    Enable-HybridExchangeOnlineRemoteMailbox

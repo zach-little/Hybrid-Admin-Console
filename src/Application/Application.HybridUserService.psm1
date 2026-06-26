@@ -446,6 +446,8 @@ function New-HybridCompositeUser {
         LockedOut             = Get-HybridObjectValue -InputObject $ActiveDirectoryUser -Names @('LockedOut','IsLockedOut') -Default $null
         Groups                = @()
         DirectReports         = @()
+        Devices               = @()
+        Licenses              = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('Licenses','AssignedLicenses') -Default @())
         Mailbox               = New-HybridMailboxSourceEnvelope -AdMailAttributes (New-HybridAdMailAttributeSnapshot -User $ActiveDirectoryUser) -ExchangeOnPremises $null -ExchangeOnline $Mailbox
         MailboxDetails        = $null
         ExchangeLoaded        = $false
@@ -734,10 +736,9 @@ function Initialize-HybridUserService {
 
 function Search-HybridUser {
     [CmdletBinding()]
-    param([Parameter(Mandatory=$true)][string]$Query)
+    param([string]$Query = '')
 
     if (-not $script:HybridUserServiceState.Initialized) { throw 'Hybrid user service has not been initialized.' }
-    if ([string]::IsNullOrWhiteSpace($Query)) { throw 'Search query cannot be empty.' }
 
     try {
         $script:HybridUserServiceState.LastQuery = $Query

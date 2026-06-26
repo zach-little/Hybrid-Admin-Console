@@ -524,6 +524,9 @@ function Initialize-HybridActiveDirectoryProvider {
         GetUserGroups        = { param([string]$Identity) Get-HybridADUserGroups -Identity $Identity }
         GetUserManager       = { param([string]$Identity) Get-HybridADUserManager -Identity $Identity }
         GetUserDirectReports = { param([string]$Identity) Get-HybridADUserDirectReports -Identity $Identity }
+        GetUsersWithDirectReports = { Get-HybridADUsersWithDirectReports }
+        ResolveUserDistinguishedName = { param([string]$Identity) Resolve-HybridADUserDistinguishedName -Identity $Identity }
+        CreateUser           = { param([hashtable]$Parameters) New-HybridADUser -Parameters $Parameters }
         ResetPassword        = { param([string]$Identity, [securestring]$NewPassword, [switch]$ChangeAtLogon) Reset-HybridADUserPassword -Identity $Identity -NewPassword $NewPassword -ChangeAtLogon:$ChangeAtLogon }
         SetEnabled           = { param([string]$Identity, [bool]$Enabled) Set-HybridADUserEnabled -Identity $Identity -Enabled $Enabled }
         UnlockUser           = { param([string]$Identity) Unlock-HybridADUser -Identity $Identity }
@@ -563,6 +566,9 @@ function Initialize-HybridActiveDirectoryProvider {
             GetUserGroups        = $operations.GetUserGroups
             GetUserManager       = $operations.GetUserManager
             GetUserDirectReports = $operations.GetUserDirectReports
+            GetUsersWithDirectReports = $operations.GetUsersWithDirectReports
+            ResolveUserDistinguishedName = $operations.ResolveUserDistinguishedName
+            CreateUser           = $operations.CreateUser
             ResetPassword        = $operations.ResetPassword
             SetEnabled           = $operations.SetEnabled
             UnlockUser           = $operations.UnlockUser
@@ -811,6 +817,64 @@ function Get-HybridADUserRawAttributes {
     }
 
     return $attributes
+}
+
+function Get-HybridADUsersWithDirectReports {
+    [CmdletBinding()]
+    param()
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    $adParams.Filter = 'directReports -like "*"'
+    $adParams.Properties = @('SamAccountName','Name','DisplayName','DistinguishedName')
+    if (-not [string]::IsNullOrWhiteSpace($script:State.SearchBase)) {
+        $adParams.SearchBase = $script:State.SearchBase
+    }
+
+    return @(Invoke-HybridADCommand -CommandName 'Get-ADUser' -Parameters $adParams -Operation 'Get managers with direct reports' | ForEach-Object {
+        [pscustomobject]@{
+            PSTypeName = 'Hybrid.ActiveDirectory.ManagerOption'
+            Name = [string]$_.Name
+            DisplayName = [string]$(if ($_.DisplayName) { $_.DisplayName } else { $_.Name })
+            SamAccountName = [string]$_.SamAccountName
+            DistinguishedName = [string]$_.DistinguishedName
+            Identity = [string]$_.SamAccountName
+        }
+    } | Sort-Object Name)
+}
+
+function Resolve-HybridADUserDistinguishedName {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    $user = Get-HybridADUser -Identity $Identity
+    if ($null -eq $user) { return '' }
+    if ($user.PSObject.Properties.Name -contains 'DistinguishedName') { return [string]$user.DistinguishedName }
+    if ($user.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $user.Attributes -and $user.Attributes.ContainsKey('DistinguishedName')) { return [string]$user.Attributes.DistinguishedName }
+    return ''
+}
+
+function New-HybridADUser {
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param([Parameter(Mandatory=$true)][hashtable]$Parameters)
+
+    Assert-HybridADProviderAvailable
+
+    $createParams = New-HybridADCommonParameters
+    foreach ($key in @($Parameters.Keys)) {
+        if ($key -eq 'Server') { continue }
+        $value = $Parameters[$key]
+        if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { $createParams[$key] = $value }
+    }
+
+    $identity = if ($createParams.ContainsKey('SamAccountName')) { [string]$createParams.SamAccountName } else { [string]$createParams.Name }
+    if ($PSCmdlet.ShouldProcess($identity, 'Create Active Directory user')) {
+        Invoke-HybridADCommand -CommandName 'New-ADUser' -Parameters $createParams -Operation 'Create AD user' | Out-Null
+    }
+
+    Clear-HybridADProviderCache -Identity $identity
+    return New-HybridResult -Success $true -Message "Created AD user '$identity'."
 }
 
 function Get-HybridADUserGroups {
@@ -1145,6 +1209,9 @@ Export-ModuleMember -Function @(
     'Get-HybridADUserGroups',
     'Get-HybridADUserManager',
     'Get-HybridADUserDirectReports',
+    'Get-HybridADUsersWithDirectReports',
+    'Resolve-HybridADUserDistinguishedName',
+    'New-HybridADUser',
     'Reset-HybridADUserPassword',
     'Set-HybridADUserEnabled',
     'Unlock-HybridADUser',

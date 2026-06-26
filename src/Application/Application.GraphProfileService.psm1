@@ -64,6 +64,9 @@ function ConvertTo-HybridGraphProfile {
     $licenses = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('Licenses','AssignedLicenses','assignedLicenses') -Default @())
     $licenseAssignmentStates = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
     $pimRoles = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
+    $graphDiagnostics = @(Get-HybridGraphObjectValue -InputObject $InputObject -Names @('GraphDiagnostics','Diagnostics') -Default @())
+    $licenseDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+    $pimDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
     $lastSignIn = Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LastSignInDateTime','LastSignIn','SignInActivity') -Default $null
     $lastNonInteractive = Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default $null
     $passwordChanged = Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null
@@ -84,8 +87,13 @@ function ConvertTo-HybridGraphProfile {
         AssignedLicenses = @($licenses)
         LicenseAssignmentStates = @($licenseAssignmentStates)
         PimRoles = @($pimRoles)
-        LicenseDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
-        PimRoleDiagnostic = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('PimRoleDiagnostic','PimRoleDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+        DirectoryRoles = @($pimRoles)
+        GraphDiagnostics = @($graphDiagnostics)
+        LicenseDiagnostic = $licenseDiagnostic
+        LicenseDiagnostics = $licenseDiagnostic
+        PimRoleDiagnostic = $pimDiagnostic
+        PimRoleDiagnostics = $pimDiagnostic
+        PimDiagnostics = $pimDiagnostic
         MfaRegistered = [bool](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
         MfaCapable = [bool](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('MfaCapable','IsMfaCapable') -Default $false)
         RiskState = [string](Get-HybridGraphObjectValue -InputObject $InputObject -Names @('RiskState','UserRiskState') -Default 'none')

@@ -38,7 +38,8 @@ function Initialize-HybridApplicationServices {
     if (Get-Command Get-HybridService -ErrorAction SilentlyContinue) {
         try { $directoryService = Get-HybridService -Name 'Directory' } catch { $directoryService = $null }
     }
-    Initialize-HybridUserService -ActiveDirectoryProvider $directoryService | Out-Null
+    $userService = Initialize-HybridUserService -ActiveDirectoryProvider $directoryService
+    Register-HybridService -Name 'User' -Instance $userService -Description 'Provider-agnostic user application service.' -Provider 'Application' -Force | Out-Null
 
     if (Get-Command Write-HybridLog -ErrorAction SilentlyContinue) {
         Write-HybridLog -Level Information -Module 'Application.ServiceLocator' -Message "Application services initialized using provider mode '$providerMode'." | Out-Null
