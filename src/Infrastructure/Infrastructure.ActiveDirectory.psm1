@@ -520,6 +520,7 @@ function Initialize-HybridActiveDirectoryProvider {
         ClearCache           = { param([string]$Identity) Clear-HybridADProviderCache -Identity $Identity }
         SearchUser           = { param([string]$Query, [switch]$IncludeRelated) Search-HybridADUser -Query $Query -IncludeRelated:$IncludeRelated }
         GetUser              = { param([string]$Identity, [switch]$IncludeRelated) Get-HybridADUser -Identity $Identity -IncludeRelated:$IncludeRelated }
+        GetUserRawAttributes = { param([string]$Identity) Get-HybridADUserRawAttributes -Identity $Identity }
         GetUserGroups        = { param([string]$Identity) Get-HybridADUserGroups -Identity $Identity }
         GetUserManager       = { param([string]$Identity) Get-HybridADUserManager -Identity $Identity }
         GetUserDirectReports = { param([string]$Identity) Get-HybridADUserDirectReports -Identity $Identity }
@@ -558,6 +559,7 @@ function Initialize-HybridActiveDirectoryProvider {
             ClearCache           = $operations.ClearCache
             SearchUser           = $operations.SearchUser
             GetUser              = $operations.GetUser
+            GetUserRawAttributes = $operations.GetUserRawAttributes
             GetUserGroups        = $operations.GetUserGroups
             GetUserManager       = $operations.GetUserManager
             GetUserDirectReports = $operations.GetUserDirectReports
@@ -786,6 +788,29 @@ function Get-HybridADUser {
 
     Set-HybridADCacheValue -Bucket 'Users' -Key $cacheKey -Value $user
     return $user
+}
+
+function Get-HybridADUserRawAttributes {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    Assert-HybridADProviderAvailable
+
+    $adParams = New-HybridADCommonParameters
+    $adParams.Properties = @('*')
+    $adParams.Filter = Resolve-HybridADIdentityFilter -Identity $Identity
+
+    $adUser = Invoke-HybridADCommand -CommandName 'Get-ADUser' -Parameters $adParams -Operation 'Get user raw attributes' | Select-Object -First 1
+    if ($null -eq $adUser) { return @{} }
+
+    $attributes = @{}
+    foreach ($property in $adUser.PSObject.Properties) {
+        $value = $property.Value
+        if ($value -is [array]) { $attributes[$property.Name] = @($value) }
+        else { $attributes[$property.Name] = $value }
+    }
+
+    return $attributes
 }
 
 function Get-HybridADUserGroups {
@@ -1116,6 +1141,7 @@ Export-ModuleMember -Function @(
     'Get-HybridADProviderCapabilities',
     'Search-HybridADUser',
     'Get-HybridADUser',
+    'Get-HybridADUserRawAttributes',
     'Get-HybridADUserGroups',
     'Get-HybridADUserManager',
     'Get-HybridADUserDirectReports',

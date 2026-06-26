@@ -4,7 +4,8 @@
 # Exports: Initialize-HybridUserAdministrationService, Get-HybridUserEditableSnapshot,
 #          Set-HybridUserDirectoryAttributes, Set-HybridUserManager,
 #          Move-HybridUserDirectReports, Set-HybridUserMailboxForwarding,
-#          Set-HybridUserHiddenFromAddressLists, Add-HybridUserMailboxDelegation,
+#          Set-HybridUserHiddenFromAddressLists, Get-HybridUserDistributionGroups,
+#          Search-HybridUserDistributionGroups, Add-HybridUserMailboxDelegation,
 #          Remove-HybridUserMailboxDelegation, Add-HybridUserDistributionGroupMembership,
 #          Remove-HybridUserDistributionGroupMembership, Clear-HybridUserAdministrationService
 #endregion
@@ -121,6 +122,8 @@ function Initialize-HybridUserAdministrationService {
         MoveDirectReports = ({ param([string]$Identity, [string]$NewManagerIdentity, [object[]]$DirectReports) Move-HybridUserDirectReports -Identity $Identity -NewManagerIdentity $NewManagerIdentity -DirectReports $DirectReports }).GetNewClosure()
         SetMailboxForwarding = ({ param([string]$Identity, [string]$ForwardingSmtpAddress, [bool]$DeliverToMailboxAndForward) Set-HybridUserMailboxForwarding -Identity $Identity -ForwardingSmtpAddress $ForwardingSmtpAddress -DeliverToMailboxAndForward $DeliverToMailboxAndForward }).GetNewClosure()
         SetHiddenFromAddressLists = ({ param([string]$Identity, [bool]$Hidden) Set-HybridUserHiddenFromAddressLists -Identity $Identity -Hidden $Hidden }).GetNewClosure()
+        GetDistributionGroups = ({ param([string]$Identity) Get-HybridUserDistributionGroups -Identity $Identity }).GetNewClosure()
+        SearchDistributionGroups = ({ param([string]$Query) Search-HybridUserDistributionGroups -Query $Query }).GetNewClosure()
         AddMailboxDelegation = ({ param([string]$Identity, [string]$Trustee, [string[]]$AccessRights) Add-HybridUserMailboxDelegation -Identity $Identity -Trustee $Trustee -AccessRights $AccessRights }).GetNewClosure()
         RemoveMailboxDelegation = ({ param([string]$Identity, [string]$Trustee, [string[]]$AccessRights) Remove-HybridUserMailboxDelegation -Identity $Identity -Trustee $Trustee -AccessRights $AccessRights }).GetNewClosure()
         AddDistributionGroupMembership = ({ param([string]$Identity, [string]$GroupIdentity) Add-HybridUserDistributionGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }).GetNewClosure()
@@ -135,33 +138,49 @@ function Get-HybridUserEditableSnapshot {
     if (-not $script:HybridUserAdministrationState.Initialized) { throw 'Hybrid user administration service has not been initialized.' }
 
     $identity = [string](Get-HybridUserAdminObjectValue -InputObject $User -Names @('SamAccountName','UserPrincipalName','Identity','Mail') -Default '')
+    $directoryUser = $User
+    if (-not [string]::IsNullOrWhiteSpace($identity)) {
+        $hydrated = Invoke-HybridUserAdminProviderOperation -Provider $script:HybridUserAdministrationState.ActiveDirectory -OperationNames @('GetUser') -Arguments @($identity, $true)
+        if ($null -ne $hydrated) { $directoryUser = $hydrated }
+    }
+
     $attributes = [ordered]@{
-        displayName = Get-HybridUserAdminObjectValue -InputObject $User -Names @('DisplayName','Name') -Default ''
-        givenName = Get-HybridUserAdminObjectValue -InputObject $User -Names @('GivenName') -Default ''
-        sn = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Surname','sn') -Default ''
-        title = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Title','JobTitle') -Default ''
-        department = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Department') -Default ''
-        company = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Company','CompanyName') -Default ''
-        physicalDeliveryOfficeName = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Office','OfficeLocation','PhysicalDeliveryOfficeName') -Default ''
-        employeeID = Get-HybridUserAdminObjectValue -InputObject $User -Names @('EmployeeId','EmployeeID') -Default ''
-        badgeID = Get-HybridUserAdminObjectValue -InputObject $User -Names @('BadgeId','BadgeID','extensionAttribute15') -Default ''
-        st = Get-HybridUserAdminObjectValue -InputObject $User -Names @('State','st') -Default ''
-        telephoneNumber = Get-HybridUserAdminObjectValue -InputObject $User -Names @('PhoneNumber','TelephoneNumber','OfficePhone') -Default ''
-        mail = Get-HybridUserAdminObjectValue -InputObject $User -Names @('Mail','PrimarySmtpAddress') -Default ''
-        manager = Get-HybridUserAdminObjectValue -InputObject $User -Names @('ManagerDisplayName','ManagerName','Manager') -Default ''
+        displayName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('DisplayName','Name') -Default ''
+        givenName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('GivenName') -Default ''
+        sn = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Surname','sn') -Default ''
+        userPrincipalName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('UserPrincipalName','UPN') -Default ''
+        sAMAccountName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('SamAccountName','SAMAccountName') -Default ''
+        mail = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Mail','PrimarySmtpAddress') -Default ''
+        telephoneNumber = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('PhoneNumber','TelephoneNumber','OfficePhone') -Default ''
+        title = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Title','JobTitle') -Default ''
+        department = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Department') -Default ''
+        company = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Company','CompanyName') -Default ''
+        physicalDeliveryOfficeName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Office','OfficeLocation','PhysicalDeliveryOfficeName') -Default ''
+        employeeID = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('EmployeeId','EmployeeID') -Default ''
+        badgeID = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('BadgeId','BadgeID','extensionAttribute15') -Default ''
+        st = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('State','st') -Default ''
+        mobile = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Mobile','MobilePhone','mobile') -Default ''
+        manager = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('ManagerDisplayName','ManagerName','Manager') -Default ''
+        distinguishedName = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('DistinguishedName','DN') -Default ''
+        enabled = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('Enabled') -Default ''
     }
 
     $rawAttributes = @{}
-    if ($User.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $User.Attributes) {
-        if ($User.Attributes -is [hashtable]) {
-            foreach ($key in $User.Attributes.Keys) { $rawAttributes[[string]$key] = $User.Attributes[$key] }
+    if (-not [string]::IsNullOrWhiteSpace($identity)) {
+        $raw = Invoke-HybridUserAdminProviderOperation -Provider $script:HybridUserAdministrationState.ActiveDirectory -OperationNames @('GetUserRawAttributes','GetRawAttributes') -Arguments @($identity)
+        if ($raw -is [hashtable]) { foreach ($key in $raw.Keys) { $rawAttributes[[string]$key] = $raw[$key] } }
+    }
+
+    if ($rawAttributes.Count -eq 0 -and $directoryUser.PSObject.Properties.Name -contains 'Attributes' -and $null -ne $directoryUser.Attributes) {
+        if ($directoryUser.Attributes -is [hashtable]) {
+            foreach ($key in $directoryUser.Attributes.Keys) { $rawAttributes[[string]$key] = $directoryUser.Attributes[$key] }
         }
         else {
-            foreach ($property in $User.Attributes.PSObject.Properties) { $rawAttributes[$property.Name] = $property.Value }
+            foreach ($property in $directoryUser.Attributes.PSObject.Properties) { $rawAttributes[$property.Name] = $property.Value }
         }
     }
-    else {
-        foreach ($property in $User.PSObject.Properties) { $rawAttributes[$property.Name] = $property.Value }
+    elseif ($rawAttributes.Count -eq 0) {
+        foreach ($property in $directoryUser.PSObject.Properties) { $rawAttributes[$property.Name] = $property.Value }
     }
 
     [pscustomobject]@{
@@ -169,8 +188,8 @@ function Get-HybridUserEditableSnapshot {
         Identity = $identity
         Attributes = $attributes
         RawAttributes = $rawAttributes
-        DirectReports = @(Get-HybridUserAdminObjectValue -InputObject $User -Names @('DirectReports') -Default @())
-        Manager = Get-HybridUserAdminObjectValue -InputObject $User -Names @('ManagerObject','Manager') -Default $null
+        DirectReports = @(Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('DirectReports') -Default @())
+        Manager = Get-HybridUserAdminObjectValue -InputObject $directoryUser -Names @('ManagerObject','Manager') -Default $null
     }
 }
 
@@ -294,6 +313,37 @@ function Set-HybridUserHiddenFromAddressLists {
     }
 }
 
+function Get-HybridUserDistributionGroups {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    try {
+        $groups = @(Invoke-HybridUserAdminProviderOperation -Provider $script:HybridUserAdministrationState.ExchangeOnline -OperationNames @('GetDistributionGroups','GetUserDistributionGroups') -Arguments @($Identity))
+        return New-HybridUserAdministrationResult -Action 'GetDistributionGroups' -Identity $Identity -Status Completed -Message "Loaded $($groups.Count) distribution group(s)." -Data @($groups)
+    }
+    catch {
+        $script:HybridUserAdministrationState.LastError = $_.Exception.Message
+        return New-HybridUserAdministrationResult -Action 'GetDistributionGroups' -Identity $Identity -Status Failed -Message $_.Exception.Message
+    }
+}
+
+function Search-HybridUserDistributionGroups {
+    [CmdletBinding()]
+    param([string]$Query = '')
+
+    try {
+        $groups = @(Invoke-HybridUserAdminProviderOperation -Provider $script:HybridUserAdministrationState.ExchangeOnline -OperationNames @('SearchDistributionGroups','FindDistributionGroups','SearchGroups') -Arguments @($Query))
+        if ($groups.Count -eq 0 -and -not (Test-HybridUserAdminProviderOperation -Provider $script:HybridUserAdministrationState.ExchangeOnline -OperationNames @('SearchDistributionGroups','FindDistributionGroups','SearchGroups'))) {
+            return New-HybridUserAdministrationResult -Action 'SearchDistributionGroups' -Identity $Query -Status Unsupported -Message 'Exchange Online provider does not expose distribution group lookup yet.'
+        }
+        return New-HybridUserAdministrationResult -Action 'SearchDistributionGroups' -Identity $Query -Status Completed -Message "Found $($groups.Count) distribution group(s)." -Data @($groups)
+    }
+    catch {
+        $script:HybridUserAdministrationState.LastError = $_.Exception.Message
+        return New-HybridUserAdministrationResult -Action 'SearchDistributionGroups' -Identity $Query -Status Failed -Message $_.Exception.Message
+    }
+}
+
 function Add-HybridUserMailboxDelegation {
     [CmdletBinding()]
     param(
@@ -396,6 +446,8 @@ Export-ModuleMember -Function @(
     'Move-HybridUserDirectReports',
     'Set-HybridUserMailboxForwarding',
     'Set-HybridUserHiddenFromAddressLists',
+    'Get-HybridUserDistributionGroups',
+    'Search-HybridUserDistributionGroups',
     'Add-HybridUserMailboxDelegation',
     'Remove-HybridUserMailboxDelegation',
     'Add-HybridUserDistributionGroupMembership',

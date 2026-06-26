@@ -391,6 +391,9 @@ function Initialize-HybridExchangeOnlineProvider {
         GetUserMailbox = ({ param([string]$Identity) Get-HybridExchangeOnlineMailbox -Identity $Identity }).GetNewClosure()
         GetMailboxForwarding = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxForwarding -Identity $Identity }).GetNewClosure()
         GetDistributionGroups = ({ param([string]$Identity) Get-HybridExchangeOnlineDistributionGroups -Identity $Identity }).GetNewClosure()
+        SearchDistributionGroups = ({ param([string]$Query) Search-HybridExchangeOnlineDistributionGroups -Query $Query }).GetNewClosure()
+        AddDistributionGroupMember = ({ param([string]$Identity, [string]$GroupIdentity) Add-HybridExchangeOnlineDistributionGroupMember -Identity $Identity -GroupIdentity $GroupIdentity }).GetNewClosure()
+        RemoveDistributionGroupMember = ({ param([string]$Identity, [string]$GroupIdentity) Remove-HybridExchangeOnlineDistributionGroupMember -Identity $Identity -GroupIdentity $GroupIdentity }).GetNewClosure()
         GetMailboxStatistics = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxStatistics -Identity $Identity }).GetNewClosure()
         GetMailboxDelegations = ({ param([string]$Identity) Get-HybridExchangeOnlineMailboxDelegations -Identity $Identity }).GetNewClosure()
     }
@@ -566,6 +569,79 @@ function Get-HybridExchangeOnlineDistributionGroups {
     return @($groups | Where-Object { $null -ne $_ } | Sort-Object Identity,PrimarySmtpAddress -Unique)
 }
 
+function Search-HybridExchangeOnlineDistributionGroups {
+    [CmdletBinding()]
+    param(
+        [string]$Query = '',
+        [int]$ResultSize = 50
+    )
+
+    Ensure-HybridExchangeOnlineConnection
+    $distributionCommand = Get-Command -Name Get-EXODistributionGroup -ErrorAction SilentlyContinue
+    if ($null -eq $distributionCommand) { $distributionCommand = Get-Command -Name Get-DistributionGroup -ErrorAction SilentlyContinue }
+    if ($null -eq $distributionCommand) { return @() }
+
+    $groups = New-Object System.Collections.Generic.List[object]
+    if ([string]::IsNullOrWhiteSpace($Query)) {
+        @(& $distributionCommand -ResultSize $ResultSize -ErrorAction Stop) |
+            ForEach-Object { $groups.Add((ConvertTo-HybridExchangeOnlineDistributionGroupModel -Group $_ -MatchedBy 'Browse')) | Out-Null }
+    }
+    else {
+        $escaped = $Query.Replace("'", "''")
+        foreach ($filter in @("DisplayName -like '*$escaped*'", "Name -like '*$escaped*'", "PrimarySmtpAddress -like '*$escaped*'")) {
+            try {
+                @(& $distributionCommand -ResultSize $ResultSize -Filter $filter -ErrorAction Stop) |
+                    ForEach-Object { $groups.Add((ConvertTo-HybridExchangeOnlineDistributionGroupModel -Group $_ -MatchedBy $filter)) | Out-Null }
+            }
+            catch { }
+        }
+    }
+
+    return @($groups | Where-Object { $null -ne $_ } | Sort-Object Identity,PrimarySmtpAddress -Unique | Select-Object -First $ResultSize)
+}
+
+function Add-HybridExchangeOnlineDistributionGroupMember {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$GroupIdentity
+    )
+
+    Ensure-HybridExchangeOnlineConnection
+    $command = Get-Command -Name Add-DistributionGroupMember -ErrorAction SilentlyContinue
+    if ($null -eq $command) { throw 'Add-DistributionGroupMember is not available after connecting to Exchange Online.' }
+
+    & $command -Identity $GroupIdentity -Member $Identity -BypassSecurityGroupManagerCheck -ErrorAction Stop
+    return [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.DistributionGroupMembershipUpdate'
+        Action = 'Add'
+        Identity = $Identity
+        GroupIdentity = $GroupIdentity
+        Success = $true
+    }
+}
+
+function Remove-HybridExchangeOnlineDistributionGroupMember {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string]$GroupIdentity
+    )
+
+    Ensure-HybridExchangeOnlineConnection
+    $command = Get-Command -Name Remove-DistributionGroupMember -ErrorAction SilentlyContinue
+    if ($null -eq $command) { throw 'Remove-DistributionGroupMember is not available after connecting to Exchange Online.' }
+
+    & $command -Identity $GroupIdentity -Member $Identity -Confirm:$false -BypassSecurityGroupManagerCheck -ErrorAction Stop
+    return [pscustomobject]@{
+        PSTypeName = 'Hybrid.ExchangeOnline.DistributionGroupMembershipUpdate'
+        Action = 'Remove'
+        Identity = $Identity
+        GroupIdentity = $GroupIdentity
+        Success = $true
+    }
+}
+
 Export-ModuleMember -Function `
     Resolve-HybridExchangeOnlineEndpoint,`
     Test-HybridExchangeOnlineModuleAvailable,`
@@ -577,4 +653,7 @@ Export-ModuleMember -Function `
     Get-HybridExchangeOnlineMailboxForwarding,`
     Get-HybridExchangeOnlineMailboxStatistics,`
     Get-HybridExchangeOnlineMailboxDelegations,`
-    Get-HybridExchangeOnlineDistributionGroups
+    Get-HybridExchangeOnlineDistributionGroups,`
+    Search-HybridExchangeOnlineDistributionGroups,`
+    Add-HybridExchangeOnlineDistributionGroupMember,`
+    Remove-HybridExchangeOnlineDistributionGroupMember

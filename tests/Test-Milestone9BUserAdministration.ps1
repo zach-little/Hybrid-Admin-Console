@@ -69,7 +69,7 @@ foreach ($expected in @('Set-HybridADUserAttributes','SetUserAttributes','Set-AD
 }
 
 $uiText = Get-Content -LiteralPath $uiPath -Raw
-foreach ($expected in @('EditSelectedUserButton','Show-HybridSelectedUserEditDialog','Attribute Editor','ChangeManagerButton','MoveSubordinatesButton','MailboxDelegationButton','DistributionGroupsButton','MailboxForwardingButton','GalVisibilityButton','GraphLicensesList','GraphPimRolesList')) {
+foreach ($expected in @('ConsoleMenuBar','PreferencesMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','Show-HybridSelectedUserEditDialog','Attribute Editor','Show-HybridSelectedUserDistributionGroupsDialog','GraphLicensesList','GraphPimRolesList')) {
     if ($uiText -notlike "*$expected*") { throw "UI wiring missing: $expected" }
 }
 

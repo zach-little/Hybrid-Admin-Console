@@ -433,9 +433,26 @@ $xaml = @"
 
         <Grid x:Name="MainRegion" Grid.Row="0">
             <Grid x:Name="ConsoleView" Margin="22" Visibility="Collapsed">
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Menu x:Name="ConsoleMenuBar" Grid.Row="0" Background="#0F172A" Foreground="#E5E7EB" Margin="0,0,0,10">
+                    <MenuItem Header="_File">
+                        <MenuItem x:Name="PreferencesMenuItem" Header="Preferences"/>
+                        <Separator/>
+                        <MenuItem x:Name="ExitMenuItem" Header="Exit"/>
+                    </MenuItem>
+                    <MenuItem Header="_Edit">
+                        <MenuItem x:Name="EditCurrentUserMenuItem" Header="Edit Current User" IsEnabled="False"/>
+                        <MenuItem x:Name="MoveReportsMenuItem" Header="Move Reports" IsEnabled="False"/>
+                        <MenuItem x:Name="UpdateDistributionGroupsMenuItem" Header="Update Distribution Groups" IsEnabled="False"/>
+                        <MenuItem x:Name="ShowHideGalMenuItem" Header="Show/Hide GAL" IsEnabled="False"/>
+                        <MenuItem x:Name="ChangeManagerMenuItem" Header="Change Manager" IsEnabled="False"/>
+                        <MenuItem x:Name="AddDelegatesMenuItem" Header="Add Delegates" IsEnabled="False"/>
+                        <MenuItem x:Name="EmailForwardingMenuItem" Header="E-mail Forwarding" IsEnabled="False"/>
+                    </MenuItem>
+                </Menu>
+
+                <Grid Grid.Row="1" Margin="0,0,0,14">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="52"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -456,7 +473,7 @@ $xaml = @"
                     <Button x:Name="BackToStartButton" Grid.Column="2" Content="Back / Start" Style="{StaticResource GlassCommandButton}" Height="38" Padding="16,0" VerticalAlignment="Center" ToolTip="Return to Runtime Home to switch profiles"/>
                 </Grid>
 
-                <Border Grid.Row="1" Style="{StaticResource Card}">
+                <Border Grid.Row="2" Style="{StaticResource Card}">
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/><ColumnDefinition Width="260"/></Grid.ColumnDefinitions>
                         <TextBox x:Name="SearchBox" Grid.Column="0" Height="43" FontSize="16" Padding="10,2,10,2" VerticalContentAlignment="Center"/>
@@ -465,7 +482,7 @@ $xaml = @"
                     </Grid>
                 </Border>
 
-                <Grid x:Name="MainDashboardGrid" Grid.Row="2">
+                <Grid x:Name="MainDashboardGrid" Grid.Row="3">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1.25*"/>
                         <ColumnDefinition Width="1.55*"/>
@@ -515,22 +532,6 @@ $xaml = @"
 
                     <ScrollViewer x:Name="OperationsColumn" Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
                         <StackPanel>
-                            <Border x:Name="SelectedUserActionsCard" Style="{StaticResource Card}">
-                                <StackPanel>
-                                    <TextBlock Text="Selected User Actions" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock x:Name="SelectedUserActionsSummaryText" Text="Search for a user to enable administration actions." Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" Margin="0,3,0,10" TextWrapping="Wrap"/>
-                                    <UniformGrid Columns="2" Rows="4">
-                                        <Button x:Name="EditSelectedUserButton" Content="Edit" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,8,8" IsEnabled="False" ToolTip="Edit core AD attributes and inspect raw attributes for the selected user."/>
-                                        <Button x:Name="ChangeManagerButton" Content="Manager" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,0,8" IsEnabled="False" ToolTip="Change the selected user's manager."/>
-                                        <Button x:Name="MoveSubordinatesButton" Content="Move Reports" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,8,8" IsEnabled="False" ToolTip="Move all direct reports from the selected user to another manager."/>
-                                        <Button x:Name="MailboxDelegationButton" Content="Delegation" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,0,8" IsEnabled="False" ToolTip="Add or remove mailbox delegation when the Exchange provider supports write actions."/>
-                                        <Button x:Name="DistributionGroupsButton" Content="Groups" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,8,8" IsEnabled="False" ToolTip="Edit distribution group memberships when the Exchange provider supports write actions."/>
-                                        <Button x:Name="MailboxForwardingButton" Content="Forwarding" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,0,8" IsEnabled="False" ToolTip="Set or clear mailbox forwarding when the Exchange provider supports write actions."/>
-                                        <Button x:Name="GalVisibilityButton" Content="GAL" Style="{StaticResource GlassCommandButton}" Height="34" Margin="0,0,8,0" IsEnabled="False" ToolTip="Hide or show the mailbox in the global address list when supported."/>
-                                    </UniformGrid>
-                                </StackPanel>
-                            </Border>
-
                             <Border x:Name="ExchangeMailboxCard" Style="{StaticResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="Exchange Mailbox" Style="{StaticResource SectionTitle}"/>
@@ -914,7 +915,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','SelectedUserActionsCard','SelectedUserActionsSummaryText','EditSelectedUserButton','ChangeManagerButton','MoveSubordinatesButton','MailboxDelegationButton','DistributionGroupsButton','MailboxForwardingButton','GalVisibilityButton','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -2634,12 +2635,8 @@ function Get-HybridSelectedUserIdentity {
 function Set-HybridSelectedUserActionState {
     param([bool]$Enabled)
 
-    foreach ($name in @('EditSelectedUserButton','ChangeManagerButton','MoveSubordinatesButton','MailboxDelegationButton','DistributionGroupsButton','MailboxForwardingButton','GalVisibilityButton')) {
+    foreach ($name in @('EditCurrentUserMenuItem','ChangeManagerMenuItem','MoveReportsMenuItem','AddDelegatesMenuItem','UpdateDistributionGroupsMenuItem','EmailForwardingMenuItem','ShowHideGalMenuItem')) {
         if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].IsEnabled = $Enabled }
-    }
-
-    if ($controls.ContainsKey('SelectedUserActionsSummaryText') -and $null -ne $controls.SelectedUserActionsSummaryText) {
-        $controls.SelectedUserActionsSummaryText.Text = if ($Enabled) { 'Administration actions are available for the selected user.' } else { 'Search for a user to enable administration actions.' }
     }
 }
 
@@ -2939,6 +2936,330 @@ function Invoke-HybridSelectedUserDistributionGroupEdit {
     $group = Read-HybridAdminTextInput -Title 'Distribution Groups' -Prompt 'Enter a distribution group identity to add the selected user to:'
     if ([string]::IsNullOrWhiteSpace($group)) { return }
     Show-HybridUserAdminResult -Result (Add-HybridUserDistributionGroupMembership -Identity $identity -GroupIdentity $group) -Title 'Distribution Groups'
+}
+
+function Add-HybridEditorField {
+    param(
+        [Parameter(Mandatory=$true)][Windows.Controls.Grid]$Grid,
+        [Parameter(Mandatory=$true)][hashtable]$TextBoxes,
+        [Parameter(Mandatory=$true)][string]$Key,
+        [Parameter(Mandatory=$true)][string]$Label,
+        [AllowNull()][object]$Value = '',
+        [bool]$ReadOnly = $false
+    )
+
+    $row = $Grid.RowDefinitions.Count
+    $Grid.RowDefinitions.Add([Windows.Controls.RowDefinition]::new()) | Out-Null
+
+    $labelBlock = [Windows.Controls.TextBlock]::new()
+    $labelBlock.Text = $Label
+    $labelBlock.Foreground = '#94A3B8'
+    $labelBlock.Margin = [Windows.Thickness]::new(0,0,14,10)
+    $labelBlock.VerticalAlignment = 'Center'
+    [Windows.Controls.Grid]::SetRow($labelBlock, $row)
+    [Windows.Controls.Grid]::SetColumn($labelBlock, 0)
+    $Grid.Children.Add($labelBlock) | Out-Null
+
+    $textBox = [Windows.Controls.TextBox]::new()
+    $textBox.Text = if ($null -eq $Value) { '' } else { [string]$Value }
+    $textBox.Height = 32
+    $textBox.Margin = [Windows.Thickness]::new(0,0,0,10)
+    $textBox.IsReadOnly = $ReadOnly
+    if ($ReadOnly) { $textBox.Background = '#111827'; $textBox.Foreground = '#94A3B8' }
+    [Windows.Controls.Grid]::SetRow($textBox, $row)
+    [Windows.Controls.Grid]::SetColumn($textBox, 1)
+    $Grid.Children.Add($textBox) | Out-Null
+    $TextBoxes[$Key] = $textBox
+}
+
+function New-HybridEditorTab {
+    param(
+        [string]$Header,
+        [object[]]$Fields,
+        [object]$Attributes,
+        [hashtable]$TextBoxes
+    )
+
+    $scroll = [Windows.Controls.ScrollViewer]::new()
+    $scroll.VerticalScrollBarVisibility = 'Auto'
+    $grid = [Windows.Controls.Grid]::new()
+    $grid.Margin = [Windows.Thickness]::new(14)
+    $grid.ColumnDefinitions.Add([Windows.Controls.ColumnDefinition]::new()) | Out-Null
+    $grid.ColumnDefinitions.Add([Windows.Controls.ColumnDefinition]::new()) | Out-Null
+    $grid.ColumnDefinitions[0].Width = [Windows.GridLength]::new(220)
+
+    foreach ($field in $Fields) {
+        $value = if ($Attributes.Contains($field.Key)) { $Attributes[$field.Key] } else { '' }
+        Add-HybridEditorField -Grid $grid -TextBoxes $TextBoxes -Key $field.Key -Label $field.Label -Value $value -ReadOnly ([bool]$field.ReadOnly)
+    }
+
+    $scroll.Content = $grid
+    $tab = [Windows.Controls.TabItem]::new()
+    $tab.Header = $Header
+    $tab.Content = $scroll
+    return $tab
+}
+
+function Show-HybridSelectedUserEditDialog {
+    if ($null -eq $script:SelectedHybridUser) {
+        [System.Windows.MessageBox]::Show('Search for and select a user first.', 'Edit User', 'OK', 'Information') | Out-Null
+        return
+    }
+
+    $snapshot = Get-HybridSelectedUserEditableSnapshot
+    if ($null -eq $snapshot) { return }
+
+    $dialog = [Windows.Window]::new()
+    $dialog.Title = 'Edit Current User'
+    $dialog.Width = 980
+    $dialog.Height = 720
+    $dialog.MinWidth = 760
+    $dialog.MinHeight = 560
+    $dialog.WindowStartupLocation = 'CenterOwner'
+    $dialog.Owner = $window
+    $dialog.Background = '#0B1220'
+    $dialog.Foreground = '#E5E7EB'
+
+    $root = [Windows.Controls.Grid]::new()
+    $root.Margin = [Windows.Thickness]::new(18)
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new()) | Out-Null
+    $root.RowDefinitions.Add([Windows.Controls.RowDefinition]::new()) | Out-Null
+    $root.RowDefinitions[1].Height = [Windows.GridLength]::Auto
+
+    $tabs = [Windows.Controls.TabControl]::new()
+    $tabs.Background = '#111827'
+    $tabs.Foreground = '#E5E7EB'
+    [Windows.Controls.Grid]::SetRow($tabs, 0)
+    $root.Children.Add($tabs) | Out-Null
+
+    $textBoxes = @{}
+    $attributes = $snapshot.Attributes
+    $tabs.Items.Add((New-HybridEditorTab -Header 'General' -Attributes $attributes -TextBoxes $textBoxes -Fields @(
+        [pscustomobject]@{ Key='givenName'; Label='First name'; ReadOnly=$false },
+        [pscustomobject]@{ Key='sn'; Label='Last name'; ReadOnly=$false },
+        [pscustomobject]@{ Key='displayName'; Label='Display name'; ReadOnly=$false },
+        [pscustomobject]@{ Key='mail'; Label='E-mail'; ReadOnly=$false },
+        [pscustomobject]@{ Key='telephoneNumber'; Label='Telephone number'; ReadOnly=$false }
+    ))) | Out-Null
+    $tabs.Items.Add((New-HybridEditorTab -Header 'Account' -Attributes $attributes -TextBoxes $textBoxes -Fields @(
+        [pscustomobject]@{ Key='sAMAccountName'; Label='User logon name (pre-Windows 2000)'; ReadOnly=$true },
+        [pscustomobject]@{ Key='userPrincipalName'; Label='User logon name'; ReadOnly=$true },
+        [pscustomobject]@{ Key='distinguishedName'; Label='Distinguished name'; ReadOnly=$true },
+        [pscustomobject]@{ Key='enabled'; Label='Account enabled'; ReadOnly=$true }
+    ))) | Out-Null
+    $tabs.Items.Add((New-HybridEditorTab -Header 'Organization' -Attributes $attributes -TextBoxes $textBoxes -Fields @(
+        [pscustomobject]@{ Key='title'; Label='Title'; ReadOnly=$false },
+        [pscustomobject]@{ Key='department'; Label='Department'; ReadOnly=$false },
+        [pscustomobject]@{ Key='company'; Label='Company'; ReadOnly=$false },
+        [pscustomobject]@{ Key='physicalDeliveryOfficeName'; Label='Office'; ReadOnly=$false },
+        [pscustomobject]@{ Key='manager'; Label='Manager'; ReadOnly=$true }
+    ))) | Out-Null
+    $tabs.Items.Add((New-HybridEditorTab -Header 'Telephones' -Attributes $attributes -TextBoxes $textBoxes -Fields @(
+        [pscustomobject]@{ Key='telephoneNumber'; Label='Office'; ReadOnly=$false },
+        [pscustomobject]@{ Key='mobile'; Label='Mobile'; ReadOnly=$false },
+        [pscustomobject]@{ Key='st'; Label='State/province'; ReadOnly=$false }
+    ))) | Out-Null
+    $tabs.Items.Add((New-HybridEditorTab -Header 'Employee' -Attributes $attributes -TextBoxes $textBoxes -Fields @(
+        [pscustomobject]@{ Key='employeeID'; Label='Employee ID'; ReadOnly=$false },
+        [pscustomobject]@{ Key='badgeID'; Label='Badge ID'; ReadOnly=$false }
+    ))) | Out-Null
+
+    $attributeGrid = [Windows.Controls.ListView]::new()
+    $attributeGrid.Margin = [Windows.Thickness]::new(10)
+    $view = [Windows.Controls.GridView]::new()
+    foreach ($columnSpec in @(
+        [pscustomobject]@{ Header='Attribute'; Binding='Name'; Width=280 },
+        [pscustomobject]@{ Header='Value'; Binding='Value'; Width=560 }
+    )) {
+        $column = [Windows.Controls.GridViewColumn]::new()
+        $column.Header = $columnSpec.Header
+        $column.DisplayMemberBinding = [Windows.Data.Binding]::new($columnSpec.Binding)
+        $column.Width = $columnSpec.Width
+        $view.Columns.Add($column) | Out-Null
+    }
+    $attributeGrid.View = $view
+    if ($snapshot.RawAttributes -is [System.Collections.IDictionary]) {
+        foreach ($key in @($snapshot.RawAttributes.Keys | Sort-Object)) {
+            $value = $snapshot.RawAttributes[$key]
+            if ($value -is [array]) { $value = ($value -join '; ') }
+            $attributeGrid.Items.Add([pscustomobject]@{ Name = [string]$key; Value = [string]$value }) | Out-Null
+        }
+    }
+    $rawTab = [Windows.Controls.TabItem]::new()
+    $rawTab.Header = 'Attribute Editor'
+    $rawTab.Content = $attributeGrid
+    $tabs.Items.Add($rawTab) | Out-Null
+
+    $buttons = [Windows.Controls.StackPanel]::new()
+    $buttons.Orientation = 'Horizontal'
+    $buttons.HorizontalAlignment = 'Right'
+    $buttons.Margin = [Windows.Thickness]::new(0,14,0,0)
+    $save = [Windows.Controls.Button]::new()
+    $save.Content = 'Apply'
+    $save.Width = 110
+    $save.Height = 36
+    $save.Margin = [Windows.Thickness]::new(0,0,8,0)
+    $close = [Windows.Controls.Button]::new()
+    $close.Content = 'Close'
+    $close.Width = 100
+    $close.Height = 36
+    $buttons.Children.Add($save) | Out-Null
+    $buttons.Children.Add($close) | Out-Null
+    [Windows.Controls.Grid]::SetRow($buttons, 1)
+    $root.Children.Add($buttons) | Out-Null
+
+    $save.Add_Click({
+        $changes = @{}
+        foreach ($key in @('givenName','sn','displayName','mail','telephoneNumber','mobile','title','department','company','physicalDeliveryOfficeName','employeeID','badgeID','st')) {
+            if ($textBoxes.ContainsKey($key)) { $changes[$key] = $textBoxes[$key].Text }
+        }
+        $identity = [string]$snapshot.Identity
+        if ([string]::IsNullOrWhiteSpace($identity)) { $identity = Get-HybridSelectedUserIdentity }
+        $result = Set-HybridUserDirectoryAttributes -Identity $identity -Attributes $changes
+        Show-HybridUserAdminResult -Result $result -Title 'Edit Current User'
+        if ($result.Status -eq 'Completed') { $dialog.DialogResult = $true; $dialog.Close() }
+    })
+    $close.Add_Click({ $dialog.DialogResult = $false; $dialog.Close() })
+
+    $dialog.Content = $root
+    $dialog.ShowDialog() | Out-Null
+}
+
+function Get-HybridDistributionGroupIdentity {
+    param([AllowNull()][object]$Group)
+    return Get-DisplayValue -InputObject $Group -Names @('PrimarySmtpAddress','Identity','ExternalDirectoryObjectId','Name','DisplayName') -Default ([string]$Group)
+}
+
+function Show-HybridSelectedUserDistributionGroupsDialog {
+    $identity = Get-HybridSelectedUserIdentity
+    if ([string]::IsNullOrWhiteSpace($identity)) {
+        [System.Windows.MessageBox]::Show('Search for a user first.', 'Distribution Groups', 'OK', 'Information') | Out-Null
+        return
+    }
+
+    $dialog = [Windows.Window]::new()
+    $dialog.Title = 'Update Distribution Groups'
+    $dialog.Width = 920
+    $dialog.Height = 620
+    $dialog.WindowStartupLocation = 'CenterOwner'
+    $dialog.Owner = $window
+    $dialog.Background = '#0B1220'
+    $dialog.Foreground = '#E5E7EB'
+
+    $root = [Windows.Controls.Grid]::new()
+    $root.Margin = [Windows.Thickness]::new(16)
+    foreach ($height in @('Auto','*','Auto','*','Auto')) {
+        $row = [Windows.Controls.RowDefinition]::new()
+        if ($height -eq 'Auto') { $row.Height = [Windows.GridLength]::Auto }
+        $root.RowDefinitions.Add($row) | Out-Null
+    }
+
+    $currentHeader = [Windows.Controls.TextBlock]::new()
+    $currentHeader.Text = 'Member of'
+    $currentHeader.FontSize = 16
+    $currentHeader.FontWeight = 'SemiBold'
+    $currentHeader.Foreground = '#E5E7EB'
+    $root.Children.Add($currentHeader) | Out-Null
+
+    $currentList = [Windows.Controls.ListBox]::new()
+    $currentList.Margin = [Windows.Thickness]::new(0,8,0,12)
+    [Windows.Controls.Grid]::SetRow($currentList, 1)
+    $root.Children.Add($currentList) | Out-Null
+
+    $removeButton = [Windows.Controls.Button]::new()
+    $removeButton.Content = 'Remove Selected'
+    $removeButton.Width = 140
+    $removeButton.Height = 34
+    $removeButton.HorizontalAlignment = 'Right'
+    [Windows.Controls.Grid]::SetRow($removeButton, 2)
+    $root.Children.Add($removeButton) | Out-Null
+
+    $lookupPanel = [Windows.Controls.Grid]::new()
+    $lookupPanel.Margin = [Windows.Thickness]::new(0,12,0,8)
+    $lookupPanel.ColumnDefinitions.Add([Windows.Controls.ColumnDefinition]::new()) | Out-Null
+    $lookupPanel.ColumnDefinitions.Add([Windows.Controls.ColumnDefinition]::new()) | Out-Null
+    $lookupPanel.ColumnDefinitions[1].Width = [Windows.GridLength]::Auto
+    $searchBox = [Windows.Controls.TextBox]::new()
+    $searchBox.Height = 34
+    $searchBox.VerticalContentAlignment = 'Center'
+    $searchBox.ToolTip = 'Search distribution groups by name or SMTP address.'
+    $searchButton = [Windows.Controls.Button]::new()
+    $searchButton.Content = 'Lookup'
+    $searchButton.Width = 100
+    $searchButton.Height = 34
+    $searchButton.Margin = [Windows.Thickness]::new(8,0,0,0)
+    [Windows.Controls.Grid]::SetColumn($searchButton, 1)
+    $lookupPanel.Children.Add($searchBox) | Out-Null
+    $lookupPanel.Children.Add($searchButton) | Out-Null
+    [Windows.Controls.Grid]::SetRow($lookupPanel, 3)
+    $root.Children.Add($lookupPanel) | Out-Null
+
+    $searchList = [Windows.Controls.ListBox]::new()
+    $searchList.Margin = [Windows.Thickness]::new(0,54,0,12)
+    [Windows.Controls.Grid]::SetRow($searchList, 3)
+    $root.Children.Add($searchList) | Out-Null
+
+    $bottomButtons = [Windows.Controls.StackPanel]::new()
+    $bottomButtons.Orientation = 'Horizontal'
+    $bottomButtons.HorizontalAlignment = 'Right'
+    $addButton = [Windows.Controls.Button]::new()
+    $addButton.Content = 'Add Selected'
+    $addButton.Width = 130
+    $addButton.Height = 34
+    $addButton.Margin = [Windows.Thickness]::new(0,0,8,0)
+    $closeButton = [Windows.Controls.Button]::new()
+    $closeButton.Content = 'Close'
+    $closeButton.Width = 100
+    $closeButton.Height = 34
+    $bottomButtons.Children.Add($addButton) | Out-Null
+    $bottomButtons.Children.Add($closeButton) | Out-Null
+    [Windows.Controls.Grid]::SetRow($bottomButtons, 4)
+    $root.Children.Add($bottomButtons) | Out-Null
+
+    $loadCurrent = {
+        $currentList.Items.Clear()
+        $result = Get-HybridUserDistributionGroups -Identity $identity
+        if ($result.Status -ne 'Completed') {
+            $currentList.Items.Add([pscustomobject]@{ Display = $result.Message; Raw = $null }) | Out-Null
+            return
+        }
+        foreach ($group in @($result.Data)) {
+            $currentList.Items.Add([pscustomobject]@{ Display = (Format-HybridGroupDisplay -Group $group); Raw = $group }) | Out-Null
+        }
+        if ($currentList.Items.Count -eq 0) { $currentList.Items.Add([pscustomobject]@{ Display = 'No distribution groups loaded'; Raw = $null }) | Out-Null }
+        $currentList.DisplayMemberPath = 'Display'
+    }
+
+    $searchButton.Add_Click({
+        $searchList.Items.Clear()
+        $result = Search-HybridUserDistributionGroups -Query $searchBox.Text
+        if ($result.Status -ne 'Completed') {
+            $searchList.Items.Add([pscustomobject]@{ Display = $result.Message; Raw = $null }) | Out-Null
+            return
+        }
+        foreach ($group in @($result.Data)) {
+            $searchList.Items.Add([pscustomobject]@{ Display = (Format-HybridGroupDisplay -Group $group); Raw = $group }) | Out-Null
+        }
+        if ($searchList.Items.Count -eq 0) { $searchList.Items.Add([pscustomobject]@{ Display = 'No matching distribution groups'; Raw = $null }) | Out-Null }
+        $searchList.DisplayMemberPath = 'Display'
+    })
+    $addButton.Add_Click({
+        if ($null -eq $searchList.SelectedItem -or $null -eq $searchList.SelectedItem.Raw) { return }
+        $groupIdentity = Get-HybridDistributionGroupIdentity -Group $searchList.SelectedItem.Raw
+        Show-HybridUserAdminResult -Result (Add-HybridUserDistributionGroupMembership -Identity $identity -GroupIdentity $groupIdentity) -Title 'Update Distribution Groups'
+        & $loadCurrent
+    })
+    $removeButton.Add_Click({
+        if ($null -eq $currentList.SelectedItem -or $null -eq $currentList.SelectedItem.Raw) { return }
+        $groupIdentity = Get-HybridDistributionGroupIdentity -Group $currentList.SelectedItem.Raw
+        Show-HybridUserAdminResult -Result (Remove-HybridUserDistributionGroupMembership -Identity $identity -GroupIdentity $groupIdentity) -Title 'Update Distribution Groups'
+        & $loadCurrent
+    })
+    $closeButton.Add_Click({ $dialog.Close() })
+
+    $dialog.Content = $root
+    & $loadCurrent
+    $dialog.ShowDialog() | Out-Null
 }
 
 function Reset-AggregationPanel {
@@ -3633,13 +3954,15 @@ $controls.RefreshRuntimeProfilesButton.Add_Click({ Initialize-HybridRuntimeProfi
 if ($controls.DeleteRuntimeProfileButton) { $controls.DeleteRuntimeProfileButton.Add_Click({ Remove-HybridSelectedRuntimeProfile }) }
 if ($controls.ImportExportRuntimeProfileButton) { $controls.ImportExportRuntimeProfileButton.Add_Click({ Show-HybridRuntimeProfileImportExportWizard }) }
 if ($controls.SetDefaultRuntimeProfileButton) { $controls.SetDefaultRuntimeProfileButton.Add_Click({ Set-HybridSelectedRuntimeProfileDefault }) }
-if ($controls.EditSelectedUserButton) { $controls.EditSelectedUserButton.Add_Click({ Show-HybridSelectedUserEditDialog }) }
-if ($controls.ChangeManagerButton) { $controls.ChangeManagerButton.Add_Click({ Invoke-HybridSelectedUserManagerChange }) }
-if ($controls.MoveSubordinatesButton) { $controls.MoveSubordinatesButton.Add_Click({ Invoke-HybridSelectedUserMoveSubordinates }) }
-if ($controls.MailboxDelegationButton) { $controls.MailboxDelegationButton.Add_Click({ Invoke-HybridSelectedUserMailboxDelegationEdit }) }
-if ($controls.DistributionGroupsButton) { $controls.DistributionGroupsButton.Add_Click({ Invoke-HybridSelectedUserDistributionGroupEdit }) }
-if ($controls.MailboxForwardingButton) { $controls.MailboxForwardingButton.Add_Click({ Invoke-HybridSelectedUserForwardingEdit }) }
-if ($controls.GalVisibilityButton) { $controls.GalVisibilityButton.Add_Click({ Invoke-HybridSelectedUserGalVisibilityEdit }) }
+if ($controls.PreferencesMenuItem) { $controls.PreferencesMenuItem.Add_Click({ Show-HybridRuntimeThemeEditor }) }
+if ($controls.ExitMenuItem) { $controls.ExitMenuItem.Add_Click({ $window.Close() }) }
+if ($controls.EditCurrentUserMenuItem) { $controls.EditCurrentUserMenuItem.Add_Click({ Show-HybridSelectedUserEditDialog }) }
+if ($controls.ChangeManagerMenuItem) { $controls.ChangeManagerMenuItem.Add_Click({ Invoke-HybridSelectedUserManagerChange }) }
+if ($controls.MoveReportsMenuItem) { $controls.MoveReportsMenuItem.Add_Click({ Invoke-HybridSelectedUserMoveSubordinates }) }
+if ($controls.AddDelegatesMenuItem) { $controls.AddDelegatesMenuItem.Add_Click({ Invoke-HybridSelectedUserMailboxDelegationEdit }) }
+if ($controls.UpdateDistributionGroupsMenuItem) { $controls.UpdateDistributionGroupsMenuItem.Add_Click({ Show-HybridSelectedUserDistributionGroupsDialog }) }
+if ($controls.EmailForwardingMenuItem) { $controls.EmailForwardingMenuItem.Add_Click({ Invoke-HybridSelectedUserForwardingEdit }) }
+if ($controls.ShowHideGalMenuItem) { $controls.ShowHideGalMenuItem.Add_Click({ Invoke-HybridSelectedUserGalVisibilityEdit }) }
 $controls.RuntimeProfileListBox.Add_SelectionChanged({ Select-HybridRuntimeProfileFromList })
 $controls.WizardCancelButton.Add_Click({ Hide-HybridRuntimeProfileWizard })
 $controls.ThemeEditorCloseButton.Add_Click({ Hide-HybridRuntimeThemeEditor })
@@ -3656,3 +3979,4 @@ $controls.ExitButton.Add_Click({ $window.Close() })
 Initialize-HybridRuntimeProfileList
 Update-HybridStartupView
 $null = $window.ShowDialog()
+
