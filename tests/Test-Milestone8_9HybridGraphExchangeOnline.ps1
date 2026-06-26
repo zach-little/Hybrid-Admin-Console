@@ -322,6 +322,8 @@ Assert-ContainsText $graphProviderText "`$select = 'id,displayName,userPrincipal
 Assert-ContainsText $graphProviderText 'Invoke-HybridMicrosoftGraphOptionalRequest -Uri $profileUri' 'Microsoft Graph extended user fields are loaded with optional fallback requests'
 Assert-ContainsText $graphProviderText 'LastAuthenticationSession' 'Microsoft Graph provider reuses an existing valid authentication session'
 Assert-ContainsText $authManagerText '$tenantId,$cloudName,$methodName,$clientId,$scopeText' 'Authentication manager cache key includes client ID'
+Assert-ContainsText $authManagerText 'Get-HybridCompatibleCachedAuthenticationSession' 'Authentication manager can reuse compatible delegated sessions across scope variants'
+Assert-ContainsText $authManagerText "if (`$methodName -notin @('Interactive','InteractiveBrowser'))" 'Compatible auth cache reuse is limited to interactive delegated methods'
 Assert-ContainsText $ui '$script:HybridRuntimeLaunchInProgress' 'Runtime launch guards against repeated launch clicks'
 Assert-ContainsText $ui '$controls.LaunchConsoleButton.IsEnabled = $false' 'Runtime launch disables launch button while authentication is in progress'
 Assert-ContainsText $ui '$profileName = ''Simulation''' 'Console startup initializes simulation runtime before launch to avoid pre-launch delegated MFA prompts'

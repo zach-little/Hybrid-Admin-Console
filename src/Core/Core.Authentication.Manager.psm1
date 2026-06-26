@@ -322,6 +322,41 @@ function Test-HybridAuthenticationRefreshRequired {
     return ([datetime]$Session.ExpiresOn) -le (Get-Date).AddMinutes($RefreshWindowMinutes)
 }
 
+function Get-HybridCompatibleCachedAuthenticationSession {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Request)
+
+    $methodName = [string](Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('MethodName','AuthenticationMethod','Method') -Default '')
+    if ($methodName -notin @('Interactive','InteractiveBrowser')) { return $null }
+
+    $tenantContext = Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('TenantContext','Tenant')
+    $cloudEnvironment = Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('CloudEnvironment','Cloud')
+    $tenantId = [string](Get-HybridAuthenticationObjectValue -InputObject $tenantContext -Names @('TenantId','Id') -Default '')
+    $cloudName = [string](Get-HybridAuthenticationObjectValue -InputObject $cloudEnvironment -Names @('Name') -Default '')
+    $clientId = [string](Get-HybridAuthenticationObjectValue -InputObject $Request -Names @('ClientId') -Default '')
+
+    foreach ($session in @($script:HybridAuthenticationSessionCache.Values)) {
+        if ($null -eq $session -or (Test-HybridAuthenticationRefreshRequired -Session $session)) { continue }
+        $sessionRequest = Get-HybridAuthenticationObjectValue -InputObject $session -Names @('AuthenticationRequest','Request') -Default $null
+        if ($null -eq $sessionRequest) { continue }
+
+        $sessionMethod = [string](Get-HybridAuthenticationObjectValue -InputObject $sessionRequest -Names @('MethodName','AuthenticationMethod','Method') -Default '')
+        if ($sessionMethod -notin @('Interactive','InteractiveBrowser')) { continue }
+
+        $sessionTenant = Get-HybridAuthenticationObjectValue -InputObject $sessionRequest -Names @('TenantContext','Tenant')
+        $sessionCloud = Get-HybridAuthenticationObjectValue -InputObject $sessionRequest -Names @('CloudEnvironment','Cloud')
+        $sessionTenantId = [string](Get-HybridAuthenticationObjectValue -InputObject $sessionTenant -Names @('TenantId','Id') -Default '')
+        $sessionCloudName = [string](Get-HybridAuthenticationObjectValue -InputObject $sessionCloud -Names @('Name') -Default '')
+        $sessionClientId = [string](Get-HybridAuthenticationObjectValue -InputObject $sessionRequest -Names @('ClientId') -Default '')
+
+        if ($tenantId -eq $sessionTenantId -and $cloudName -eq $sessionCloudName -and $clientId -eq $sessionClientId) {
+            return $session
+        }
+    }
+
+    return $null
+}
+
 function Get-HybridAuthenticationSession {
     [CmdletBinding()]
     param(
@@ -340,6 +375,14 @@ function Get-HybridAuthenticationSession {
 
     if (-not $ForceRefresh -and $null -ne $cached -and -not (Test-HybridAuthenticationRefreshRequired -Session $cached)) {
         return $cached
+    }
+
+    if (-not $ForceRefresh) {
+        $compatibleCached = Get-HybridCompatibleCachedAuthenticationSession -Request $Request
+        if ($null -ne $compatibleCached) {
+            Set-HybridCachedAuthenticationSession -CacheKey $cacheKey -Session $compatibleCached | Out-Null
+            return $compatibleCached
+        }
     }
 
     $adapter = Get-HybridAuthenticationAdapter -Name $methodName

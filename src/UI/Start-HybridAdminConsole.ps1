@@ -3120,76 +3120,59 @@ function Invoke-HybridSelectedUserHydration {
         SamAccountName = $controls.SamText.Text
     })
 
-    $stages = @(
-        [pscustomobject]@{
-            Name = 'ActiveDirectoryDetails'
-            ProgressStage = 'Active Directory Details'
-            Percent = 35
-            Action = {
-                [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action { Update-DetailPanels -User $User -Query $Query } -OnFailure {
-                    param($ErrorRecord)
-                    $controls.ManagerText.Text = "AD details failed: $($ErrorRecord.Exception.Message)"
-                    $controls.OrganizationalUnitText.Text = 'Unavailable'
-                    if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('Groups unavailable') }
-                    if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
-                })
-            }.GetNewClosure()
-        },
-        [pscustomobject]@{
-            Name = 'MicrosoftGraph'
-            ProgressStage = 'Microsoft Graph'
-            Percent = 52
-            Action = { [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action { Update-GraphPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)" }) }.GetNewClosure()
-        },
-        [pscustomobject]@{
-            Name = 'ExchangeMailbox'
-            ProgressStage = 'Exchange Online'
-            Percent = 68
-            Action = {
-                Set-HybridSearchProgressStage -Stage 'Exchange On-Prem' -Percent 60
-                Set-HybridSearchProgressStage -Stage 'Exchange Online' -Percent 68
-                [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action { Update-ExchangePanels -User $User -Query $Query } -OnFailure {
-                    param($ErrorRecord)
-                    $controls.ExchangeSummaryText.Text = "Exchange mailbox load failed: $($ErrorRecord.Exception.Message)"
-                    $controls.RecipientTypeText.Text = 'Unavailable'
-                    $controls.MailboxStatusText.Text = 'Unavailable'
-                    $controls.ForwardingText.Text = 'Unavailable'
-                    if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Mailbox delegations unavailable') }
-                    if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
-                })
-            }.GetNewClosure()
-        },
-        [pscustomobject]@{
-            Name = 'AuthenticationPosture'
-            ProgressStage = 'Authentication Posture'
-            Percent = 78
-            Action = { [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action { Update-AuthenticationPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)" }) }.GetNewClosure()
-        },
-        [pscustomobject]@{
-            Name = 'Aggregation'
-            ProgressStage = 'Aggregation'
-            Percent = 92
-            Action = {
-                [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action { Update-AggregationPanel -User $User -Query $Query } -OnFailure {
-                    param($ErrorRecord)
-                    $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
-                    $controls.AggregationStatusText.Text = 'Failed'
-                })
-            }.GetNewClosure()
-        },
-        [pscustomobject]@{
-            Name = 'Complete'
-            ProgressStage = 'Complete'
-            Percent = 100
-            Action = {
-                $controls.SourcesText.Text = if ($null -ne $User.Sources) { (($User.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
-                $controls.StatusText.Text = "Search complete: $Query | See logs\hydration-diagnostics.log for provider details"
-                Update-HybridUiHealth
-            }.GetNewClosure()
-        }
-    )
+    Set-HybridSearchProgressStage -Stage 'Active Directory Details' -Percent 35
+    [void](Invoke-HybridUiHydrationStage -Stage 'ActiveDirectoryDetails' -Action { Update-DetailPanels -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.ManagerText.Text = "AD details failed: $($ErrorRecord.Exception.Message)"
+        $controls.OrganizationalUnitText.Text = 'Unavailable'
+        if ($controls.GroupsList.Items.Count -eq 0) { [void]$controls.GroupsList.Items.Add('Groups unavailable') }
+        if ($controls.DirectReportsList.Items.Count -eq 0) { [void]$controls.DirectReportsList.Items.Add('Direct reports unavailable') }
+    })
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.StageCompleted' -Data ([pscustomobject]@{ Query = $Query; Stage = 'ActiveDirectoryDetails' })
+    [System.Windows.Forms.Application]::DoEvents()
 
-    Start-HybridHydrationStageQueue -Stages $stages -Token $Token
+    if (-not (Test-HybridSearchTokenActive -Token $Token)) { Set-HybridUiBusyState -Busy $false; return }
+    Set-HybridSearchProgressStage -Stage 'Microsoft Graph' -Percent 52
+    [void](Invoke-HybridUiHydrationStage -Stage 'MicrosoftGraph' -Action { Update-GraphPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.GraphSummaryText.Text = "Graph profile load failed: $($ErrorRecord.Exception.Message)" })
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.StageCompleted' -Data ([pscustomobject]@{ Query = $Query; Stage = 'MicrosoftGraph' })
+    [System.Windows.Forms.Application]::DoEvents()
+
+    if (-not (Test-HybridSearchTokenActive -Token $Token)) { Set-HybridUiBusyState -Busy $false; return }
+    Set-HybridSearchProgressStage -Stage 'Exchange On-Prem' -Percent 60
+    Set-HybridSearchProgressStage -Stage 'Exchange Online' -Percent 68
+    [void](Invoke-HybridUiHydrationStage -Stage 'ExchangeMailbox' -Action { Update-ExchangePanels -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.ExchangeSummaryText.Text = "Exchange mailbox load failed: $($ErrorRecord.Exception.Message)"
+        $controls.RecipientTypeText.Text = 'Unavailable'
+        $controls.MailboxStatusText.Text = 'Unavailable'
+        $controls.ForwardingText.Text = 'Unavailable'
+        if ($controls.MailboxDelegationList.Items.Count -eq 0) { [void]$controls.MailboxDelegationList.Items.Add('Mailbox delegations unavailable') }
+        if ($controls.DistributionGroupsList.Items.Count -eq 0) { [void]$controls.DistributionGroupsList.Items.Add('Distribution groups unavailable') }
+    })
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.StageCompleted' -Data ([pscustomobject]@{ Query = $Query; Stage = 'ExchangeMailbox' })
+    [System.Windows.Forms.Application]::DoEvents()
+
+    if (-not (Test-HybridSearchTokenActive -Token $Token)) { Set-HybridUiBusyState -Busy $false; return }
+    Set-HybridSearchProgressStage -Stage 'Authentication Posture' -Percent 78
+    [void](Invoke-HybridUiHydrationStage -Stage 'AuthenticationPosture' -Action { Update-AuthenticationPanels -User $User -Query $Query } -OnFailure { param($ErrorRecord) $controls.AuthenticationSummaryText.Text = "Authentication profile load failed: $($ErrorRecord.Exception.Message)" })
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.StageCompleted' -Data ([pscustomobject]@{ Query = $Query; Stage = 'AuthenticationPosture' })
+    [System.Windows.Forms.Application]::DoEvents()
+
+    if (-not (Test-HybridSearchTokenActive -Token $Token)) { Set-HybridUiBusyState -Busy $false; return }
+    Set-HybridSearchProgressStage -Stage 'Aggregation' -Percent 92
+    [void](Invoke-HybridUiHydrationStage -Stage 'Aggregation' -Action { Update-AggregationPanel -User $User -Query $Query } -OnFailure {
+        param($ErrorRecord)
+        $controls.AggregationSummaryText.Text = "Aggregation failed: $($ErrorRecord.Exception.Message)"
+        $controls.AggregationStatusText.Text = 'Failed'
+    })
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.StageCompleted' -Data ([pscustomobject]@{ Query = $Query; Stage = 'Aggregation' })
+
+    $controls.SourcesText.Text = if ($null -ne $User.Sources) { (($User.Sources | ForEach-Object { '{0}: {1}' -f $_.Name, $_.Available }) -join ' | ') } else { 'HybridUserService' }
+    Set-HybridSearchProgressStage -Stage 'Complete' -Percent 100
+    $controls.StatusText.Text = "Search complete: $Query | See logs\hydration-diagnostics.log for provider details"
+    Publish-HybridUiRuntimeEvent -EventName 'Hydration.Completed' -Data ([pscustomobject]@{ Query = $Query })
+    Update-HybridUiHealth
+    Set-HybridUiBusyState -Busy $false
 }
 
 function Invoke-UserSearch {
