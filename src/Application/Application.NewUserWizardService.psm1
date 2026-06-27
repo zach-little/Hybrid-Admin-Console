@@ -273,8 +273,11 @@ function Test-HybridNewUserRequest {
     if ([string]::IsNullOrWhiteSpace([string]$Request.FirstName)) { [void]$errors.Add('First name is required.') }
     if ([string]::IsNullOrWhiteSpace([string]$Request.LastName)) { [void]$errors.Add('Last name is required.') }
     if ([string]::IsNullOrWhiteSpace([string]$Request.JobTitle)) { [void]$errors.Add('Job title is required.') }
+    if ([string]::IsNullOrWhiteSpace([string]$Request.ManagerIdentity)) { [void]$errors.Add('Manager is required.') }
     if ($null -eq $Request.OfficeNumber) { [void]$errors.Add('Location selection is required.') }
     if ($null -eq $Request.DepartmentNumber) { [void]$errors.Add('Department selection is required.') }
+    if ([string]::IsNullOrWhiteSpace([string]$Request.EmployeeId)) { [void]$errors.Add('Employee ID # is required.') }
+    if ([string]::IsNullOrWhiteSpace([string]$Request.BadgeId)) { [void]$errors.Add('Encoded Badge Number # is required.') }
     if ([string]::IsNullOrWhiteSpace([string]$Request.SamAccountName)) { [void]$errors.Add('SamAccountName could not be generated.') }
     if ($Request.CreateMailbox -and $null -eq $script:HybridNewUserWizardState.ExchangeOnline) { [void]$warnings.Add('Exchange provider is unavailable; mailbox creation will fail safely if executed.') }
     if ($Request.JamisClaimSetup) { [void]$warnings.Add('JAMIS claim setup is a discrete post-create step and does not run during preview.') }
