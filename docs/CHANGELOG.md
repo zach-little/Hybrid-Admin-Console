@@ -91,3 +91,4 @@
 - Fixed User Lookup Graph profile parity so the preferred `Get-HybridUserGraphProfile` path preserves licenses, assigned licenses, license assignment states, license diagnostics, PIM roles, directory roles, PIM diagnostics, authentication method details, and richer risk fields.
 - Expanded the canonical Graph profile model and Graph profile service to preserve the same richer identity fields.
 - Added Milestone 10 identity-platform regression tests to keep license facts inside the User Lookup workflow and prevent a standalone Licensing display workflow from reappearing.
+- Expanded Authentication Posture parity so method details, separate sign-in/user risk states, risk level, risk detail records, and Conditional Access details survive service conversion and display inside the existing User Lookup authentication card.

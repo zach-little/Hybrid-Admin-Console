@@ -20,7 +20,7 @@ Assert-Pass -Condition ($ui -match 'x:Name="AuthenticationPostureCard"') -Messag
 Assert-Pass -Condition ($ui -match 'x:Name="AuthDefaultMethodText"') -Message 'Default auth method field is present'
 Assert-Pass -Condition ($ui -match 'x:Name="AuthMethodsList"') -Message 'Authentication methods list is present'
 Assert-Pass -Condition ($ui -match 'function Update-AuthenticationPanels') -Message 'Authentication card update function is present'
-Assert-Pass -Condition ($ui -match 'Update-AuthenticationPanels -User \$user -Query \$effectiveQuery') -Message 'Authentication card is updated during user search'
+Assert-Pass -Condition ($ui -match 'Update-AuthenticationPanels -User \$User -Query \$Query') -Message 'Authentication card is updated during user search'
 Assert-Pass -Condition (([regex]::Matches($ui, 'x:Name="AuthenticationPostureCard"')).Count -eq 1) -Message 'Only one Authentication card exists'
 Assert-Pass -Condition ($service -match 'function Get-HybridUserAuthenticationProfile') -Message 'Hybrid user service authentication function present'
 Assert-Pass -Condition ($service -match "'Get-HybridUserAuthenticationProfile'") -Message 'Hybrid user service authentication function exported'

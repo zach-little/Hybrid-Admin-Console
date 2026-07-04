@@ -24,7 +24,13 @@ function Get-HybridAuthenticationObjectValue {
     foreach ($name in $Names) {
         if ($null -ne $InputObject -and $InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
-            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
+            if ($null -eq $value) { continue }
+            if ($value -is [string] -and [string]::IsNullOrWhiteSpace($value)) { continue }
+            if ($value -is [System.Collections.IEnumerable] -and $value -isnot [string]) {
+                if (@($value).Count -eq 0) { continue }
+                return $value
+            }
+            if (-not [string]::IsNullOrWhiteSpace([string]$value)) { return $value }
         }
     }
     return $Default
@@ -61,10 +67,16 @@ function ConvertTo-HybridAuthenticationProfile {
     if ($InputObject.PSObject.TypeNames -contains 'Hybrid.AuthenticationProfile') { return $InputObject }
 
     $methods = @(Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('AuthenticationMethods','Methods') -Default @())
+    $methodDetails = @(Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('AuthenticationMethodDetails','AuthMethodDetails','MethodDetails') -Default @())
     $defaultMethod = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default '')
     if ([string]::IsNullOrWhiteSpace($defaultMethod)) {
         $defaultMethod = if ($methods.Count -gt 0) { [string]$methods[0] } else { 'password' }
     }
+    $riskState = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('SignInRiskState','RiskState','UserRiskState','riskState') -Default 'none')
+    $userRiskState = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('UserRiskState','RiskState','riskState') -Default $riskState)
+    $riskLevel = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('RiskLevel','riskLevel','RiskState','SignInRiskState') -Default $riskState)
+    $riskDetails = @(Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('RiskDetails','RiskDetections','RiskySignIns') -Default @())
+    $conditionalAccessDetails = @(Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('ConditionalAccessDetails','ConditionalAccessPolicies','AppliedConditionalAccessPolicies') -Default @())
 
     $profile = [pscustomobject]@{
         PSTypeName = 'Hybrid.AuthenticationProfile'
@@ -72,13 +84,18 @@ function ConvertTo-HybridAuthenticationProfile {
         DisplayName = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('DisplayName','Name') -Default $Identity)
         DefaultMethod = $defaultMethod
         AuthenticationMethods = @($methods)
+        AuthenticationMethodDetails = @($methodDetails)
         MfaRegistered = [bool](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
         MfaCapable = [bool](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('MfaCapable','IsMfaCapable') -Default $false)
         PasswordlessRegistered = [bool](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('PasswordlessRegistered','IsPasswordlessRegistered') -Default $false)
         TemporaryAccessPassEligible = [bool](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('TemporaryAccessPassEligible','TapEligible') -Default $false)
         AuthenticationStrength = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('AuthenticationStrength','StrongAuthenticationRequirement') -Default 'Single-factor')
         ConditionalAccessState = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('ConditionalAccessState','ConditionalAccess') -Default 'Not evaluated')
-        SignInRiskState = [string](Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('SignInRiskState','RiskState','UserRiskState') -Default 'none')
+        ConditionalAccessDetails = @($conditionalAccessDetails)
+        SignInRiskState = $riskState
+        UserRiskState = $userRiskState
+        RiskLevel = $riskLevel
+        RiskDetails = @($riskDetails)
         LastMfaRegistrationDateTime = Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('LastMfaRegistrationDateTime','MfaRegisteredOn') -Default $null
         LastSuccessfulSignInDateTime = Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('LastSuccessfulSignInDateTime','LastSignInDateTime','LastSignIn') -Default $null
         PasswordLastChangedDateTime = Get-HybridAuthenticationObjectValue -InputObject $InputObject -Names @('PasswordLastChangedDateTime','PasswordLastChanged','LastPasswordChange') -Default $null
