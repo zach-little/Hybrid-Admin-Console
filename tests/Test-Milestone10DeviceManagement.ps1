@@ -24,6 +24,8 @@ Assert-True ($runtime -match 'Application\.DeviceManagementService\.psm1') 'Runt
 Assert-True ($runtime -match "Register-HybridService -Name 'DeviceManagement'") 'Runtime registers DeviceManagement service'
 Assert-True ($ui -match 'WorkflowDeviceManagementButton') 'Workflow selector exposes Device Management'
 Assert-True ($ui -match 'DeviceManagementView') 'UI contains Device Management workflow view'
+Assert-True ($ui -match 'OverlayHost" Style="\{StaticResource Card\}" MaxWidth="1320"') 'Overlay host is wide enough for enterprise workflow panels'
+Assert-True ($ui -match 'DeviceManagementView" Width="1240"') 'Device Management panel uses wider layout'
 Assert-True ($ui -match 'Invoke-HybridDeviceManagementSearchFromUi') 'UI wires Device Management lookup action'
 Assert-True ($ui -match 'Milestone10DeviceManagement') 'UI declares Milestone 10 Device Management marker'
 Assert-True ($ui -match '<DataGrid x:Name="DeviceManagementDevicesList"') 'Device Management renders devices in a structured grid'
@@ -31,6 +33,7 @@ foreach ($column in @('Device','OS','Compliance','Last Check-In','Source')) {
     Assert-True ($ui -match [regex]::Escape(("Header=""{0}""" -f $column))) "Device Management grid includes $column column"
 }
 Assert-True ($ui -match 'ItemsSource = @\(\$deviceRows\)') 'Device Management binds structured device rows instead of plain text lines'
+Assert-True ($ui -match 'Get-HybridWorkflowFriendlySource') 'Device Management normalizes long provider source labels for grid display'
 Assert-True ($simulatorSource -match 'Get-HybridDirectorySimulatorDevices') 'Directory Simulator exposes device lookup'
 Assert-True ($simulatorSource -match 'GetUserDevices') 'Directory Simulator provider advertises user device operation'
 

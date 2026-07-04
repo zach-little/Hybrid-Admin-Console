@@ -84,3 +84,4 @@
 - Registered the Device Management application service during runtime bootstrap.
 - Added Device Management to the post-launch workflow selector.
 - Added a read-only Device Management workflow view for identity lookup, device count, non-compliant device count, stale check-in count, and managed-device details.
+- Widened the Device Management workflow panel and shortened provider source labels in the device grid.

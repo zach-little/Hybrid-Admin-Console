@@ -107,6 +107,7 @@ function Initialize-HybridDirectorySimulatorRecords {
     $script:HybridDirectorySimulatorState.Devices['jlee'] = @(
         New-HybridDirectorySimulatorDevice -Id 'sim-device-jlee-01' -Name 'SIM-JLEE-LT01' -PrimaryUser 'jlee@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 8
     )
+
 }
 
 function Resolve-HybridDirectorySimulatorKey {

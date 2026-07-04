@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -657,7 +657,7 @@ $xaml = @"
         </Grid>
 
         <Grid x:Name="OverlayRegion" Grid.RowSpan="2" Background="#990B1220" Visibility="Collapsed">
-            <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="1040" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border x:Name="OverlayHost" Style="{StaticResource Card}" MaxWidth="1320" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Grid>
                 <Grid x:Name="LaunchProgressView" Width="620" MinHeight="360" Visibility="Collapsed">
                     <StackPanel>
@@ -704,7 +704,7 @@ $xaml = @"
                 </Grid>
 
                 <!-- Milestone10DeviceManagement: read-only managed device lookup workflow. -->
-                <Grid x:Name="DeviceManagementView" Width="1040" MinHeight="640" Visibility="Collapsed">
+                <Grid x:Name="DeviceManagementView" Width="1240" MinHeight="660" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="0,0,0,18">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -720,7 +720,7 @@ $xaml = @"
                         <Button x:Name="DeviceManagementSearchButton" Grid.Column="1" Content="Search Devices" MinWidth="132" Height="36" Margin="10,0,0,0"/>
                     </Grid>
                     <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="0.72*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.28*"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="0.58*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.42*"/></Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="18">
                             <StackPanel>
                                 <TextBlock Text="Summary" Style="{StaticResource SectionTitle}"/>
@@ -770,10 +770,10 @@ $xaml = @"
                                     </DataGrid.Resources>
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Device" Binding="{Binding Name}" Width="1.35*"/>
-                                        <DataGridTextColumn Header="OS" Binding="{Binding OperatingSystem}" Width="1.2*"/>
-                                        <DataGridTextColumn Header="Compliance" Binding="{Binding ComplianceState}" Width="0.85*"/>
-                                        <DataGridTextColumn Header="Last Check-In" Binding="{Binding LastCheckInDisplay}" Width="0.95*"/>
-                                        <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="0.95*"/>
+                                        <DataGridTextColumn Header="OS" Binding="{Binding OperatingSystem}" Width="1.15*"/>
+                                        <DataGridTextColumn Header="Compliance" Binding="{Binding ComplianceState}" Width="0.82*"/>
+                                        <DataGridTextColumn Header="Last Check-In" Binding="{Binding LastCheckInDisplay}" Width="0.9*"/>
+                                        <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="0.78*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                                 <TextBlock x:Name="DeviceManagementEmptyText" Grid.Row="2" Text="" Foreground="#94A3B8" Margin="0,10,0,0" TextWrapping="Wrap"/>
@@ -2171,6 +2171,16 @@ function Get-HybridDeviceManagementSummaryFromRuntime {
     throw 'Device Management service is not loaded.'
 }
 
+function Get-HybridWorkflowFriendlySource {
+    param([string]$Source)
+
+    if ([string]::IsNullOrWhiteSpace($Source)) { return '' }
+    if ($Source -match 'DirectorySimulator') { return 'Simulation' }
+    if ($Source -match 'MicrosoftGraph') { return 'Microsoft Graph' }
+    if ($Source -match 'ActiveDirectory') { return 'Active Directory' }
+    return $Source
+}
+
 function Invoke-HybridDeviceManagementSearchFromUi {
     try {
         $identity = if ($controls.DeviceManagementIdentityTextBox) { [string]$controls.DeviceManagementIdentityTextBox.Text } else { '' }
@@ -2204,7 +2214,7 @@ function Invoke-HybridDeviceManagementSearchFromUi {
                 OperatingSystem = [string]$device.OperatingSystem
                 ComplianceState = [string]$device.ComplianceState
                 LastCheckInDisplay = $lastCheckIn
-                Source = [string]$device.Source
+                Source = Get-HybridWorkflowFriendlySource -Source ([string]$device.Source)
             }
         }
         $controls.DeviceManagementDevicesList.ItemsSource = @($deviceRows)
