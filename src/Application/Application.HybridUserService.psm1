@@ -86,6 +86,41 @@ function Get-HybridObjectValue {
     return $Default
 }
 
+
+function Get-HybridCollectionCount {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) { return 0 }
+    if ($Value -is [string]) {
+        if ([string]::IsNullOrWhiteSpace($Value)) { return 0 }
+        return 1
+    }
+    try {
+        if ($Value.PSObject.Properties.Name -contains 'Count') {
+            $countValue = $Value.Count
+            if ($null -ne $countValue) { return [int]$countValue }
+        }
+    }
+    catch { }
+    try { return @($Value).Count } catch { return 1 }
+}
+
+function Test-HybridExchangeMailboxObject {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Mailbox)
+
+    if ($null -eq $Mailbox) { return $false }
+    $primary = [string](Get-HybridObjectValue -InputObject $Mailbox -Names @('PrimarySmtpAddress','WindowsEmailAddress','UserPrincipalName','Mail','EmailAddress') -Default '')
+    $recipientType = [string](Get-HybridObjectValue -InputObject $Mailbox -Names @('RecipientTypeDetails','RecipientType','MailboxType') -Default '')
+    $externalId = [string](Get-HybridObjectValue -InputObject $Mailbox -Names @('ExternalDirectoryObjectId','ExchangeGuid','Guid','MailboxGuid') -Default '')
+
+    if (-not [string]::IsNullOrWhiteSpace($recipientType) -and $recipientType -match 'Mailbox|MailUser|RemoteUserMailbox|UserMailbox|SharedMailbox|RoomMailbox|EquipmentMailbox') { return $true }
+    if (-not [string]::IsNullOrWhiteSpace($primary) -and $primary -match '@') { return $true }
+    if (-not [string]::IsNullOrWhiteSpace($externalId) -and $externalId -notmatch '^(0{8}-0{4}-0{4}-0{4}-0{12})$') { return $true }
+    return $false
+}
+
 function Get-HybridActiveDirectoryStableIdentity {
     [CmdletBinding()]
     param(
@@ -258,7 +293,7 @@ function Get-HybridProviderHealthSnapshot {
     param([AllowNull()][object]$Service)
 
     $health = @(Invoke-HybridServiceOperation -Service $Service -OperationNames @('GetHealth','GetProviderHealth') -Arguments @() | Select-Object -First 1)
-    if ($health.Count -gt 0) { return $health[0] }
+    if ((Get-HybridCollectionCount $health) -gt 0) { return $health[0] }
 
     if ($null -eq $Service) {
         return [pscustomobject]@{
@@ -327,13 +362,17 @@ function Test-HybridAdMailAttributeSnapshotHasMailSignal {
     param([AllowNull()][object]$Snapshot)
 
     if ($null -eq $Snapshot) { return $false }
-    foreach ($name in @('Mail','TargetAddress','MailNickname')) {
-        $value = Get-HybridObjectValue -InputObject $Snapshot -Names @($name) -Default $null
-        if (-not [string]::IsNullOrWhiteSpace([string]$value)) { return $true }
+
+    # Do not treat MailNickname/Alias as mailbox proof. ADM/admin accounts may have
+    # alias-like values but no mailbox. Require SMTP-bearing attributes before any
+    # Exchange mailbox lookup to avoid long Exchange Online timeout/hang behavior.
+    foreach ($name in @('Mail','TargetAddress')) {
+        $value = [string](Get-HybridObjectValue -InputObject $Snapshot -Names @($name) -Default '')
+        if ($value -match '@') { return $true }
     }
 
     $proxyAddresses = @(Get-HybridObjectValue -InputObject $Snapshot -Names @('ProxyAddresses') -Default @())
-    return (@($proxyAddresses | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }).Count -gt 0)
+    return (@($proxyAddresses | Where-Object { [string]$_ -match '^(?i:smtp):' -or [string]$_ -match '@' }).Count -gt 0)
 }
 
 function New-HybridMailboxSourceEnvelope {
@@ -381,7 +420,7 @@ function ConvertTo-HybridUserOrganizationalUnit {
     if ([string]::IsNullOrWhiteSpace($DistinguishedName)) { return '' }
 
     $ouParts = @($DistinguishedName -split ',' | Where-Object { $_ -like 'OU=*' } | ForEach-Object { $_.Substring(3) })
-    if ($ouParts.Count -eq 0) { return '' }
+    if ((Get-HybridCollectionCount $ouParts) -eq 0) { return '' }
 
     [array]::Reverse($ouParts)
     return ($ouParts -join ' / ')
@@ -633,6 +672,10 @@ function Add-HybridUserMailboxDetails {
         try {
             $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($identity) | Select-Object -First 1)
             $mailbox = ($mailbox | Select-Object -First 1)
+            if (-not (Test-HybridExchangeMailboxObject -Mailbox $mailbox)) {
+                Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Exchange Online returned no concrete mailbox object for '$identity'; treating as mailboxless/synced-only account." -Level INFO
+                $mailbox = $null
+            }
         }
         catch {
             Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Exchange Online mailbox lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
@@ -666,14 +709,14 @@ function Add-HybridUserMailboxDetails {
     $distributionGroups = @()
     $forwarding = $null
 
-    if ($null -ne $mailbox -and $null -ne $script:HybridUserServiceState.ExchangeOnline) {
+    if ((Test-HybridExchangeMailboxObject -Mailbox $mailbox) -and $null -ne $script:HybridUserServiceState.ExchangeOnline) {
         $statistics = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailboxStatistics','GetMailboxStats','GetStatistics') -Arguments @($identity) | Select-Object -First 1)
         $delegations = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailboxDelegations','GetDelegations','GetMailboxPermissions','GetPermissions') -Arguments @($identity))
         $distributionGroups = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetDistributionGroups','GetOwnedDistributionGroups','GetRecipientGroups') -Arguments @($identity))
         $forwarding = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailboxForwarding','GetForwarding') -Arguments @($identity) | Select-Object -First 1)
     }
 
-    if ($distributionGroups.Count -eq 0 -and $onPremDistributionGroups.Count -gt 0) { $distributionGroups = @($onPremDistributionGroups) }
+    if ((Get-HybridCollectionCount $distributionGroups) -eq 0 -and (Get-HybridCollectionCount $onPremDistributionGroups) -gt 0) { $distributionGroups = @($onPremDistributionGroups) }
     if ($null -eq $forwarding -and $null -ne $onPremForwarding) { $forwarding = $onPremForwarding }
 
     $primarySmtp = [string](Get-HybridObjectValue -InputObject $effectiveMailbox -Names @('PrimarySmtpAddress','WindowsEmailAddress','Mail','EmailAddress') -Default '')
@@ -784,11 +827,11 @@ function Search-HybridUser {
         if (@($adUsers).Count -gt 0) { $candidateUsers += @($adUsers) }
         if (@($adUsers).Count -eq 0 -and @($graphUsers).Count -gt 0) { $candidateUsers += @($graphUsers) }
 
-        if ($candidateUsers.Count -eq 0) {
+        if ((Get-HybridCollectionCount $candidateUsers) -eq 0) {
             Write-HybridUserHydrationDiagnostic -Stage 'Search' -Message "Search returned no candidates for '$Query'. Trying exact identity lookup before returning no results." -Level WARN
             $exactUser = @(Get-HybridUser -Identity $Query | Select-Object -First 1)
             $hasExactData = $false
-            if ($exactUser.Count -gt 0 -and $null -ne $exactUser[0]) {
+            if ((Get-HybridCollectionCount $exactUser) -gt 0 -and $null -ne $exactUser[0]) {
                 foreach ($sourceName in @('ActiveDirectory','MicrosoftGraph','ExchangeOnline','ExchangeOnPremises')) {
                     if ($exactUser[0].PSObject.Properties.Name -contains 'Sources' -and $null -ne $exactUser[0].Sources) {
                         $sourceStatus = $null
@@ -802,7 +845,7 @@ function Search-HybridUser {
                             $sourceStatus = @($exactUser[0].Sources | Where-Object {
                                 $_.PSObject.Properties.Name -contains 'Name' -and [string]$_.Name -eq $sourceName
                             } | Select-Object -First 1)
-                            if ($sourceStatus.Count -gt 0) { $sourceStatus = $sourceStatus[0] }
+                            if ((Get-HybridCollectionCount $sourceStatus) -gt 0) { $sourceStatus = $sourceStatus[0] }
                         }
                         if ($null -ne $sourceStatus -and $sourceStatus.PSObject.Properties.Name -contains 'Available' -and [bool]$sourceStatus.Available) {
                             $hasExactData = $true
@@ -856,7 +899,11 @@ function Get-HybridUser {
     $adUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) -ProviderName 'ActiveDirectory' | Select-Object -First 1)
     $graphUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) -ProviderName 'MicrosoftGraph' | Select-Object -First 1)
     $mailbox = @()
-    if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
+    $adMailSignal = $false
+    if (@($adUser).Count -gt 0) {
+        $adMailSignal = Test-HybridAdMailAttributeSnapshotHasMailSignal -Snapshot (New-HybridAdMailAttributeSnapshot -User ($adUser | Select-Object -First 1))
+    }
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnline -and $adMailSignal) {
         try {
             $mailbox = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($Identity) -ProviderName 'ExchangeOnline' | Select-Object -First 1)
         }
@@ -864,6 +911,9 @@ function Get-HybridUser {
             Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Base Exchange Online mailbox lookup deferred or unavailable for '$Identity' - $($_.Exception.Message)" -Level WARN
             $mailbox = @()
         }
+    }
+    elseif ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
+        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Skipped base Exchange Online mailbox lookup for '$Identity' because AD has no SMTP mail, proxyAddress, or targetAddress signal. This is expected for mailboxless ADM/admin accounts synced to Azure." -Level INFO
     }
     Write-HybridUserHydrationDiagnostic -Stage 'BaseHydration' -Message "Base hydration results AD=$(@($adUser).Count), Graph=$(@($graphUser).Count), Exchange=$(@($mailbox).Count) for identity '$Identity'." -Level INFO -Data ([pscustomobject]@{
         Identity = $Identity
@@ -946,9 +996,9 @@ function Get-HybridUserServiceHealth {
             ExchangeOnline  = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnline
             ExchangeOnPremises = Get-HybridProviderHealthSnapshot -Service $script:HybridUserServiceState.ExchangeOnPremises
         }
-        CacheEntries       = $script:HybridUserServiceState.Cache.Count
-        DetailCacheEntries = $script:HybridUserServiceState.DetailCache.Count
-        MailboxCacheEntries = $script:HybridUserServiceState.MailboxCache.Count
+        CacheEntries       = (Get-HybridCollectionCount $script:HybridUserServiceState.Cache)
+        DetailCacheEntries = (Get-HybridCollectionCount $script:HybridUserServiceState.DetailCache)
+        MailboxCacheEntries = (Get-HybridCollectionCount $script:HybridUserServiceState.MailboxCache)
         LastQuery          = $script:HybridUserServiceState.LastQuery
         LastError          = $script:HybridUserServiceState.LastError
     }
@@ -983,19 +1033,19 @@ function Get-HybridUserGraphProfile {
 
     $provider = $script:HybridUserServiceState.MicrosoftGraph
     $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetGraphProfile','GetUserGraphProfile','GetAuthenticationProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
-    if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }
+    if ((Get-HybridCollectionCount $profile) -eq 0 -or $null -eq $profile[0]) { return $null }
 
     $raw = $profile[0]
     $methods = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethods','Methods') -Default @())
     $methodDetails = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethodDetails','AuthMethodDetails','MethodDetails') -Default @())
     $licenses = @(Get-HybridObjectValue -InputObject $raw -Names @('Licenses','licenses') -Default @())
     $assignedLicenses = @(Get-HybridObjectValue -InputObject $raw -Names @('AssignedLicenses','assignedLicenses') -Default @())
-    if ($licenses.Count -eq 0 -and $assignedLicenses.Count -gt 0) { $licenses = @($assignedLicenses) }
-    if ($assignedLicenses.Count -eq 0 -and $licenses.Count -gt 0) { $assignedLicenses = @($licenses) }
+    if ((Get-HybridCollectionCount $licenses) -eq 0 -and (Get-HybridCollectionCount $assignedLicenses) -gt 0) { $licenses = @($assignedLicenses) }
+    if ((Get-HybridCollectionCount $assignedLicenses) -eq 0 -and (Get-HybridCollectionCount $licenses) -gt 0) { $assignedLicenses = @($licenses) }
     $licenseAssignmentStates = @(Get-HybridObjectValue -InputObject $raw -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
     $pimRoles = @(Get-HybridObjectValue -InputObject $raw -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
     $directoryRoles = @(Get-HybridObjectValue -InputObject $raw -Names @('DirectoryRoles','AzureRoles') -Default @())
-    if ($directoryRoles.Count -eq 0 -and $pimRoles.Count -gt 0) { $directoryRoles = @($pimRoles) }
+    if ((Get-HybridCollectionCount $directoryRoles) -eq 0 -and (Get-HybridCollectionCount $pimRoles) -gt 0) { $directoryRoles = @($pimRoles) }
     $graphDiagnostics = @(Get-HybridObjectValue -InputObject $raw -Names @('GraphDiagnostics','Diagnostics') -Default @())
     $licenseDiagnostic = [string](Get-HybridObjectValue -InputObject $raw -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
     $pimDiagnostic = [string](Get-HybridObjectValue -InputObject $raw -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
@@ -1051,13 +1101,13 @@ function Get-HybridUserAuthenticationProfile {
 
     $provider = $script:HybridUserServiceState.MicrosoftGraph
     $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
-    if ($profile.Count -eq 0 -or $null -eq $profile[0]) { return $null }
+    if ((Get-HybridCollectionCount $profile) -eq 0 -or $null -eq $profile[0]) { return $null }
 
     $raw = $profile[0]
     $methods = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethods','Methods') -Default @())
     $methodDetails = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethodDetails','AuthMethodDetails','MethodDetails') -Default @())
     $defaultMethod = [string](Get-HybridObjectValue -InputObject $raw -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default '')
-    if ([string]::IsNullOrWhiteSpace($defaultMethod)) { $defaultMethod = if ($methods.Count -gt 0) { [string]$methods[0] } else { 'password' } }
+    if ([string]::IsNullOrWhiteSpace($defaultMethod)) { $defaultMethod = if ((Get-HybridCollectionCount $methods) -gt 0) { [string]$methods[0] } else { 'password' } }
     $riskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('SignInRiskState','RiskState','UserRiskState','riskState') -Default 'none')
     $userRiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('UserRiskState','RiskState','riskState') -Default $riskState)
     $riskLevel = [string](Get-HybridObjectValue -InputObject $raw -Names @('RiskLevel','riskLevel','RiskState','SignInRiskState') -Default $riskState)

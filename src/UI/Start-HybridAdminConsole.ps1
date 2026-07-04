@@ -170,6 +170,67 @@ $xaml = @"
         </Style>
         <Style x:Key="LaunchActionButton" TargetType="Button" BasedOn="{StaticResource RuntimeActionButton}"><Setter Property="Background" Value="#14532D"/><Setter Property="BorderBrush" Value="#22C55E"/><Setter Property="MinWidth" Value="132"/></Style>
 
+        <Style x:Key="WorkflowCardButton" TargetType="Button">
+            <Setter Property="MinHeight" Value="210"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="#111827"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#E5E7EB"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="WorkflowCardChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="WorkflowCardChrome" Property="Background" Value="#DCEBFA"/>
+                                <Setter TargetName="WorkflowCardChrome" Property="BorderBrush" Value="#0F766E"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="WorkflowCardChrome" Property="Background" Value="#BFDBFE"/>
+                                <Setter Property="Foreground" Value="#020617"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="WorkflowCardChrome" Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="WorkflowCardTitleText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#0F172A"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsPressed, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#020617"/></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="WorkflowCardDescriptionText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#CBD5E1"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,12,0,0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#1E293B"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsPressed, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#0F172A"/></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="WorkflowCardHighlightText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#38BDF8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,22,0,0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#075985"/></DataTrigger>
+                <DataTrigger Binding="{Binding IsPressed, RelativeSource={RelativeSource AncestorType=Button}}" Value="True"><Setter Property="Foreground" Value="#0C4A6E"/></DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
         <Style x:Key="GlassCommandButton" TargetType="Button">
             <Setter Property="Foreground" Value="#E0F2FE"/>
             <Setter Property="Background">
@@ -216,15 +277,16 @@ $xaml = @"
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="TextElement.Foreground" Value="#E5E7EB"/>
             <Style.Triggers>
+                <!-- Menus can render with a light hover/highlight background depending on Windows theme. Use dark text while highlighted for readability. -->
                 <Trigger Property="IsHighlighted" Value="True">
-                    <Setter Property="Background" Value="#1E293B"/>
-                    <Setter Property="Foreground" Value="#F8FAFC"/>
-                    <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                    <Setter Property="Background" Value="#DCEBFA"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                    <Setter Property="TextElement.Foreground" Value="#0F172A"/>
                 </Trigger>
                 <Trigger Property="IsSubmenuOpen" Value="True">
-                    <Setter Property="Background" Value="#1E293B"/>
-                    <Setter Property="Foreground" Value="#F8FAFC"/>
-                    <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                    <Setter Property="Background" Value="#DCEBFA"/>
+                    <Setter Property="Foreground" Value="#0F172A"/>
+                    <Setter Property="TextElement.Foreground" Value="#0F172A"/>
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Foreground" Value="#94A3B8"/>
@@ -244,8 +306,48 @@ $xaml = @"
             <Setter Property="Width" Value="10"/>
         </Style>
         <Style TargetType="ListBoxItem">
-            <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border Background="{TemplateBinding Background}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#13243A"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#13243A"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                                <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#13243A"/>
+                                <Setter Property="Foreground" Value="#F8FAFC"/>
+                                <Setter Property="TextElement.Foreground" Value="#F8FAFC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
     <Grid x:Name="ShellRoot">
@@ -400,7 +502,7 @@ $xaml = @"
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,10,14">
                                         <StackPanel>
-                                            <TextBlock Text="PROVIDER STATUS" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="PROFILE READINESS" Style="{StaticResource SectionTitle}"/>
                                             <TextBlock x:Name="RuntimeProviderSummaryText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
                                             <TextBlock x:Name="RuntimeActiveDirectoryStatusText" Text="Active Directory        Validates on launch" Foreground="#FACC15" Margin="0,0,0,8"/>
                                             <TextBlock x:Name="RuntimeProviderDetailsText" Text="Provider details load from the selected runtime profile." TextWrapping="Wrap" Foreground="#CBD5E1"/>
@@ -408,17 +510,14 @@ $xaml = @"
                                     </Border>
                                     <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,10,14">
                                         <StackPanel>
-                                            <TextBlock Text="AUTHENTICATION" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock x:Name="RuntimeAuthenticationText" Text="Device Code disabled. Live providers authenticate on launch." TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
-                                            <TextBlock Text="App-Only            Deferred" Foreground="#CBD5E1" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Delegated           Required on launch" Foreground="#FACC15" Margin="0,0,0,8"/>
-                                            <TextBlock Text="Device Code         Disabled" Foreground="#94A3B8"/>
+                                            <TextBlock Text="LAUNCH REQUIREMENTS" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock x:Name="RuntimeAuthenticationText" Text="Select a runtime profile to review the sign-in and launch requirements." TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,14"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,0,14">
                                         <StackPanel>
-                                            <TextBlock Text="RUNTIME HEALTH" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Healthy" Foreground="#22C55E" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                            <TextBlock Text="LAUNCH READINESS" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock x:Name="RuntimeReadinessHeadlineText" Text="Ready" Foreground="#22C55E" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6"/>
                                             <TextBlock x:Name="RuntimeDiagnosticsText" Text="-" TextWrapping="Wrap" Foreground="#E5E7EB" FontSize="14" Margin="0,0,0,12"/>
                                             <TextBlock x:Name="RuntimeStatusText" Text="Ready to launch." TextWrapping="Wrap" Foreground="#CBD5E1"/>
                                         </StackPanel>
@@ -427,7 +526,7 @@ $xaml = @"
 
                                 <Border Grid.Row="1" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="18">
                                     <StackPanel>
-                                        <TextBlock Text="RUNTIME PREVIEW" Style="{StaticResource SectionTitle}"/>
+                                        <TextBlock Text="OPERATIONAL PREVIEW" Style="{StaticResource SectionTitle}"/>
                                         <TextBlock x:Name="RuntimePreviewText" Text="Select a runtime profile to preview what HAP will attempt to load." TextWrapping="Wrap" Foreground="#CBD5E1" FontSize="14" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
@@ -474,7 +573,7 @@ $xaml = @"
             <Grid x:Name="ConsoleView" Margin="22" Visibility="Collapsed">
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
 
-                <Menu x:Name="ConsoleMenuBar" Grid.Row="0" Background="#0F172A" Foreground="#E5E7EB" Margin="0,0,0,10">
+                <Menu x:Name="ConsoleMenuBar" Grid.Row="0" Background="#0F172A" Foreground="#E5E7EB" Margin="-22,-22,-22,10" Padding="6,0,0,0">
                     <MenuItem Header="_File">
                         <MenuItem x:Name="PreferencesMenuItem" Header="Preferences"/>
                         <Separator/>
@@ -668,7 +767,7 @@ $xaml = @"
                         <TextBlock Text="The dashboard will open after validation and runtime initialization complete." Foreground="#94A3B8" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Grid>
-                <!-- v0.9C WorkflowSelector: profile launch now routes to a workflow instead of always opening User Lookup. -->
+                <!-- WorkflowSelector: profile launch routes to an enterprise workflow. -->
                 <Grid x:Name="WorkflowSelectorView" Width="980" MinHeight="420" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,0,0,22">
@@ -676,25 +775,25 @@ $xaml = @"
                         <TextBlock x:Name="WorkflowSelectorProfileText" Text="Runtime profile is ready. Choose what HAP should open next." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                     <UniformGrid Grid.Row="1" Columns="3" Rows="1" Margin="0,0,0,20">
-                        <Button x:Name="WorkflowUserLookupButton" Margin="0,0,12,0" MinHeight="210" Background="#111827" BorderBrush="#38BDF8" Foreground="#E5E7EB">
+                        <Button x:Name="WorkflowUserLookupButton" Style="{StaticResource WorkflowCardButton}" Margin="0,0,12,0" BorderBrush="#38BDF8">
                             <StackPanel Margin="18">
-                                <TextBlock Text="User Lookup" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Open the existing Hybrid Admin Console dashboard for search, hydration, editing, Exchange, Graph, and provider-backed user operations." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
-                                <TextBlock Text="Current console workflow" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                                <TextBlock Text="User Lookup" Style="{StaticResource WorkflowCardTitleText}"/>
+                                <TextBlock Text="Search and review hybrid identities across Active Directory, Entra ID, Exchange, authentication posture, groups, licensing, manager data, and risk signals." Style="{StaticResource WorkflowCardDescriptionText}"/>
+                                <TextBlock Text="Enterprise identity operations" Style="{StaticResource WorkflowCardHighlightText}"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="WorkflowNewUserWizardButton" Margin="6,0,6,0" MinHeight="210" Background="#111827" BorderBrush="#22C55E" Foreground="#E5E7EB">
+                        <Button x:Name="WorkflowNewUserWizardButton" Style="{StaticResource WorkflowCardButton}" Margin="6,0,6,0" BorderBrush="#22C55E">
                             <StackPanel Margin="18">
-                                <TextBlock Text="New User Wizard" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Start the onboarding workflow ported from the legacy NewUserWizard logic. v0.9C validates, previews, then executes only after explicit confirmation." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
-                                <TextBlock Text="v0.9C provider-backed workflow" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                                <TextBlock Text="New User Wizard" Style="{StaticResource WorkflowCardTitleText}"/>
+                                <TextBlock Text="Create and validate standardized employee onboarding requests using configured organizational defaults, manager mappings, group assignments, mailbox options, and execution review." Style="{StaticResource WorkflowCardDescriptionText}"/>
+                                <TextBlock Text="Controlled onboarding workflow" Style="{StaticResource WorkflowCardHighlightText}"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="WorkflowDeviceManagementButton" Margin="12,0,0,0" MinHeight="210" Background="#111827" BorderBrush="#F59E0B" Foreground="#E5E7EB">
+                        <Button x:Name="WorkflowDeviceManagementButton" Style="{StaticResource WorkflowCardButton}" Margin="12,0,0,0" BorderBrush="#F59E0B">
                             <StackPanel Margin="18">
-                                <TextBlock Text="Device Management" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
-                                <TextBlock Text="Open the Milestone 10 read-only managed device workflow for a user identity, compliance summary, and last check-in review." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
-                                <TextBlock Text="Milestone 10 starter" Foreground="#F59E0B" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                                <TextBlock Text="Device Manager" Style="{StaticResource WorkflowCardTitleText}"/>
+                                <TextBlock Text="Review managed device ownership, compliance posture, stale check-ins, and device inventory data through the runtime service layer." Style="{StaticResource WorkflowCardDescriptionText}"/>
+                                <TextBlock Text="Endpoint administration workflow" Style="{StaticResource WorkflowCardHighlightText}"/>
                             </StackPanel>
                         </Button>
                     </UniformGrid>
@@ -1181,7 +1280,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementEmptyText','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthRiskDetailsList','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementEmptyText','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeReadinessHeadlineText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthRiskDetailsList','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1503,21 +1602,25 @@ function Get-HapAuthenticationPreviewLines {
     )
 
     if ($Mode -eq 'Simulation') {
-        return @('Authentication: Mock/simulation', 'Device Code: prohibited')
+        return @('Simulation profile: no live Microsoft sign-in required.', 'Launch will use mock provider data only.')
     }
 
     $authentication = Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Authentication') -Default $null
-    $appOnly = Get-HapProfileObjectValue -InputObject $authentication -Names @('AppOnly') -Default $null
-    $delegated = Get-HapProfileObjectValue -InputObject $authentication -Names @('Delegated') -Default $null
     $appOnlyConfigured = Test-HapCloudAppOnlyConfigured -Authentication $authentication
-    $appOnlyEnabled = [bool](Get-HapProfileObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
-    $delegatedEnabled = [bool](Get-HapProfileObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
+    $tenant = [string](Get-HapProfileObjectValue -InputObject $RawProfile -Names @('TenantId','Tenant','TenantDomain') -Default '')
+    $cloud = [string](Get-HapProfileObjectValue -InputObject $RawProfile -Names @('Cloud','CloudEnvironment') -Default 'Commercial')
 
-    @(
-        ('App-only Graph/EXO: {0}' -f $(if ($appOnlyConfigured) { 'configured' } elseif ($appOnlyEnabled) { 'missing settings' } else { 'disabled/not configured' }))
-        ('Delegated Graph: {0}' -f $(if ($delegatedEnabled) { 'available on demand' } else { 'disabled' }))
-        'Device Code: prohibited'
-    )
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add(('Cloud target: {0}' -f $cloud)) | Out-Null
+    if (-not [string]::IsNullOrWhiteSpace($tenant)) { $lines.Add(('Tenant: {0}' -f $tenant)) | Out-Null }
+    $lines.Add('Delegated Microsoft Graph sign-in occurs during launch and is required for user license, PIM, risk, and authentication posture data.') | Out-Null
+    if ($appOnlyConfigured) {
+        $lines.Add('App-only credentials are configured and can be used by providers that support unattended reads.') | Out-Null
+    }
+    else {
+        $lines.Add('App-only credentials are not complete; cloud reads will rely on delegated sign-in where supported.') | Out-Null
+    }
+    return @($lines)
 }
 
 function Get-HapProviderConnectionHint {
@@ -1617,26 +1720,11 @@ function Get-HapProviderStatusPreviewModel {
     foreach ($key in @($providerMap.Keys | Sort-Object)) {
         if (-not (@($providerNames) -contains [string]$key)) { $providerNames.Add([string]$key) | Out-Null }
     }
-    $providerNames.Add('Authentication') | Out-Null
 
     $items = foreach ($name in @($providerNames | Select-Object -Unique)) {
-        if ($name -eq 'Authentication') {
-            $mode = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Mode','RuntimeMode') -Default '')
-            $authLines = Get-HapAuthenticationPreviewLines -RawProfile $rawProfile -Mode $mode
-            $configured = ($authLines -join ' | ') -match 'configured|Mock/simulation'
-            [pscustomobject]@{
-                Name = 'Authentication'
-                DisplayName = 'Authentication'
-                State = if ($configured) { 'Hybrid auth configured' } else { 'Enabled but missing required settings' }
-                Detail = ($authLines -join ' | ')
-                Hint = 'Device Code prohibited'
-            }
-        }
-        else {
-            $present = $providerMap.Contains($name)
-            $config = if ($present) { $providerMap[$name] } else { $null }
-            Get-HapProviderStatusPreviewItem -ProviderName $name -ProviderConfig $config -RawProfile $rawProfile -Present $present
-        }
+        $present = $providerMap.Contains($name)
+        $config = if ($present) { $providerMap[$name] } else { $null }
+        Get-HapProviderStatusPreviewItem -ProviderName $name -ProviderConfig $config -RawProfile $rawProfile -Present $present
     }
 
     [pscustomobject]@{
@@ -1693,16 +1781,32 @@ function Update-HapRuntimePreviewCard {
 
     if (-not $controls.ContainsKey('RuntimePreviewText') -or $null -eq $controls.RuntimePreviewText) { return }
     $model = Get-HapRuntimePreviewModel -Profile $Profile
+    $providerStatus = Get-HapProviderStatusPreviewModel -Profile $Profile
+    $enabledProviders = @($providerStatus.Items | Where-Object { $_.State -ne 'Disabled' -and $_.State -ne 'Disabled/not present' })
+    $missingProviders = @($providerStatus.Items | Where-Object { $_.State -eq 'Enabled but missing required settings' })
+
     $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add(('Profile: {0}' -f $model.ProfileName)) | Out-Null
-    $lines.Add(('Mode: {0}' -f $model.Mode)) | Out-Null
-    $lines.Add(('Cloud: {0}' -f $model.Cloud)) | Out-Null
-    $lines.Add('Authentication:') | Out-Null
-    foreach ($line in @($model.AuthenticationLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
-    $lines.Add('Providers:') | Out-Null
-    foreach ($line in @($model.ProviderLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
-    $lines.Add('Connections:') | Out-Null
-    foreach ($line in @($model.ConnectionLines)) { $lines.Add(('  - {0}' -f $line)) | Out-Null }
+    $lines.Add(('Launch profile: {0}' -f $model.ProfileName)) | Out-Null
+    $lines.Add(('Environment: {0} / {1}' -f $model.Cloud, $model.Mode)) | Out-Null
+    $lines.Add('') | Out-Null
+    $lines.Add('What will load after launch:') | Out-Null
+    if ($enabledProviders.Count -gt 0) {
+        foreach ($item in @($enabledProviders | Sort-Object DisplayName)) {
+            $lines.Add(('  - {0}: {1}' -f $item.DisplayName, $item.State)) | Out-Null
+        }
+    }
+    else { $lines.Add('  - No live providers are enabled for this profile.') | Out-Null }
+    $lines.Add('') | Out-Null
+    $lines.Add('Operator impact:') | Out-Null
+    if ($missingProviders.Count -gt 0) {
+        foreach ($item in @($missingProviders | Sort-Object DisplayName)) {
+            $lines.Add(('  - Fix {0}: {1}' -f $item.DisplayName, $item.Detail)) | Out-Null
+        }
+    }
+    else {
+        $lines.Add('  - Profile has no pre-launch configuration blockers.') | Out-Null
+        $lines.Add('  - Live connectivity is still validated during launch and user hydration.') | Out-Null
+    }
     $controls.RuntimePreviewText.Text = ($lines -join [Environment]::NewLine)
 }
 
@@ -1710,18 +1814,43 @@ function Update-HapProviderStatusCard {
     param([AllowNull()][object]$Profile)
 
     $model = Get-HapProviderStatusPreviewModel -Profile $Profile
+    $enabled = @($model.Items | Where-Object { $_.State -ne 'Disabled' -and $_.State -ne 'Disabled/not present' })
+    $missing = @($model.Items | Where-Object { $_.State -eq 'Enabled but missing required settings' })
+    $configured = @($enabled | Where-Object { $_.State -ne 'Enabled but missing required settings' })
+
     if ($controls.ContainsKey('RuntimeProviderSummaryText') -and $null -ne $controls.RuntimeProviderSummaryText) {
-        $controls.RuntimeProviderSummaryText.Text = ('{0} provider/auth item(s); {1} missing required setting(s).' -f @($model.Items).Count, $model.MissingCount)
+        if ($missing.Count -gt 0) {
+            $controls.RuntimeProviderSummaryText.Text = ('Needs attention: {0} provider configuration issue(s).' -f $missing.Count)
+            $controls.RuntimeProviderSummaryText.Foreground = '#FACC15'
+        }
+        elseif ($enabled.Count -gt 0) {
+            $controls.RuntimeProviderSummaryText.Text = ('Ready: {0} enabled provider(s) configured for launch.' -f $enabled.Count)
+            $controls.RuntimeProviderSummaryText.Foreground = '#22C55E'
+        }
+        else {
+            $controls.RuntimeProviderSummaryText.Text = 'No live providers are enabled for this profile.'
+            $controls.RuntimeProviderSummaryText.Foreground = '#CBD5E1'
+        }
     }
     if ($controls.ContainsKey('RuntimeActiveDirectoryStatusText') -and $null -ne $controls.RuntimeActiveDirectoryStatusText) {
         $ad = @($model.Items | Where-Object { $_.Name -eq 'ActiveDirectory' } | Select-Object -First 1)
-        if ($ad.Count -gt 0) { $controls.RuntimeActiveDirectoryStatusText.Text = ('Active Directory        {0}' -f $ad[0].State) }
+        if ($ad.Count -gt 0) {
+            $controls.RuntimeActiveDirectoryStatusText.Text = ('Primary directory: {0}' -f $ad[0].State)
+            $controls.RuntimeActiveDirectoryStatusText.Foreground = if ($ad[0].State -eq 'Enabled but missing required settings') { '#FACC15' } elseif ($ad[0].State -like 'Disabled*') { '#94A3B8' } else { '#22C55E' }
+        }
     }
     if ($controls.ContainsKey('RuntimeProviderDetailsText') -and $null -ne $controls.RuntimeProviderDetailsText) {
-        $controls.RuntimeProviderDetailsText.Text = (@($model.Items) | ForEach-Object {
-            $detail = if ([string]::IsNullOrWhiteSpace([string]$_.Hint)) { $_.Detail } else { ('{0} Hint: {1}' -f $_.Detail, $_.Hint) }
-            '{0}: {1} - {2}' -f $_.DisplayName, $_.State, $detail
-        }) -join [Environment]::NewLine
+        $lines = New-Object System.Collections.Generic.List[string]
+        if ($missing.Count -gt 0) {
+            foreach ($item in @($missing | Sort-Object DisplayName)) { $lines.Add(('{0}: {1}' -f $item.DisplayName, $item.Detail)) | Out-Null }
+        }
+        elseif ($configured.Count -gt 0) {
+            $names = (@($configured | Sort-Object DisplayName | ForEach-Object { $_.DisplayName }) -join ', ')
+            $lines.Add(('Enabled providers: {0}' -f $names)) | Out-Null
+            $lines.Add('Launch will validate connectivity and establish live provider sessions.') | Out-Null
+        }
+        else { $lines.Add('Enable providers in the selected runtime profile to activate live workflows.') | Out-Null }
+        $controls.RuntimeProviderDetailsText.Text = ($lines -join [Environment]::NewLine)
     }
 }
 
@@ -1857,8 +1986,12 @@ function Update-HybridStartupView {
         if ($selectedProfile.IsLastUsed) { $profileBadges += 'Last Used' }
         $badgeSuffix = if ($profileBadges.Count -gt 0) { ' Badges: ' + ($profileBadges -join ', ') + '.' } else { '' }
         $statusModel = Get-HapProviderStatusPreviewModel -Profile $selectedProfile
-        $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { ('Pre-launch validation: {0} missing required setting(s).' -f $statusModel.MissingCount) } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
-        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Selected profile appears ready for runtime bootstrap.' + $badgeSuffix } elseif ($selectedProfile.IsValid) { 'Selected profile has pre-launch configuration warnings.' + $badgeSuffix } else { 'Selected profile cannot be launched until corrected.' + $badgeSuffix }
+        $controls.RuntimeDiagnosticsText.Text = if ($selectedProfile.IsValid) { ('Configuration blockers: {0}' -f $statusModel.MissingCount) } else { 'Profile is invalid: {0}' -f $selectedProfile.ErrorMessage }
+        if ($controls.RuntimeReadinessHeadlineText) {
+            $controls.RuntimeReadinessHeadlineText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Ready' } elseif ($selectedProfile.IsValid) { 'Review' } else { 'Blocked' }
+            $controls.RuntimeReadinessHeadlineText.Foreground = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { '#22C55E' } elseif ($selectedProfile.IsValid) { '#FACC15' } else { '#F87171' }
+        }
+        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Profile is ready to launch. Connectivity and delegated Microsoft Graph sign-in will be validated when the console opens.' + $badgeSuffix } elseif ($selectedProfile.IsValid) { 'Profile can be edited before launch to clear configuration warnings.' + $badgeSuffix } else { 'Profile cannot be launched until corrected.' + $badgeSuffix }
         if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = ((Get-HapAuthenticationPreviewLines -RawProfile (Get-HapSelectedRuntimeProfileRaw -Profile $selectedProfile) -Mode $selectedProfile.RuntimeMode) -join [Environment]::NewLine) }
         $controls.LaunchConsoleButton.IsEnabled = [bool]$selectedProfile.IsValid
         Set-HybridLaunchButtonLabel -Profile $selectedProfile
@@ -1874,7 +2007,8 @@ function Update-HybridStartupView {
         Set-HybridRuntimeActiveDirectoryStatusText -Runtime $null -SelectedProfile $null
         Set-HybridRuntimeProviderDetailsText -Runtime $null -SelectedProfile $null
         Update-HapRuntimePreviewCard -Profile $null
-        $controls.RuntimeDiagnosticsText.Text = 'Diagnostics unavailable.'
+        if ($controls.RuntimeReadinessHeadlineText) { $controls.RuntimeReadinessHeadlineText.Text = 'Legacy'; $controls.RuntimeReadinessHeadlineText.Foreground = '#FACC15' }
+        $controls.RuntimeDiagnosticsText.Text = 'Runtime profile validation unavailable.'
         $controls.RuntimeStatusText.Text = 'Ready to launch legacy console.'
         Set-HybridLaunchButtonLabel -Profile $null
         return
@@ -1905,6 +2039,7 @@ function Update-HybridStartupView {
     elseif ($null -ne $runtime.Diagnostics) {
         $diagSummary = 'Status={0}' -f (Get-HybridRuntimeDisplayValue -InputObject $runtime.Diagnostics -Names @('OverallStatus','Status') -Default 'Initialized')
     }
+    if ($controls.RuntimeReadinessHeadlineText) { $controls.RuntimeReadinessHeadlineText.Text = 'Initialized'; $controls.RuntimeReadinessHeadlineText.Foreground = '#22C55E' }
     $controls.RuntimeDiagnosticsText.Text = $diagSummary
     $controls.RuntimeStatusText.Text = 'Runtime initialized. Launch the console when ready.'
     Set-HybridLaunchButtonLabel -Profile $null
@@ -3206,39 +3341,25 @@ function ConvertTo-HybridUiLicenseFriendlyName {
 
     if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
     $key = $SkuPartNumber.Trim()
+    $upperKey = $key.ToUpperInvariant()
     $map = @{
-        'AAD_PREMIUM' = 'Microsoft Entra ID P1'
-        'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'
-        'DESKLESSPACK' = 'Office 365 F3'
-        'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
-        'EMS' = 'Enterprise Mobility + Security E3'
-        'ENTERPRISEPACK' = 'Office 365 E3'
-        'ENTERPRISEPREMIUM' = 'Office 365 E5'
-        'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'
-        'EXCHANGESTANDARD' = 'Exchange Online Plan 1'
-        'INTUNE_A' = 'Microsoft Intune Plan 1'
-        'M365_F1' = 'Microsoft 365 F1'
-        'M365_F3' = 'Microsoft 365 F3'
-        'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'
-        'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
-        'MCOSTANDARD' = 'Microsoft Teams'
-        'O365_BUSINESS_ESSENTIALS' = 'Microsoft 365 Business Basic'
-        'O365_BUSINESS_PREMIUM' = 'Microsoft 365 Business Standard'
-        'POWER_BI_PRO' = 'Power BI Pro'
-        'PROJECTPREMIUM' = 'Project Plan 5'
-        'PROJECTPROFESSIONAL' = 'Project Plan 3'
-        'SPE_E3' = 'Microsoft 365 E3'
-        'SPE_E5' = 'Microsoft 365 E5'
-        'STANDARDPACK' = 'Office 365 E1'
-        'VISIOCLIENT' = 'Visio Plan 2'
-        'VISIOONLINE_PLAN1' = 'Visio Plan 1'
-        'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
+        'AAD_PREMIUM' = 'Microsoft Entra ID P1'; 'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'; 'ATP_ENTERPRISE' = 'Microsoft Defender for Office 365 Plan 1'
+        'DESKLESSPACK' = 'Office 365 F3'; 'EMS' = 'Enterprise Mobility + Security E3'; 'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
+        'ENTERPRISEPACK' = 'Office 365 E3'; 'ENTERPRISEPREMIUM' = 'Office 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Office 365 E5 without Audio Conferencing'
+        'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'; 'EXCHANGESTANDARD' = 'Exchange Online Plan 1'; 'FLOW_FREE' = 'Power Automate Free'
+        'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'; 'INTUNE_A' = 'Microsoft Intune Plan 1'
+        'M365_F1' = 'Microsoft 365 F1'; 'M365_F3' = 'Microsoft 365 F3'; 'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'; 'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
+        'MCOSTANDARD' = 'Microsoft Teams'; 'MEETING_ROOM' = 'Microsoft Teams Rooms Standard'
+        'O365_BUSINESS' = 'Microsoft 365 Apps for business'; 'O365_BUSINESS_ESSENTIALS' = 'Microsoft 365 Business Basic'; 'O365_BUSINESS_PREMIUM' = 'Microsoft 365 Business Standard'
+        'POWER_BI_PRO' = 'Power BI Pro'; 'POWERAPPS_PER_USER' = 'Power Apps Premium'; 'PROJECTESSENTIALS' = 'Project Plan 1'; 'PROJECTPREMIUM' = 'Project Plan 5'; 'PROJECTPROFESSIONAL' = 'Project Plan 3'
+        'RIGHTSMANAGEMENT' = 'Azure Information Protection Plan 1'; 'SPE_E3' = 'Microsoft 365 E3'; 'SPE_E5' = 'Microsoft 365 E5'; 'SPE_F1' = 'Microsoft 365 F3'
+        'STANDARDPACK' = 'Office 365 E1'; 'STANDARDWOFFPACK' = 'Office 365 E2'; 'STREAM' = 'Microsoft Stream'; 'TEAMS_EXPLORATORY' = 'Microsoft Teams Exploratory'
+        'VISIOCLIENT' = 'Visio Plan 2'; 'VISIOONLINE_PLAN1' = 'Visio Plan 1'; 'WIN10_PRO_ENT_SUB' = 'Windows Enterprise E3'; 'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
     }
     if ($map.ContainsKey($key)) { return [string]$map[$key] }
-    $upperKey = $key.ToUpperInvariant()
     if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
-    if ($upperKey -match '^[A-Z0-9_]+$' -and $upperKey -match '_') {
-        $fallback = ($key -replace '_GOV$', ' GCC/GCC High') -replace '_', ' '
+    if ($upperKey -match '^[A-Z0-9_]+$') {
+        $fallback = $key -replace '_GOV$', ' GCC/GCC High' -replace '_GCCHIGH$', ' GCC High' -replace '_DOD$', ' DoD' -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
         return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
     }
     return $key
@@ -3251,9 +3372,10 @@ function Format-HybridGraphListItem {
     if ($null -eq $Item) { return '-' }
     if ($Item -is [string]) { return (ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $Item) }
 
-    $display = Get-DisplayValue -InputObject $Item -Names @('DisplayName','FriendlyName','Name','SkuPartNumber','RoleName','RoleDefinitionName','Value','Id') -Default ''
+    $display = Get-DisplayValue -InputObject $Item -Names @('FriendlyName','DisplayName','Name','SkuPartNumber','RoleName','RoleDefinitionName','Value','Id') -Default ''
     $skuPartNumber = Get-DisplayValue -InputObject $Item -Names @('SkuPartNumber','skuPartNumber') -Default ''
     if (-not [string]::IsNullOrWhiteSpace($skuPartNumber) -and $skuPartNumber -ne '-') { $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $skuPartNumber }
+    elseif (-not [string]::IsNullOrWhiteSpace($display) -and $display -ne '-') { $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $display }
     $source = Get-DisplayValue -InputObject $Item -Names @('AssignmentSource','AssignmentType','State','Status') -Default ''
     if (-not [string]::IsNullOrWhiteSpace($display)) {
         if (-not [string]::IsNullOrWhiteSpace($source) -and $source -ne '-') { return "$display ($source)" }

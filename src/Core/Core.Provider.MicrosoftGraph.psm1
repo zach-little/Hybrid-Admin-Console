@@ -78,6 +78,40 @@ function Get-HybridMicrosoftGraphObjectValue {
     return $Default
 }
 
+
+function Get-HybridMicrosoftGraphCollectionCount {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) { return 0 }
+    if ($Value -is [string]) {
+        if ([string]::IsNullOrWhiteSpace($Value)) { return 0 }
+        return 1
+    }
+
+    try {
+        if ($Value.PSObject.Properties.Name -contains 'Count') {
+            $countValue = $Value.Count
+            if ($null -ne $countValue) { return [int]$countValue }
+        }
+    }
+    catch { }
+
+    try { return @($Value).Count } catch { return 1 }
+}
+
+function ConvertTo-HybridMicrosoftGraphArray {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) { return @() }
+    if ($Value -is [string]) {
+        if ([string]::IsNullOrWhiteSpace($Value)) { return @() }
+        return @($Value)
+    }
+    return @($Value)
+}
+
 function New-HybridMicrosoftGraphProviderContext {
     [CmdletBinding()]
     param(
@@ -176,7 +210,7 @@ function ConvertTo-HybridMicrosoftGraphUser {
     $pimRoleDiagnostic = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
     $businessPhones = @(Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('businessPhones','BusinessPhones') -Default @())
     $phoneNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PhoneNumber','TelephoneNumber','mobilePhone','MobilePhone') -Default '')
-    if ([string]::IsNullOrWhiteSpace($phoneNumber) -and $businessPhones.Count -gt 0) { $phoneNumber = [string]$businessPhones[0] }
+    if ([string]::IsNullOrWhiteSpace($phoneNumber) -and (Get-HybridMicrosoftGraphCollectionCount $businessPhones) -gt 0) { $phoneNumber = [string]$businessPhones[0] }
 
     [pscustomobject]@{
         PSTypeName          = 'Hybrid.User'
@@ -207,11 +241,11 @@ function ConvertTo-HybridMicrosoftGraphUser {
         PimRoleDiagnostic   = $pimRoleDiagnostic
         PimRoleDiagnostics  = $pimRoleDiagnostic
         PimDiagnostics      = $pimRoleDiagnostic
-        DefaultMethod       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default $(if ($methods.Count -gt 0) { [string]$methods[0] } else { '' }))
-        MfaRegistered       = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default ($methods.Count -gt 1))
-        MfaCapable          = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaCapable','IsMfaCapable') -Default ($methods.Count -gt 0))
+        DefaultMethod       = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('DefaultMethod','DefaultAuthenticationMethod') -Default $(if ((Get-HybridMicrosoftGraphCollectionCount $methods) -gt 0) { [string]$methods[0] } else { '' }))
+        MfaRegistered       = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default ((Get-HybridMicrosoftGraphCollectionCount $methods) -gt 1))
+        MfaCapable          = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('MfaCapable','IsMfaCapable') -Default ((Get-HybridMicrosoftGraphCollectionCount $methods) -gt 0))
         PasswordlessRegistered = [bool](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('PasswordlessRegistered','IsPasswordlessRegistered') -Default (@($methods | Where-Object { $_ -match 'passwordless|fido|windows hello|temporary access pass' }).Count -gt 0))
-        AuthenticationStrength = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('AuthenticationStrength','StrongAuthenticationRequirement') -Default $(if ($methods.Count -gt 1) { 'Multi-factor capable' } else { 'Single-factor' }))
+        AuthenticationStrength = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $GraphUser -Names @('AuthenticationStrength','StrongAuthenticationRequirement') -Default $(if ((Get-HybridMicrosoftGraphCollectionCount $methods) -gt 1) { 'Multi-factor capable' } else { 'Single-factor' }))
         LastSignInDateTime  = $lastSignIn
         LastNonInteractiveSignInDateTime = $lastNonInteractive
         PasswordLastChangedDateTime = $passwordChanged
@@ -366,6 +400,13 @@ function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
         'VISIOONLINE_PLAN1' = 'Visio Plan 1'
         'WIN10_PRO_ENT_SUB' = 'Windows Enterprise E3'
         'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
+        'SPE_E5_SEC' = 'Microsoft 365 E5 Security'
+        'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'
+        'THREAT_INTELLIGENCE' = 'Microsoft Defender for Office 365 Plan 2'
+        'RIGHTSMANAGEMENT' = 'Azure Information Protection Plan 1'
+        'POWERAPPS_PER_USER' = 'Power Apps Premium'
+        'EXCHANGE_S_ENTERPRISE_GOV' = 'Exchange Online Plan 2 GCC/GCC High'
+        'EXCHANGE_S_STANDARD_GOV' = 'Exchange Online Plan 1 GCC/GCC High'
     }
 
     if ($map.ContainsKey($key)) { return [string]$map[$key] }
@@ -376,6 +417,44 @@ function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
     return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
 }
 
+
+function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName {
+    [CmdletBinding()]
+    param([AllowNull()][string]$SkuPartNumber)
+
+    if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
+    $key = $SkuPartNumber.Trim()
+    $upperKey = $key.ToUpperInvariant()
+    $map = @{
+        'AAD_PREMIUM' = 'Microsoft Entra ID P1'; 'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'; 'ATP_ENTERPRISE' = 'Microsoft Defender for Office 365 Plan 1'
+        'DESKLESSPACK' = 'Office 365 F3'; 'EMS' = 'Enterprise Mobility + Security E3'; 'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
+        'ENTERPRISEPACK' = 'Office 365 E3'; 'ENTERPRISEPREMIUM' = 'Office 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Office 365 E5 without Audio Conferencing'
+        'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'; 'EXCHANGESTANDARD' = 'Exchange Online Plan 1'; 'FLOW_FREE' = 'Power Automate Free'
+        'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'; 'INTUNE_A' = 'Microsoft Intune Plan 1'
+        'M365_F1' = 'Microsoft 365 F1'; 'M365_F3' = 'Microsoft 365 F3'; 'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'; 'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
+        'MCOSTANDARD' = 'Microsoft Teams'; 'MEETING_ROOM' = 'Microsoft Teams Rooms Standard'
+        'O365_BUSINESS' = 'Microsoft 365 Apps for business'; 'O365_BUSINESS_ESSENTIALS' = 'Microsoft 365 Business Basic'; 'O365_BUSINESS_PREMIUM' = 'Microsoft 365 Business Standard'
+        'POWER_BI_PRO' = 'Power BI Pro'; 'POWERAPPS_PER_USER' = 'Power Apps Premium'; 'PROJECTESSENTIALS' = 'Project Plan 1'; 'PROJECTPREMIUM' = 'Project Plan 5'; 'PROJECTPROFESSIONAL' = 'Project Plan 3'
+        'RIGHTSMANAGEMENT' = 'Azure Information Protection Plan 1'; 'SPE_E3' = 'Microsoft 365 E3'; 'SPE_E5' = 'Microsoft 365 E5'; 'SPE_F1' = 'Microsoft 365 F3'
+        'STANDARDPACK' = 'Office 365 E1'; 'STANDARDWOFFPACK' = 'Office 365 E2'; 'STREAM' = 'Microsoft Stream'; 'TEAMS_EXPLORATORY' = 'Microsoft Teams Exploratory'
+        'VISIOCLIENT' = 'Visio Plan 2'; 'VISIOONLINE_PLAN1' = 'Visio Plan 1'; 'WIN10_PRO_ENT_SUB' = 'Windows Enterprise E3'; 'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
+        'SPE_E5_SEC' = 'Microsoft 365 E5 Security'
+        'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'
+        'THREAT_INTELLIGENCE' = 'Microsoft Defender for Office 365 Plan 2'
+        'RIGHTSMANAGEMENT' = 'Azure Information Protection Plan 1'
+        'POWERAPPS_PER_USER' = 'Power Apps Premium'
+        'EXCHANGE_S_ENTERPRISE_GOV' = 'Exchange Online Plan 2 GCC/GCC High'
+        'EXCHANGE_S_STANDARD_GOV' = 'Exchange Online Plan 1 GCC/GCC High'
+    }
+    if ($map.ContainsKey($key)) { return [string]$map[$key] }
+    if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+    if ($upperKey -match '^[A-Z0-9_]+$') {
+        $fallback = $key -replace '_GOV$', ' GCC/GCC High' -replace '_GCCHIGH$', ' GCC High' -replace '_DOD$', ' DoD' -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
+        return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
+    }
+    return $key
+}
+
 function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
     [CmdletBinding()]
     param(
@@ -384,7 +463,10 @@ function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
     )
 
     if ($null -eq $License) { return $null }
-    if ($License -is [string]) { return $License }
+    if ($License -is [string]) {
+        $skuString = [string]$License
+        return [pscustomobject]@{ PSTypeName = 'Hybrid.MicrosoftGraph.License'; DisplayName = (ConvertTo-HybridMicrosoftGraphSkuFriendlyName -SkuPartNumber $skuString); SkuPartNumber = $skuString; SkuId = ''; Status = ''; AssignmentSource = ''; DisabledPlans = @() }
+    }
 
     $skuId = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('skuId','SkuId') -Default '')
     $skuPartNumber = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('skuPartNumber','SkuPartNumber') -Default '')
@@ -393,6 +475,7 @@ function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
         elseif ($SkuMap.ContainsKey($skuId.ToLowerInvariant())) { $skuPartNumber = [string]$SkuMap[$skuId.ToLowerInvariant()] }
     }
     if ([string]::IsNullOrWhiteSpace($skuPartNumber)) { $skuPartNumber = $skuId }
+    $friendlyName = ConvertTo-HybridMicrosoftGraphFriendlyLicenseName -SkuPartNumber $skuPartNumber
 
     $state = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('state','State') -Default '')
     $assignmentSource = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('assignedByGroup','AssignedByGroup','AssignmentSource') -Default '')
@@ -450,11 +533,11 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
         $escapedId = [System.Uri]::EscapeDataString($id)
         $methodsResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}/authentication/methods' -f $graphEndpoint, $escapedId) -Session $Session
         $methodValues = @(Get-HybridMicrosoftGraphObjectValue -InputObject $methodsResponse -Names @('value','Value') -Default @())
-        if ($methodValues.Count -gt 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $methodValues) -gt 0) {
             $methodNames = @($methodValues | ForEach-Object { ConvertTo-HybridMicrosoftGraphAuthenticationMethodName -Method $_ } | Select-Object -Unique)
             $GraphUser | Add-Member -NotePropertyName AuthenticationMethods -NotePropertyValue @($methodNames) -Force
-            $GraphUser | Add-Member -NotePropertyName MfaRegistered -NotePropertyValue ($methodNames.Count -gt 1) -Force
-            $GraphUser | Add-Member -NotePropertyName MfaCapable -NotePropertyValue ($methodNames.Count -gt 0) -Force
+            $GraphUser | Add-Member -NotePropertyName MfaRegistered -NotePropertyValue ((Get-HybridMicrosoftGraphCollectionCount $methodNames) -gt 1) -Force
+            $GraphUser | Add-Member -NotePropertyName MfaCapable -NotePropertyValue ((Get-HybridMicrosoftGraphCollectionCount $methodNames) -gt 0) -Force
             $GraphUser | Add-Member -NotePropertyName PasswordlessRegistered -NotePropertyValue (@($methodNames | Where-Object { $_ -match 'FIDO2|Windows Hello|Temporary Access Pass' }).Count -gt 0) -Force
         }
 
@@ -477,19 +560,19 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
             $assignedLicenses = @(Get-HybridMicrosoftGraphObjectValue -InputObject $licenseResponse -Names @('assignedLicenses','AssignedLicenses') -Default @() | ForEach-Object { ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License $_ -SkuMap $skuMap } | Where-Object { $null -ne $_ })
             $licenseAssignmentStates = @(Get-HybridMicrosoftGraphObjectValue -InputObject $licenseResponse -Names @('licenseAssignmentStates','LicenseAssignmentStates') -Default @() | ForEach-Object { ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License $_ -SkuMap $skuMap } | Where-Object { $null -ne $_ })
         }
-        $displayLicenses = if ($licenseDetailValues.Count -gt 0) { @($licenseDetailValues) } else { @($assignedLicenses) }
-        if ($displayLicenses.Count -gt 0) {
+        $displayLicenses = if ((Get-HybridMicrosoftGraphCollectionCount $licenseDetailValues) -gt 0) { @($licenseDetailValues) } else { @($assignedLicenses) }
+        if ((Get-HybridMicrosoftGraphCollectionCount $displayLicenses) -gt 0) {
             $GraphUser | Add-Member -NotePropertyName Licenses -NotePropertyValue @($displayLicenses) -Force
             $GraphUser | Add-Member -NotePropertyName AssignedLicenses -NotePropertyValue @($displayLicenses) -Force
         }
-        elseif ($licenseAssignmentStates.Count -gt 0) {
+        elseif ((Get-HybridMicrosoftGraphCollectionCount $licenseAssignmentStates) -gt 0) {
             $GraphUser | Add-Member -NotePropertyName Licenses -NotePropertyValue @($licenseAssignmentStates) -Force
             $GraphUser | Add-Member -NotePropertyName AssignedLicenses -NotePropertyValue @($licenseAssignmentStates) -Force
         }
-        if ($licenseAssignmentStates.Count -gt 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $licenseAssignmentStates) -gt 0) {
             $GraphUser | Add-Member -NotePropertyName LicenseAssignmentStates -NotePropertyValue @($licenseAssignmentStates) -Force
         }
-        if ($licenseDetailValues.Count -eq 0 -and $assignedLicenses.Count -eq 0 -and $licenseAssignmentStates.Count -eq 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $licenseDetailValues) -eq 0 -and (Get-HybridMicrosoftGraphCollectionCount $assignedLicenses) -eq 0 -and (Get-HybridMicrosoftGraphCollectionCount $licenseAssignmentStates) -eq 0) {
             $licenseMessage = if ($null -eq $licenseDetailsResponse -and $null -eq $licenseResponse) {
                 'License lookup did not return data. Verify Directory.Read.All/User.Read.All consent and Graph cloud endpoint.'
             }
@@ -524,7 +607,7 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                 }) | Out-Null
             }
         }
-        if ($pimRoles.Count -eq 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $pimRoles) -eq 0) {
             foreach ($membershipPath in @('memberOf/microsoft.graph.directoryRole','transitiveMemberOf/microsoft.graph.directoryRole')) {
                 $roleMembershipResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/users/{1}/{2}?$select=id,displayName,roleTemplateId' -f $graphEndpoint, $escapedId, $membershipPath) -Session $Session
                 foreach ($roleMembership in @(Get-HybridMicrosoftGraphObjectValue -InputObject $roleMembershipResponse -Names @('value','Value') -Default @())) {
@@ -541,11 +624,11 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                         Status = 'Active'
                     }) | Out-Null
                 }
-                if ($pimRoles.Count -gt 0) { break }
+                if ((Get-HybridMicrosoftGraphCollectionCount $pimRoles) -gt 0) { break }
             }
         }
 
-        if ($pimRoles.Count -gt 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $pimRoles) -gt 0) {
             $definitionResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri ('{0}/v1.0/roleManagement/directory/roleDefinitions?$select=id,displayName' -f $graphEndpoint) -Session $Session
             $definitionMap = @{}
             foreach ($definition in @(Get-HybridMicrosoftGraphObjectValue -InputObject $definitionResponse -Names @('value','Value') -Default @())) {
@@ -577,7 +660,7 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
         $signInUri = ('{0}/v1.0/auditLogs/signIns?$top=1&$orderby=createdDateTime%20desc&$filter={1}' -f $graphEndpoint, $signInFilter)
         $signInResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $signInUri -Session $Session
         $signIn = @(Get-HybridMicrosoftGraphObjectValue -InputObject $signInResponse -Names @('value','Value') -Default @() | Select-Object -First 1)
-        if ($signIn.Count -gt 0 -and $null -ne $signIn[0]) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $signIn) -gt 0 -and $null -ne $signIn[0]) {
             $latest = $signIn[0]
             $created = Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('createdDateTime','CreatedDateTime') -Default $null
             $conditionalAccess = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $latest -Names @('conditionalAccessStatus','ConditionalAccessStatus') -Default '')
@@ -590,7 +673,7 @@ function Add-HybridMicrosoftGraphUserSecurityEnrichment {
                 $GraphUser | Add-Member -NotePropertyName RiskState -NotePropertyValue $riskState -Force
                 $GraphUser | Add-Member -NotePropertyName SignInRiskState -NotePropertyValue $riskState -Force
             }
-            if ($methodsUsed.Count -gt 0 -and -not ($GraphUser.PSObject.Properties.Name -contains 'AuthenticationMethods')) {
+            if ((Get-HybridMicrosoftGraphCollectionCount $methodsUsed) -gt 0 -and -not ($GraphUser.PSObject.Properties.Name -contains 'AuthenticationMethods')) {
                 $GraphUser | Add-Member -NotePropertyName AuthenticationMethods -NotePropertyValue @($methodsUsed) -Force
             }
         }
@@ -662,7 +745,7 @@ function Search-HybridMicrosoftGraphUser {
             })
         }
 
-        if ($users.Count -eq 0 -and -not [string]::IsNullOrWhiteSpace($Query)) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $users) -eq 0 -and -not [string]::IsNullOrWhiteSpace($Query)) {
             $users = @(Invoke-HybridMicrosoftGraphUserSearchRequest -Query $Query -Session $session)
         }
 
@@ -702,7 +785,7 @@ function Get-HybridMicrosoftGraphUser {
             ([string](Get-HybridMicrosoftGraphObjectValue -InputObject $_ -Names @('mail','Mail') -Default '') -ieq $Identity)
         } | Select-Object -First 1)
 
-        if ($match.Count -eq 0) {
+        if ((Get-HybridMicrosoftGraphCollectionCount $match) -eq 0) {
             $liveUser = Invoke-HybridMicrosoftGraphUserRequest -Identity $Identity -Session $session
             $user = ConvertTo-HybridMicrosoftGraphUser -GraphUser $liveUser
             $script:HybridMicrosoftGraphState.Cache.Users[$cacheKey] = $user
@@ -764,8 +847,8 @@ function Get-HybridMicrosoftGraphProviderHealth {
             LastError       = $script:HybridMicrosoftGraphProviderState.LastError
             Version         = '0.6.0'
             Capabilities    = @($script:HybridMicrosoftGraphProviderState.Capabilities)
-            CacheEntries    = $script:HybridMicrosoftGraphState.Cache.Users.Count
-            CommandCount    = @($script:HybridMicrosoftGraphProviderState.CommandHistory).Count
+            CacheEntries    = (Get-HybridMicrosoftGraphCollectionCount $script:HybridMicrosoftGraphState.Cache.Users)
+            CommandCount    = (Get-HybridMicrosoftGraphCollectionCount $script:HybridMicrosoftGraphProviderState.CommandHistory)
             LastCommand     = $script:HybridMicrosoftGraphProviderState.LastCommand
             ResponseTimeMs  = $null
         }
@@ -784,8 +867,8 @@ function Get-HybridMicrosoftGraphProviderHealth {
             LastError       = $script:HybridMicrosoftGraphProviderState.LastError
             Version         = '0.6.0'
             Capabilities    = @($script:HybridMicrosoftGraphProviderState.Capabilities)
-            CacheEntries    = $script:HybridMicrosoftGraphState.Cache.Users.Count
-            CommandCount    = @($script:HybridMicrosoftGraphProviderState.CommandHistory).Count
+            CacheEntries    = (Get-HybridMicrosoftGraphCollectionCount $script:HybridMicrosoftGraphState.Cache.Users)
+            CommandCount    = (Get-HybridMicrosoftGraphCollectionCount $script:HybridMicrosoftGraphProviderState.CommandHistory)
             LastCommand     = $script:HybridMicrosoftGraphProviderState.LastCommand
             ResponseTimeMs  = $null
         }
