@@ -58,14 +58,26 @@ function Get-HybridObjectValue {
 
         if ($InputObject -is [System.Collections.IDictionary] -and $InputObject.Contains($name)) {
             $value = $InputObject[$name]
-            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+            if ($null -eq $value) { continue }
+            if ($value -is [string] -and [string]::IsNullOrWhiteSpace($value)) { continue }
+            if ($value -is [System.Collections.IEnumerable] -and $value -isnot [string]) {
+                if (@($value).Count -eq 0) { continue }
+                return $value
+            }
+            if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
                 return $value
             }
         }
 
         if ($InputObject.PSObject.Properties.Name -contains $name) {
             $value = $InputObject.$name
-            if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+            if ($null -eq $value) { continue }
+            if ($value -is [string] -and [string]::IsNullOrWhiteSpace($value)) { continue }
+            if ($value -is [System.Collections.IEnumerable] -and $value -isnot [string]) {
+                if (@($value).Count -eq 0) { continue }
+                return $value
+            }
+            if (-not [string]::IsNullOrWhiteSpace([string]$value)) {
                 return $value
             }
         }
@@ -448,6 +460,21 @@ function New-HybridCompositeUser {
         DirectReports         = @()
         Devices               = @()
         Licenses              = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('Licenses','AssignedLicenses') -Default @())
+        AssignedLicenses      = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('AssignedLicenses','assignedLicenses','Licenses') -Default @())
+        LicenseAssignmentStates = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
+        LicenseDiagnostic     = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+        LicenseDiagnostics    = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+        PimRoles              = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
+        DirectoryRoles        = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('DirectoryRoles','AzureRoles','PimRoles','PIMRoles') -Default @())
+        PimRoleDiagnostic     = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+        PimRoleDiagnostics    = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+        PimDiagnostics        = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+        AuthenticationMethods = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('AuthenticationMethods','Methods') -Default @())
+        AuthenticationMethodDetails = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('AuthenticationMethodDetails','AuthMethodDetails','MethodDetails') -Default @())
+        RiskState             = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('RiskState','UserRiskState','SignInRiskState','riskState') -Default 'none')
+        UserRiskState         = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('UserRiskState','RiskState','riskState') -Default 'none')
+        SignInRiskState       = [string](Get-HybridObjectValue -InputObject $GraphUser -Names @('SignInRiskState','RiskState','riskState') -Default 'none')
+        RiskDetails           = @(Get-HybridObjectValue -InputObject $GraphUser -Names @('RiskDetails','RiskDetections','RiskySignIns') -Default @())
         Mailbox               = New-HybridMailboxSourceEnvelope -AdMailAttributes (New-HybridAdMailAttributeSnapshot -User $ActiveDirectoryUser) -ExchangeOnPremises $null -ExchangeOnline $Mailbox
         MailboxDetails        = $null
         ExchangeLoaded        = $false
@@ -957,6 +984,22 @@ function Get-HybridUserGraphProfile {
 
     $raw = $profile[0]
     $methods = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethods','Methods') -Default @())
+    $methodDetails = @(Get-HybridObjectValue -InputObject $raw -Names @('AuthenticationMethodDetails','AuthMethodDetails','MethodDetails') -Default @())
+    $licenses = @(Get-HybridObjectValue -InputObject $raw -Names @('Licenses','licenses') -Default @())
+    $assignedLicenses = @(Get-HybridObjectValue -InputObject $raw -Names @('AssignedLicenses','assignedLicenses') -Default @())
+    if ($licenses.Count -eq 0 -and $assignedLicenses.Count -gt 0) { $licenses = @($assignedLicenses) }
+    if ($assignedLicenses.Count -eq 0 -and $licenses.Count -gt 0) { $assignedLicenses = @($licenses) }
+    $licenseAssignmentStates = @(Get-HybridObjectValue -InputObject $raw -Names @('LicenseAssignmentStates','licenseAssignmentStates') -Default @())
+    $pimRoles = @(Get-HybridObjectValue -InputObject $raw -Names @('PimRoles','PIMRoles','PrivilegedIdentityRoles','DirectoryRoles','AzureRoles') -Default @())
+    $directoryRoles = @(Get-HybridObjectValue -InputObject $raw -Names @('DirectoryRoles','AzureRoles') -Default @())
+    if ($directoryRoles.Count -eq 0 -and $pimRoles.Count -gt 0) { $directoryRoles = @($pimRoles) }
+    $graphDiagnostics = @(Get-HybridObjectValue -InputObject $raw -Names @('GraphDiagnostics','Diagnostics') -Default @())
+    $licenseDiagnostic = [string](Get-HybridObjectValue -InputObject $raw -Names @('LicenseDiagnostic','LicenseDiagnostics') -Default '')
+    $pimDiagnostic = [string](Get-HybridObjectValue -InputObject $raw -Names @('PimRoleDiagnostic','PimRoleDiagnostics','PimDiagnostics','RoleDiagnostic','RoleDiagnostics') -Default '')
+    $riskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('RiskState','UserRiskState','SignInRiskState','riskState') -Default 'none')
+    $userRiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('UserRiskState','RiskState','riskState') -Default $riskState)
+    $signInRiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('SignInRiskState','RiskState','riskState') -Default $riskState)
+    $riskDetails = @(Get-HybridObjectValue -InputObject $raw -Names @('RiskDetails','RiskDetections','RiskySignIns') -Default @())
     $graphProfile = [pscustomobject]@{
         PSTypeName = 'Hybrid.GraphProfile'
         ObjectId = [string](Get-HybridObjectValue -InputObject $raw -Names @('ObjectId','Id','GraphObjectId') -Default '')
@@ -969,9 +1012,24 @@ function Get-HybridUserGraphProfile {
         LastNonInteractiveSignInDateTime = Get-HybridObjectValue -InputObject $raw -Names @('LastNonInteractiveSignInDateTime','LastNonInteractiveSignIn') -Default $null
         PasswordLastChangedDateTime = Get-HybridObjectValue -InputObject $raw -Names @('PasswordLastChangedDateTime','LastPasswordChange','PasswordLastChanged') -Default $null
         AuthenticationMethods = @($methods)
+        AuthenticationMethodDetails = @($methodDetails)
+        Licenses = @($licenses)
+        AssignedLicenses = @($assignedLicenses)
+        LicenseAssignmentStates = @($licenseAssignmentStates)
+        PimRoles = @($pimRoles)
+        DirectoryRoles = @($directoryRoles)
+        GraphDiagnostics = @($graphDiagnostics)
+        LicenseDiagnostic = $licenseDiagnostic
+        LicenseDiagnostics = $licenseDiagnostic
+        PimRoleDiagnostic = $pimDiagnostic
+        PimRoleDiagnostics = $pimDiagnostic
+        PimDiagnostics = $pimDiagnostic
         MfaRegistered = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaRegistered','MfaEnabled','IsMfaRegistered') -Default $false)
         MfaCapable = [bool](Get-HybridObjectValue -InputObject $raw -Names @('MfaCapable','IsMfaCapable') -Default $false)
-        RiskState = [string](Get-HybridObjectValue -InputObject $raw -Names @('RiskState','UserRiskState') -Default 'none')
+        RiskState = $riskState
+        UserRiskState = $userRiskState
+        SignInRiskState = $signInRiskState
+        RiskDetails = @($riskDetails)
         Source = [string](Get-HybridObjectValue -InputObject $raw -Names @('Source') -Default 'MicrosoftGraph')
         RetrievedOn = [datetime]::UtcNow
     }

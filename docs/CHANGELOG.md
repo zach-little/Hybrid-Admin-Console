@@ -85,3 +85,9 @@
 - Added Device Management to the post-launch workflow selector.
 - Added a read-only Device Management workflow view for identity lookup, device count, non-compliant device count, stale check-in count, and managed-device details.
 - Widened the Device Management workflow panel and shortened provider source labels in the device grid.
+
+## v0.10.x - Identity Platform Completion
+
+- Fixed User Lookup Graph profile parity so the preferred `Get-HybridUserGraphProfile` path preserves licenses, assigned licenses, license assignment states, license diagnostics, PIM roles, directory roles, PIM diagnostics, authentication method details, and richer risk fields.
+- Expanded the canonical Graph profile model and Graph profile service to preserve the same richer identity fields.
+- Added Milestone 10 identity-platform regression tests to keep license facts inside the User Lookup workflow and prevent a standalone Licensing display workflow from reappearing.

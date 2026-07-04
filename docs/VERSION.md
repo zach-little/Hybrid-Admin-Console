@@ -1,67 +1,74 @@
 # Version
 
-Current Version: v0.9.0
+Current Version: v0.10.x
 
-Status: Live Runtime UX & Vertical Stabilization.
+Status: Identity Platform Completion / Milestone 10 stabilization.
 
 ---
 
-## Current Release
+## Current Development Target
 
-### v0.8.9 — Live Runtime UX & Vertical Stabilization
+### v0.10.x - Identity Platform Completion
+
+Milestone 10 has been redefined from broad independent enterprise modules into identity platform completion.
+
+The codebase already implements much of the originally planned Milestone 10 capability set inside the User Lookup workflow. That is the intended architecture.
+
+Current target:
+
+- Stabilize the User Lookup identity hub.
+- Fix Graph profile parity for license and PIM data.
+- Improve authentication posture and risk details.
+- Validate Exchange Online and Exchange On-Premises mailbox data.
+- Complete New User Wizard parity with the legacy script.
+- Preserve identity facts inside the User workflow.
+- Keep Device Management as the first separate administrative workflow.
+
+---
+
+## Current Release Notes
+
+### v0.10.x - Identity Platform Completion
 
 Summary:
 
-- Active Directory DN/OU propagation was tightened from AD provider output through HybridUserService composition and UI display resolution.
-- AD provider conversion now exposes `DistinguishedName`, `ActiveDirectoryDistinguishedName`, `OrganizationalUnit`, and `ActiveDirectoryOrganizationalUnit` as direct properties and in the `Attributes` bag.
-- HybridUserService object-value resolution now supports hashtable-backed attribute bags.
-- UI DN/OU display resolution now reads direct properties and `Attributes` bag values and writes diagnostics for resolved values.
-- A Back/Start button was added to the main console so operators can return to Runtime Home and switch profiles without closing the app.
-- A bottom search progress indicator was added with stages for Search, Base User, Active Directory Details, Microsoft Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
-- Exchange display now clearly distinguishes AD mail attributes from Exchange Online mailbox data when the Exchange Online provider is unavailable or returns no mailbox.
-- User search now preserves multiple matches and prompts the operator to choose the intended user before hydration.
-- Added an on-premises Exchange provider slice for hybrid recipient/remote mailbox lookup through local Exchange PowerShell.
-- Runtime Home provider detail display now renders enabled providers dynamically, including Exchange On-Premises.
-- Exchange mailbox hydration now uses on-prem remote mailbox, forwarding, and distribution-group data when Exchange Online mailbox data is unavailable.
-- Aggregation now marks ExchangeMailbox as loaded from ExchangeOnline or ExchangeOnPremises based on the mailbox detail source provider.
+- User Lookup is the central identity hub.
+- Active Directory attributes are already pulled.
+- Manager and direct-report data are pulled from Active Directory where available.
+- Groups are pulled and displayed.
+- Graph user data is wired into the user flow.
+- Exchange Online mailbox data is wired into the user flow.
+- Exchange On-Premises recipient / remote mailbox data is wired into the user flow.
+- Authentication posture has Azure/Graph-backed implementation but needs better coverage and diagnostics.
+- Licenses are intended to be part of the user Graph profile but likely have a propagation/display bug.
+- PIM has been attempted but is not confirmed functional.
+- Risk is currently shallow and should be expanded.
+- Device Management has started as a separate workflow and remains valid as an independent operational area.
 
 Known issues / next stabilization work:
 
-- On-premises Exchange provider support has runtime/profile/editor wiring and mailbox-detail fallback. Live validation should confirm returned remote mailbox, forwarding, and distribution-group shape in the local Exchange environment.
-- Microsoft Graph vertical may still be unavailable depending on runtime profile registration and authentication configuration.
-- Authentication posture vertical may still be unavailable depending on runtime profile registration and Microsoft Graph authentication readiness.
-- Service registry/deferred-provider status messaging still needs a deeper pass so each vertical clearly reports registered, deferred, unavailable, or failed.
+- Fix the license display/hydration path so richer Graph profile license fields reach the UI.
+- Confirm whether the active UI path prefers `Get-HybridUserGraphProfile` over `Get-HybridGraphProfile`, and if so, bring the former to property parity or route through the richer service.
+- Preserve `Licenses`, `AssignedLicenses`, `LicenseAssignmentStates`, license diagnostics, PIM roles, and PIM diagnostics in the user profile returned to the UI.
+- Validate PIM behavior in the target cloud and delegated/app-only permission model.
+- Expand risk details beyond yes/no.
+- Improve authentication posture diagnostics.
+- Live-validate Exchange Online and Exchange On-Premises mailbox details.
 
 ---
 
-## Previous Release
+## Roadmap Alignment
 
-### v0.8.8 — Active Directory Group Display Stabilization
-
-Summary:
-
-- Active Directory live runtime readiness is working.
-- Active Directory provider health reports connected in the live runtime session.
-- Base user search works in the live environment.
-- Active Directory group display was corrected to show friendly group names rather than raw object output.
-- Persistent runtime, Active Directory, and hydration diagnostics are available.
+- v0.10 - Identity Platform Completion.
+- v0.11 - Administrative Workflows.
+- v0.12 - Enterprise Operations.
+- v0.13 - Enterprise Platform.
+- v1.0 - Hybrid Enterprise Platform.
 
 ---
 
 ## Release Policy
 
-Milestone 9 / v0.9.0 is complete after the v0.8.9 live-readiness stabilization pass.
+Identity facts should not become standalone modules.
 
-v0.9.0 delivered:
-
-- Background runtime services.
-- Runtime event bus.
-- Provider refresh scheduling.
-- Runtime service orchestrator.
-- Provider status synchronization events.
-- Cache invalidation events.
-- Runtime task lifecycle and cooperative cancellation tracking.
-
-## Current Development Target
-
-Milestone 10 - Device Management Foundation
+A standalone workflow is appropriate only when it performs administrative operations or manages a collection/object type independently of a single user identity view.

@@ -2,115 +2,156 @@
 
 ## Current Version
 
-v0.9.0
+v0.10.x - Identity Platform Completion
+
+---
+
+## Current Assessment
+
+HAP has moved beyond the older roadmap language that described Milestone 10 as a broad set of independent enterprise modules.
+
+The current implementation is identity-first. The User Lookup workflow acts as the central identity hub and already includes a large portion of the originally planned Milestone 10 capability set.
+
+The main project risk is no longer whether the runtime architecture can support enterprise features. The main risk is scope drift: allowing Codex or future implementation passes to split identity facts into unnecessary standalone modules.
+
+Guiding rule:
+
+> User facts stay in the User workflow. Administrative actions become workflows. External system communication stays in providers.
 
 ---
 
 ## Completed Milestones
 
-- ✅ Milestone 1 — Foundation
-- ✅ Milestone 2 — Domain Model
-- ✅ Milestone 3 — Provider Architecture
-- ✅ Milestone 4 — Active Directory Provider
-- ✅ Milestone 5 — Microsoft 365 Cloud Foundation
-- ✅ Milestone 6 — Authentication Infrastructure
-- ✅ Milestone 7 — Service Layer & Vertical Integration
-- ✅ Milestone 8 — Runtime Platform
-- ✅ Milestone 8.1 — Runtime Platform Hardening
-- ✅ Milestone 8.2 — Branding & Theme System
+- Milestone 1 - Foundation
+- Milestone 2 - Domain Model
+- Milestone 3 - Provider Architecture
+- Milestone 4 - Active Directory Provider
+- Milestone 5 - Microsoft 365 Cloud Foundation
+- Milestone 6 - Authentication Infrastructure
+- Milestone 7 - Service Layer & Vertical Integration
+- Milestone 8 - Runtime Platform
+- Milestone 8.1 - Runtime Platform Hardening
+- Milestone 8.2 - Branding & Theme System
+- Milestone 9 - Background Runtime Services
 
 ---
 
-## Current Stabilization Track
+## Milestone 10 Status - Identity Platform Completion
 
-The project is currently in a live-environment stabilization pass after Milestone 8. v0.8.9 focuses on live Runtime UX and vertical stabilization before starting Milestone 9.
+Status: Mostly complete; stabilization and parity fixes remain.
 
-### Completed in the stabilization pass
+### Already represented in the User workflow
 
-- Runtime launcher now opens the Runtime Profile/WPF path instead of the legacy shell directly.
-- Runtime startup and provider health diagnostics were added.
-- Active Directory runtime readiness now imports and validates the ActiveDirectory module in the live provider session.
-- Active Directory health now reports connected in the live runtime session.
-- Persistent diagnostics were added for runtime, Active Directory, and hydration behavior:
-  - `logs/runtime-diagnostics.log`
-  - `logs/ad-runtime-diagnostics.log`
-  - `logs/hydration-diagnostics.log`
-- Active Directory search works in the live environment.
-- Base user hydration works in the live environment.
-- Active Directory details load for the selected user.
-- Group display formatting was corrected so group lists display friendly group names rather than raw object output.
-- DN/OU propagation was tightened across AD provider, HybridUserService, and UI resolvers.
-- The main console now has a Back/Start button to reopen Runtime Home.
-- The bottom status bar now has staged search progress for Search, Base User, AD, Graph, Exchange Online, Authentication Posture, Aggregation, and Complete.
-- Exchange display now distinguishes AD mail attributes from Exchange Online mailbox provider data.
-- Duplicate user search results now open a chooser instead of silently selecting the first match.
-- An `Infrastructure.ExchangeOnPremises` provider slice was added so hybrid environments can query local Exchange recipient, remote-mailbox, forwarding, and distribution-group data separately from Exchange Online.
-- Runtime Home provider display now renders enabled providers dynamically from the selected profile/runtime registry, including Exchange On-Premises.
-- Exchange mailbox hydration can now load an on-prem remote mailbox when Exchange Online mailbox data is unavailable, and aggregation annotates the ExchangeMailbox vertical with the source provider.
-- Runtime theme support and profile-aware branding are available.
+- Active Directory attributes are pulled and displayed.
+- Manager data is pulled from Active Directory.
+- Direct reports are represented through Active Directory-derived data where available.
+- Groups are pulled and displayed.
+- Microsoft Graph user data is wired into the user hydration flow.
+- Exchange Online mailbox information is wired into the user flow.
+- Exchange On-Premises recipient / remote mailbox data is wired into the user flow.
+- Authentication posture pulls Azure/Graph-based identity security information.
+- Device Management has started as a separate workflow, which is architecturally correct.
 
-### Current live validation findings
+### Known incomplete or unstable areas
 
-Active Directory search, group display, and DN/OU display are working. v0.8.9 now also includes duplicate-user selection before hydration: AD conversion now preserves DN/OU as direct properties and Attributes values, the service layer reads hashtable attributes, and the UI resolver reads both direct and Attributes-backed names.
+- Licenses are intended to pull as part of the user Graph profile, but there is likely a service/UI parity bug where the UI path prefers a graph profile object that does not preserve all license properties.
+- PIM was attempted but is not confirmed functional.
+- Risk is shallow and currently behaves closer to a yes/no risky sign-in indicator than a full risk investigation panel.
+- Authentication posture needs better coverage and clearer diagnostics.
+- Exchange Online and Exchange On-Premises provider behavior need live validation.
+- Provider status and failure reporting need clearer registered/deferred/unavailable/failed states.
 
-The likely investigation areas are:
+### Important architectural decision
 
-1. `src\Infrastructure\Infrastructure.ActiveDirectory.psm1`
-   - `ConvertTo-HybridADUser`
-   - Confirm `DistinguishedName` is preserved from raw AD results.
-   - Confirm the value is also available in the `Attributes` bag if the UI expects it there.
+Do not create a separate License module merely to display a user's assigned licenses.
 
-2. `src\Application\Application.HybridUserService.psm1`
-   - `New-HybridCompositeUser`
-   - `Add-HybridUserDetails`
-   - Confirm `DistinguishedName`, `ActiveDirectoryDistinguishedName`, and `OrganizationalUnit` survive service-layer composition.
-
-3. `src\UI\Start-HybridAdminConsole.ps1`
-   - `Update-DetailPanels`
-   - `Resolve-HybridUserDistinguishedName`
-   - `Resolve-HybridUserOrganizationalUnit`
-   - Confirm the UI is reading the same property names produced by the service layer.
-
-### Other known live validation gaps
-
-- Exchange on-premises support is represented as a separate provider slice and has runtime/profile/editor wiring. Live validation should confirm the local Exchange server returns remote mailbox, forwarding, and distribution-group data for the selected identity.
-- Microsoft Graph vertical is not yet loading in the live test environment.
-- Authentication posture vertical is not yet loading in the live test environment.
-- Graph, Exchange, and Authentication services may still be unregistered or deferred depending on runtime profile/provider configuration.
+License facts belong in the User workflow. A future License Administration workflow is valid only when it performs operational tasks such as inventory, assignment, removal, bulk licensing, group-based licensing, utilization, and SKU reporting.
 
 ---
 
-## Current Recommendation
+## Current Priority Fixes
 
-Milestone 9 / v0.9.0 is complete.
-
-The v0.9 runtime foundation is in place. Milestone 10 enterprise feature work has started with a read-only Device Management workflow foundation.
+1. Fix Graph profile parity so the active User Lookup path preserves license and PIM fields.
+2. Confirm `Licenses`, `AssignedLicenses`, `LicenseAssignmentStates`, license diagnostics, PIM role data, and PIM diagnostics survive service-layer composition and reach the UI.
+3. Improve authentication posture and risk details.
+4. Validate Exchange Online and Exchange On-Premises mailbox/detail behavior in the live environment.
+5. Complete New User Wizard parity with `legacy\New_User_Wizard.ps1`.
+6. Preserve user identity details in the identity hub rather than creating separate identity-fact modules.
 
 ---
 
-## Next Target
+## Milestone 11 Status - Administrative Workflows
 
-v0.9.0 — Background Runtime Services
+Status: Started / planned.
 
-Completed:
+Milestone 11 should introduce dedicated operational workspaces:
 
-- Runtime event bus.
-- Runtime bootstrap event publication.
-- Provider refresh scheduling foundation.
-- Runtime service orchestrator.
-- Provider status synchronization events.
-- Cache invalidation events.
-- Runtime task lifecycle and cooperative cancellation tracking.
+- Device Management.
+- Group Management.
+- Mailbox Administration.
+- License Administration.
+- Application Management.
+- Bulk Operations.
 
-## v0.9C Status - Workflow Framework
+These workflows should perform operations and manage object collections. They should not duplicate identity details that already belong in User Lookup.
 
-v0.9C introduced HAP workflows after profile launch. User Lookup remains the existing console path. New User Wizard is available as a provider-backed workflow with validation, review, and explicit confirmed create execution.
+---
 
-## Milestone 10 Status - Enterprise Features
+## Milestone 12 Status - Enterprise Operations
 
-Milestone 10 has started with Device Management:
+Status: Planned.
 
-- Added a read-only Device Management workflow tile after runtime launch.
-- Added a Device Management workflow view for user identity lookup, device count, compliance warnings, stale check-in count, and managed-device list.
-- Added `Application.DeviceManagementService.psm1` to normalize provider results into `Hybrid.Device` objects.
-- Registered `DeviceManagement` during runtime application service initialization.
+Milestone 12 should add cross-environment operational visibility:
+
+- Security operations.
+- Azure operations.
+- Exchange operations.
+- Teams administration.
+- Reporting.
+- JAMIS, Paxton, SQL, SharePoint, and Sentinel integrations.
+
+---
+
+## Milestone 13 Status - Enterprise Platform
+
+Status: Planned.
+
+Milestone 13 should make HAP production-grade and extensible:
+
+- Plugin framework.
+- Workflow SDK.
+- Provider SDK.
+- Configuration migration.
+- Secrets management improvements.
+- Installer.
+- Auto-update.
+- Code signing.
+- Audit/history.
+- Documentation completion.
+- UI polish and performance tuning.
+
+---
+
+## Estimated Completion
+
+| Milestone | Status | Estimated Completion |
+| --- | --- | ---: |
+| v0.1-v0.8 Foundation | Complete | 100% |
+| v0.9 Runtime/Architecture | Complete | 100% |
+| v0.10 Identity Platform | Mostly complete / stabilizing | 85-90% |
+| v0.11 Administrative Workflows | Started | 15% |
+| v0.12 Enterprise Operations | Planned | 5% |
+| v0.13 Enterprise Platform | Planning | 0% |
+
+---
+
+## Next Codex Guardrails
+
+When using Codex, explicitly state:
+
+- Do not split user identity facts into standalone modules.
+- Do not create a License module to display user licenses.
+- Fix license and PIM property propagation in the current User Lookup path.
+- Keep providers as external-system adapters.
+- Keep workflows as operator actions or object-management workspaces.
+- Keep User Lookup as the identity hub.
