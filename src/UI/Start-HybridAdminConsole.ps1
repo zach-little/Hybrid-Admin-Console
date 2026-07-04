@@ -25,6 +25,7 @@ $uiRuntimeProfileWizardModule = Join-Path $repoRoot 'src\UI\UI.RuntimeProfileWiz
 $uiUserDashboardModule = Join-Path $repoRoot 'src\UI\UI.UserDashboard.psm1'
 $uiStatusBarModule = Join-Path $repoRoot 'src\UI\UI.StatusBar.psm1'
 $newUserWizardServiceModule = Join-Path $repoRoot 'src\Application\Application.NewUserWizardService.psm1'
+$deviceManagementServiceModule = Join-Path $repoRoot 'src\Application\Application.DeviceManagementService.psm1'
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -48,6 +49,7 @@ $script:HybridHydrationQueue = $null
 $script:HybridHydrationToken = $null
 if (Test-Path $profileManagerModule) { Import-Module $profileManagerModule -Force -Global }
 if (Test-Path $newUserWizardServiceModule) { Import-Module $newUserWizardServiceModule -Force -Global }
+if (Test-Path $deviceManagementServiceModule) { Import-Module $deviceManagementServiceModule -Force -Global }
 if (Test-Path $runtimeModule) {
     Import-Module $runtimeModule -Force -Global
     $profileName = 'Simulation'
@@ -666,13 +668,13 @@ $xaml = @"
                     </StackPanel>
                 </Grid>
                 <!-- v0.9C WorkflowSelector: profile launch now routes to a workflow instead of always opening User Lookup. -->
-                <Grid x:Name="WorkflowSelectorView" Width="760" MinHeight="420" Visibility="Collapsed">
+                <Grid x:Name="WorkflowSelectorView" Width="980" MinHeight="420" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,0,0,22">
                         <TextBlock Text="Choose Workflow" Foreground="#F8FAFC" FontSize="28" FontWeight="SemiBold"/>
                         <TextBlock x:Name="WorkflowSelectorProfileText" Text="Runtime profile is ready. Choose what HAP should open next." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
-                    <UniformGrid Grid.Row="1" Columns="2" Rows="1" Margin="0,0,0,20">
+                    <UniformGrid Grid.Row="1" Columns="3" Rows="1" Margin="0,0,0,20">
                         <Button x:Name="WorkflowUserLookupButton" Margin="0,0,12,0" MinHeight="210" Background="#111827" BorderBrush="#38BDF8" Foreground="#E5E7EB">
                             <StackPanel Margin="18">
                                 <TextBlock Text="User Lookup" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
@@ -680,17 +682,70 @@ $xaml = @"
                                 <TextBlock Text="Current console workflow" Foreground="#38BDF8" FontWeight="SemiBold" Margin="0,22,0,0"/>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="WorkflowNewUserWizardButton" Margin="12,0,0,0" MinHeight="210" Background="#111827" BorderBrush="#22C55E" Foreground="#E5E7EB">
+                        <Button x:Name="WorkflowNewUserWizardButton" Margin="6,0,6,0" MinHeight="210" Background="#111827" BorderBrush="#22C55E" Foreground="#E5E7EB">
                             <StackPanel Margin="18">
                                 <TextBlock Text="New User Wizard" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
                                 <TextBlock Text="Start the onboarding workflow ported from the legacy NewUserWizard logic. v0.9C validates, previews, then executes only after explicit confirmation." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
                                 <TextBlock Text="v0.9C provider-backed workflow" Foreground="#22C55E" FontWeight="SemiBold" Margin="0,22,0,0"/>
                             </StackPanel>
                         </Button>
+                        <Button x:Name="WorkflowDeviceManagementButton" Margin="12,0,0,0" MinHeight="210" Background="#111827" BorderBrush="#F59E0B" Foreground="#E5E7EB">
+                            <StackPanel Margin="18">
+                                <TextBlock Text="Device Management" FontSize="24" FontWeight="SemiBold" Foreground="#F8FAFC"/>
+                                <TextBlock Text="Open the Milestone 10 read-only managed device workflow for a user identity, compliance summary, and last check-in review." TextWrapping="Wrap" Foreground="#CBD5E1" Margin="0,12,0,0"/>
+                                <TextBlock Text="Milestone 10 starter" Foreground="#F59E0B" FontWeight="SemiBold" Margin="0,22,0,0"/>
+                            </StackPanel>
+                        </Button>
                     </UniformGrid>
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="WorkflowBackToProfilesButton" Content="Back to Profiles" MinWidth="132" Height="36" Margin="0,0,10,0"/>
                         <Button x:Name="WorkflowCloseButton" Content="Close" MinWidth="92" Height="36"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Milestone10DeviceManagement: read-only managed device lookup workflow. -->
+                <Grid x:Name="DeviceManagementView" Width="820" MinHeight="600" Visibility="Collapsed">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Device Management" Foreground="#F8FAFC" FontSize="28" FontWeight="SemiBold"/>
+                            <TextBlock Text="Milestone 10 starts with read-only managed device lookup, compliance summary, and last check-in review through the runtime service layer." Foreground="#F59E0B" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                        <Button x:Name="DeviceManagementCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="DeviceManagementIdentityTextBox" Grid.Column="0" Height="36" VerticalContentAlignment="Center" ToolTip="Enter a user's SamAccountName, UPN, or mail address."/>
+                        <Button x:Name="DeviceManagementSearchButton" Grid.Column="1" Content="Search Devices" MinWidth="132" Height="36" Margin="10,0,0,0"/>
+                    </Grid>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="18">
+                            <StackPanel>
+                                <TextBlock Text="Summary" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="Identity" Style="{StaticResource LabelText}"/>
+                                <TextBlock x:Name="DeviceManagementIdentityText" Text="-" Style="{StaticResource ValueText}" TextWrapping="Wrap"/>
+                                <TextBlock Text="Status" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
+                                <TextBlock x:Name="DeviceManagementStatusText" Text="Not loaded" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Device Count" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
+                                <TextBlock x:Name="DeviceManagementCountText" Text="0" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Non-Compliant" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
+                                <TextBlock x:Name="DeviceManagementNonCompliantText" Text="0" Style="{StaticResource ValueText}"/>
+                                <TextBlock Text="Stale Check-In" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
+                                <TextBlock x:Name="DeviceManagementStaleText" Text="0" Style="{StaticResource ValueText}"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Background="#0F172A" CornerRadius="14" Padding="18">
+                            <StackPanel>
+                                <TextBlock Text="Managed Devices" Style="{StaticResource SectionTitle}"/>
+                                <ListBox x:Name="DeviceManagementDevicesList" MinHeight="340" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                        <Button x:Name="DeviceManagementBackToWorkflowButton" Content="Back to Workflows" MinWidth="132" Height="36" Margin="0,0,10,0"/>
+                        <Button x:Name="DeviceManagementOpenLookupButton" Content="Open User Lookup" MinWidth="132" Height="36"/>
                     </StackPanel>
                 </Grid>
 
@@ -1088,7 +1143,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowBackToProfilesButton','WorkflowCloseButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -2019,7 +2074,7 @@ function Set-HybridSelectedRuntimeProfileDefault {
 
 
 function Hide-HybridOverlayWorkflowViews {
-    foreach ($name in @('LaunchProgressView','RuntimeProfileWizardView','RuntimeThemeEditorView','WorkflowSelectorView','NewUserWizardView')) {
+    foreach ($name in @('LaunchProgressView','RuntimeProfileWizardView','RuntimeThemeEditorView','WorkflowSelectorView','NewUserWizardView','DeviceManagementView')) {
         if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Visibility = 'Collapsed' }
     }
 }
@@ -2044,9 +2099,72 @@ function Show-HybridNewUserWizardView {
     Update-HybridNewUserManagerOptions
 }
 
+function Show-HybridDeviceManagementView {
+    Hide-HybridOverlayWorkflowViews
+    $controls.OverlayRegion.Visibility = 'Visible'
+    $controls.DeviceManagementView.Visibility = 'Visible'
+    $controls.StatusText.Text = 'Device Management opened.'
+    if ($controls.DeviceManagementIdentityTextBox -and -not [string]::IsNullOrWhiteSpace([string]$script:CurrentSearchQuery)) {
+        $controls.DeviceManagementIdentityTextBox.Text = [string]$script:CurrentSearchQuery
+    }
+}
+
 function Hide-HybridWorkflowOverlay {
     Hide-HybridOverlayWorkflowViews
     $controls.OverlayRegion.Visibility = 'Collapsed'
+}
+
+function Get-HybridDeviceManagementSummaryFromRuntime {
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    if (Get-Command Get-HybridService -ErrorAction SilentlyContinue) {
+        try {
+            $service = Get-HybridService -Name 'DeviceManagement'
+            if ($null -ne $service -and $service.PSObject.Properties.Name -contains 'GetSummaryForUser') {
+                $operation = $service.GetSummaryForUser
+                if ($operation -is [scriptblock]) { return & $operation $Identity }
+                if ($null -ne $operation -and $operation.PSObject.Methods.Name -contains 'Invoke') { return $operation.Invoke($Identity) }
+            }
+        }
+        catch { }
+    }
+    if (Get-Command Get-HybridManagedDeviceSummary -ErrorAction SilentlyContinue) {
+        return Get-HybridManagedDeviceSummary -Identity $Identity
+    }
+    throw 'Device Management service is not loaded.'
+}
+
+function Invoke-HybridDeviceManagementSearchFromUi {
+    try {
+        $identity = if ($controls.DeviceManagementIdentityTextBox) { [string]$controls.DeviceManagementIdentityTextBox.Text } else { '' }
+        $identity = $identity.Trim()
+        if ([string]::IsNullOrWhiteSpace($identity)) {
+            $controls.StatusText.Text = 'Enter a user identity for device lookup.'
+            return
+        }
+
+        $summary = Get-HybridDeviceManagementSummaryFromRuntime -Identity $identity
+        $controls.DeviceManagementIdentityText.Text = [string]$summary.Identity
+        $controls.DeviceManagementStatusText.Text = [string]$summary.Status
+        $controls.DeviceManagementCountText.Text = [string]$summary.DeviceCount
+        $controls.DeviceManagementNonCompliantText.Text = [string]$summary.NonCompliantCount
+        $controls.DeviceManagementStaleText.Text = [string]$summary.StaleCheckInCount
+        $controls.DeviceManagementDevicesList.Items.Clear()
+
+        foreach ($device in @($summary.Devices)) {
+            $lastCheckIn = if ($device.LastCheckInUtc -is [datetime] -and $device.LastCheckInUtc -gt [datetime]::MinValue) { $device.LastCheckInUtc.ToString('yyyy-MM-dd HH:mm') } else { 'unknown' }
+            $line = "{0} | {1} | {2} | Last check-in: {3}" -f $device.Name,$device.OperatingSystem,$device.ComplianceState,$lastCheckIn
+            [void]$controls.DeviceManagementDevicesList.Items.Add($line)
+        }
+        if ($controls.DeviceManagementDevicesList.Items.Count -eq 0) { [void]$controls.DeviceManagementDevicesList.Items.Add('No managed devices returned for this identity.') }
+        $controls.StatusText.Text = "Device lookup complete for $identity."
+    }
+    catch {
+        $controls.DeviceManagementStatusText.Text = 'Failed'
+        $controls.DeviceManagementDevicesList.Items.Clear()
+        [void]$controls.DeviceManagementDevicesList.Items.Add("Device lookup failed: $($_.Exception.Message)")
+        $controls.StatusText.Text = 'Device Management lookup failed.'
+    }
 }
 
 function Get-HybridNewUserComboText {
@@ -4430,8 +4548,13 @@ if ($controls.BackToStartButton) { $controls.BackToStartButton.Add_Click({ Show-
 $controls.LaunchConsoleButton.Add_Click({ Invoke-HybridRuntimeProfileLaunch })
 if ($controls.WorkflowUserLookupButton) { $controls.WorkflowUserLookupButton.Add_Click({ Show-HybridConsoleView }) }
 if ($controls.WorkflowNewUserWizardButton) { $controls.WorkflowNewUserWizardButton.Add_Click({ Show-HybridNewUserWizardView }) }
+if ($controls.WorkflowDeviceManagementButton) { $controls.WorkflowDeviceManagementButton.Add_Click({ Show-HybridDeviceManagementView }) }
 if ($controls.WorkflowBackToProfilesButton) { $controls.WorkflowBackToProfilesButton.Add_Click({ Show-HybridHomeView; Hide-HybridWorkflowOverlay }) }
 if ($controls.WorkflowCloseButton) { $controls.WorkflowCloseButton.Add_Click({ Hide-HybridWorkflowOverlay }) }
+if ($controls.DeviceManagementCloseButton) { $controls.DeviceManagementCloseButton.Add_Click({ Hide-HybridWorkflowOverlay }) }
+if ($controls.DeviceManagementBackToWorkflowButton) { $controls.DeviceManagementBackToWorkflowButton.Add_Click({ Show-HybridWorkflowSelector }) }
+if ($controls.DeviceManagementOpenLookupButton) { $controls.DeviceManagementOpenLookupButton.Add_Click({ Show-HybridConsoleView }) }
+if ($controls.DeviceManagementSearchButton) { $controls.DeviceManagementSearchButton.Add_Click({ Invoke-HybridDeviceManagementSearchFromUi }) }
 if ($controls.NewUserWizardCloseButton) { $controls.NewUserWizardCloseButton.Add_Click({ Hide-HybridWorkflowOverlay }) }
 if ($controls.NewUserBackToWorkflowButton) { $controls.NewUserBackToWorkflowButton.Add_Click({ Show-HybridWorkflowSelector }) }
 if ($controls.NewUserOpenLookupButton) { $controls.NewUserOpenLookupButton.Add_Click({ Show-HybridConsoleView }) }

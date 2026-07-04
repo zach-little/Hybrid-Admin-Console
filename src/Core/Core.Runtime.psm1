@@ -748,6 +748,7 @@ function Initialize-HybridRuntimeApplicationServices {
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.HybridUserAggregationService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.UserAdministrationService.psm1' -Required | Out-Null
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.NewUserWizardService.psm1' -Required | Out-Null
+    Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.DeviceManagementService.psm1' -Required | Out-Null
 
     $adProvider = $null
     $graphProvider = $null
@@ -776,12 +777,16 @@ function Initialize-HybridRuntimeApplicationServices {
     $newUserWizardService = Initialize-HybridNewUserWizardService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider
     Register-HybridService -Name 'NewUserWizard' -Instance $newUserWizardService -Description 'New user onboarding wizard application service.' -Provider 'Application' -Force | Out-Null
 
+    $deviceManagementService = Initialize-HybridDeviceManagementService -UserService $userService -DirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider
+    Register-HybridService -Name 'DeviceManagement' -Instance $deviceManagementService -Description 'Managed device lookup and compliance summary service.' -Provider 'Application' -Force | Out-Null
+
     $ServiceRegistry['HybridUser'] = $userService
     $ServiceRegistry['GraphProfile'] = $graphService
     $ServiceRegistry['AuthenticationProfile'] = $authService
     $ServiceRegistry['UserAggregation'] = $aggregationService
     $ServiceRegistry['UserAdministration'] = $userAdministrationService
     $ServiceRegistry['NewUserWizard'] = $newUserWizardService
+    $ServiceRegistry['DeviceManagement'] = $deviceManagementService
 
     $Records.Add((New-HybridRuntimeBootstrapRecord -Name 'ApplicationServices' -Kind 'Service' -Status 'Initialized' -Message 'Application services initialized in dependency order.')) | Out-Null
 }

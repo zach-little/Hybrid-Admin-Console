@@ -95,6 +95,15 @@ Milestone 9 built the runtime-services foundation. Full worker-threaded non-bloc
 
 ## Milestone 10 — Enterprise Features
 
+Status: Started.
+
+First slice:
+
+- Device Management read-only workflow foundation.
+- Device Management application service for provider-backed user device lookup.
+- Runtime registration for the `DeviceManagement` service.
+- Workflow selector entry point for managed device lookup and compliance summary.
+
 - Device Management
 - Licensing
 - Teams
@@ -132,5 +141,5 @@ Milestone 9 built the runtime-services foundation. Full worker-threaded non-bloc
 - Preserve User Lookup as the current Hybrid Admin Console workflow.
 - Add New User Wizard as a service-backed workflow shell.
 - Migrate legacy wizard mappings into an application service.
-- Provide validation and preview-only planned actions.
-- Defer destructive user creation/write execution until the preview plan is verified.
+- Provide validation and planned actions before any writes.
+- Execute New User creation only through provider-backed services after explicit operator confirmation.

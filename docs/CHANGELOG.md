@@ -76,4 +76,11 @@
 - Added post-runtime workflow selection so a launched profile can open either User Lookup or New User Wizard.
 - Added service-backed New User Wizard shell based on legacy NewUserWizard mappings and validation logic.
 - Added validated preview plan for account creation, OU targeting, group assignment, remote mailbox routing, and onboarding notice intent.
-- Kept write execution disabled for v0.9C to protect live environments while the preview plan is verified.
+- Added confirmed, provider-backed New User creation through the application service after the preview plan is verified.
+
+## Milestone 10 - Device Management Foundation
+
+- Added `Application.DeviceManagementService.psm1` for read-only user device lookup and compliance summary.
+- Registered the Device Management application service during runtime bootstrap.
+- Added Device Management to the post-launch workflow selector.
+- Added a read-only Device Management workflow view for identity lookup, device count, non-compliant device count, stale check-in count, and managed-device details.

@@ -84,7 +84,7 @@ The likely investigation areas are:
 
 Milestone 9 / v0.9.0 is complete.
 
-The v0.9 runtime foundation is in place. Continue carrying forward live validation notes while planning the next enterprise feature slices.
+The v0.9 runtime foundation is in place. Milestone 10 enterprise feature work has started with a read-only Device Management workflow foundation.
 
 ---
 
@@ -104,4 +104,13 @@ Completed:
 
 ## v0.9C Status - Workflow Framework
 
-v0.9C introduces HAP workflows after profile launch. User Lookup remains the existing console path. New User Wizard is available as a new workflow shell with validation and preview-only planning. Live write execution is intentionally deferred to the next implementation phase.
+v0.9C introduced HAP workflows after profile launch. User Lookup remains the existing console path. New User Wizard is available as a provider-backed workflow with validation, review, and explicit confirmed create execution.
+
+## Milestone 10 Status - Enterprise Features
+
+Milestone 10 has started with Device Management:
+
+- Added a read-only Device Management workflow tile after runtime launch.
+- Added a Device Management workflow view for user identity lookup, device count, compliance warnings, stale check-in count, and managed-device list.
+- Added `Application.DeviceManagementService.psm1` to normalize provider results into `Hybrid.Device` objects.
+- Registered `DeviceManagement` during runtime application service initialization.

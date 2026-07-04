@@ -64,4 +64,4 @@ v0.9.0 delivered:
 
 ## Current Development Target
 
-v0.9C - Workflow Framework and New User Wizard Shell
+Milestone 10 - Device Management Foundation
