@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -1613,7 +1613,7 @@ function Get-HapAuthenticationPreviewLines {
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add(('Cloud target: {0}' -f $cloud)) | Out-Null
     if (-not [string]::IsNullOrWhiteSpace($tenant)) { $lines.Add(('Tenant: {0}' -f $tenant)) | Out-Null }
-    $lines.Add('Delegated Microsoft Graph sign-in occurs during launch and is required for user license, PIM, risk, and authentication posture data.') | Out-Null
+    $lines.Add('Microsoft Graph delegated sign-in is required during launch for user license, PIM, risk, and authentication posture data.') | Out-Null
     if ($appOnlyConfigured) {
         $lines.Add('App-only credentials are configured and can be used by providers that support unattended reads.') | Out-Null
     }
@@ -1991,7 +1991,7 @@ function Update-HybridStartupView {
             $controls.RuntimeReadinessHeadlineText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Ready' } elseif ($selectedProfile.IsValid) { 'Review' } else { 'Blocked' }
             $controls.RuntimeReadinessHeadlineText.Foreground = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { '#22C55E' } elseif ($selectedProfile.IsValid) { '#FACC15' } else { '#F87171' }
         }
-        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Profile is ready to launch. Connectivity and delegated Microsoft Graph sign-in will be validated when the console opens.' + $badgeSuffix } elseif ($selectedProfile.IsValid) { 'Profile can be edited before launch to clear configuration warnings.' + $badgeSuffix } else { 'Profile cannot be launched until corrected.' + $badgeSuffix }
+        $controls.RuntimeStatusText.Text = if ($selectedProfile.IsValid -and $statusModel.MissingCount -eq 0) { 'Profile is ready to launch. Microsoft Graph delegated sign-in will be prompted during launch when Graph is enabled for live use.' + $badgeSuffix } elseif ($selectedProfile.IsValid) { 'Profile can be edited before launch to clear configuration warnings.' + $badgeSuffix } else { 'Profile cannot be launched until corrected.' + $badgeSuffix }
         if ($controls.RuntimeAuthenticationText) { $controls.RuntimeAuthenticationText.Text = ((Get-HapAuthenticationPreviewLines -RawProfile (Get-HapSelectedRuntimeProfileRaw -Profile $selectedProfile) -Mode $selectedProfile.RuntimeMode) -join [Environment]::NewLine) }
         $controls.LaunchConsoleButton.IsEnabled = [bool]$selectedProfile.IsValid
         Set-HybridLaunchButtonLabel -Profile $selectedProfile

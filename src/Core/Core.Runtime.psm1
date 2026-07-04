@@ -564,10 +564,20 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $clientId = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('ClientId') -Default (Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('ClientId') -Default ''))
         $delegatedEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
         $appOnlyEnabled = [bool](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('Enabled') -Default $false)
+        $providerAuthentication = [string](Get-HybridRuntimeObjectValue -InputObject $ProviderSettings -Names @('Authentication') -Default '')
+        $providerRequestsDelegated = ($providerAuthentication -match '^(Interactive|Delegated|Browser|User)$')
+        if (-not $delegatedEnabled -and $providerRequestsDelegated) {
+            # Runtime profiles historically mark Microsoft Graph as Authentication = Interactive.
+            # Treat that as a launch-time delegated requirement even when the Authentication.Delegated
+            # block is missing or stale, otherwise Graph silently falls back to deferred/app-only behavior
+            # and the operator is never prompted for the delegated credentials required by GCC High data.
+            $delegatedEnabled = $true
+        }
+        $appOnlyCanLaunch = ($appOnlyEnabled -and -not $delegatedEnabled)
         $credentialMode = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CredentialMode') -Default 'Certificate')
         $certificateThumbprint = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificateThumbprint') -Default '')
         $certificatePath = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
-        $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyEnabled -and $credentialMode -eq 'Certificate') { 'AppOnlyClientCredentials' } else { 'InteractiveBrowser' }
+        $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyCanLaunch -and $credentialMode -eq 'Certificate') { 'AppOnlyClientCredentials' } else { 'InteractiveBrowser' }
         $graphScopeSuffix = [string](Get-HybridRuntimeObjectValue -InputObject $cloud.Endpoints -Names @('GraphScopeSuffix') -Default 'https://graph.microsoft.com/.default')
         $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory') }
         $verifiedDomains = if ([string]::IsNullOrWhiteSpace($tenantDomain)) { @() } else { @($tenantDomain) }
@@ -659,6 +669,7 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
             $message = 'Microsoft Graph delegated authentication is requested during console launch.'
             $null = & $getInnerService
             $service.ProviderConnected = $true
+            $service.AuthenticationMethod = 'InteractiveBrowser'
             $status = 'Connected'
             $capabilityStates = @('GraphProfile','AuthenticationPosture','DelegatedAuthenticated')
             $message = 'Microsoft Graph delegated authentication completed during console launch.'
