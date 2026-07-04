@@ -3199,14 +3199,61 @@ function Format-HybridGroupDisplay {
     return [string]$Group
 }
 
+
+function ConvertTo-HybridUiLicenseFriendlyName {
+    [CmdletBinding()]
+    param([AllowNull()][string]$SkuPartNumber)
+
+    if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
+    $key = $SkuPartNumber.Trim()
+    $map = @{
+        'AAD_PREMIUM' = 'Microsoft Entra ID P1'
+        'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'
+        'DESKLESSPACK' = 'Office 365 F3'
+        'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
+        'EMS' = 'Enterprise Mobility + Security E3'
+        'ENTERPRISEPACK' = 'Office 365 E3'
+        'ENTERPRISEPREMIUM' = 'Office 365 E5'
+        'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'
+        'EXCHANGESTANDARD' = 'Exchange Online Plan 1'
+        'INTUNE_A' = 'Microsoft Intune Plan 1'
+        'M365_F1' = 'Microsoft 365 F1'
+        'M365_F3' = 'Microsoft 365 F3'
+        'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'
+        'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
+        'MCOSTANDARD' = 'Microsoft Teams'
+        'O365_BUSINESS_ESSENTIALS' = 'Microsoft 365 Business Basic'
+        'O365_BUSINESS_PREMIUM' = 'Microsoft 365 Business Standard'
+        'POWER_BI_PRO' = 'Power BI Pro'
+        'PROJECTPREMIUM' = 'Project Plan 5'
+        'PROJECTPROFESSIONAL' = 'Project Plan 3'
+        'SPE_E3' = 'Microsoft 365 E3'
+        'SPE_E5' = 'Microsoft 365 E5'
+        'STANDARDPACK' = 'Office 365 E1'
+        'VISIOCLIENT' = 'Visio Plan 2'
+        'VISIOONLINE_PLAN1' = 'Visio Plan 1'
+        'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
+    }
+    if ($map.ContainsKey($key)) { return [string]$map[$key] }
+    $upperKey = $key.ToUpperInvariant()
+    if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+    if ($upperKey -match '^[A-Z0-9_]+$' -and $upperKey -match '_') {
+        $fallback = ($key -replace '_GOV$', ' GCC/GCC High') -replace '_', ' '
+        return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
+    }
+    return $key
+}
+
 function Format-HybridGraphListItem {
     [CmdletBinding()]
     param([AllowNull()][object]$Item)
 
     if ($null -eq $Item) { return '-' }
-    if ($Item -is [string]) { return $Item }
+    if ($Item -is [string]) { return (ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $Item) }
 
-    $display = Get-DisplayValue -InputObject $Item -Names @('DisplayName','Name','SkuPartNumber','RoleName','RoleDefinitionName','Value','Id') -Default ''
+    $display = Get-DisplayValue -InputObject $Item -Names @('DisplayName','FriendlyName','Name','SkuPartNumber','RoleName','RoleDefinitionName','Value','Id') -Default ''
+    $skuPartNumber = Get-DisplayValue -InputObject $Item -Names @('SkuPartNumber','skuPartNumber') -Default ''
+    if (-not [string]::IsNullOrWhiteSpace($skuPartNumber) -and $skuPartNumber -ne '-') { $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $skuPartNumber }
     $source = Get-DisplayValue -InputObject $Item -Names @('AssignmentSource','AssignmentType','State','Status') -Default ''
     if (-not [string]::IsNullOrWhiteSpace($display)) {
         if (-not [string]::IsNullOrWhiteSpace($source) -and $source -ne '-') { return "$display ($source)" }

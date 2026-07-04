@@ -629,7 +629,7 @@ function Add-HybridUserMailboxDetails {
     }
 
     $mailbox = $null
-    if ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
+    if ($null -ne $script:HybridUserServiceState.ExchangeOnline -and $hasAdMailSignal) {
         try {
             $mailbox = @(Invoke-HybridServiceOperation -Service $script:HybridUserServiceState.ExchangeOnline -OperationNames @('GetMailbox','GetUserMailbox','Get') -Arguments @($identity) | Select-Object -First 1)
             $mailbox = ($mailbox | Select-Object -First 1)
@@ -637,6 +637,9 @@ function Add-HybridUserMailboxDetails {
         catch {
             Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Exchange Online mailbox lookup failed for '$identity' - $($_.Exception.Message)" -Level WARN
         }
+    }
+    elseif ($null -ne $script:HybridUserServiceState.ExchangeOnline) {
+        Write-HybridUserHydrationDiagnostic -Stage 'ExchangeOnline' -Message "Skipped Exchange Online mailbox lookup for '$identity' because the directory record has no mail, proxy, target address, or alias signal. This is expected for ADM/admin-only accounts synced to Azure without mailboxes." -Level INFO
     }
 
     $effectiveMailbox = if ($null -ne $mailbox) { $mailbox } elseif ($null -ne $onPremRemoteMailbox) { $onPremRemoteMailbox } else { $onPremRecipient }

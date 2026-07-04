@@ -52,7 +52,7 @@ $script:HybridMicrosoftGraphState = @{
     MockUsers                 = @()
     LastAuthenticationSession = $null
     RequestTimeoutSeconds     = 12
-    OptionalRequestTimeoutSeconds = 10
+    OptionalRequestTimeoutSeconds = 4
     Cache                     = @{ Users = @{} }
 }
 
@@ -324,6 +324,58 @@ function Get-HybridMicrosoftGraphSubscribedSkuMap {
     return $map
 }
 
+
+function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
+    [CmdletBinding()]
+    param([AllowNull()][string]$SkuPartNumber)
+
+    if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
+    $key = $SkuPartNumber.Trim()
+    $map = @{
+        'AAD_PREMIUM' = 'Microsoft Entra ID P1'
+        'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'
+        'ATP_ENTERPRISE' = 'Microsoft Defender for Office 365 Plan 1'
+        'ATP_ENTERPRISE_FACULTY' = 'Microsoft Defender for Office 365 Plan 1'
+        'DESKLESSPACK' = 'Office 365 F3'
+        'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
+        'EMS' = 'Enterprise Mobility + Security E3'
+        'ENTERPRISEPACK' = 'Office 365 E3'
+        'ENTERPRISEPREMIUM' = 'Office 365 E5'
+        'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'
+        'EXCHANGESTANDARD' = 'Exchange Online Plan 1'
+        'FLOW_FREE' = 'Power Automate Free'
+        'INTUNE_A' = 'Microsoft Intune Plan 1'
+        'M365EDU_A3_FACULTY' = 'Microsoft 365 A3 Faculty'
+        'M365EDU_A5_FACULTY' = 'Microsoft 365 A5 Faculty'
+        'M365_F1' = 'Microsoft 365 F1'
+        'M365_F3' = 'Microsoft 365 F3'
+        'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'
+        'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
+        'MCOSTANDARD' = 'Microsoft Teams'
+        'O365_BUSINESS_ESSENTIALS' = 'Microsoft 365 Business Basic'
+        'O365_BUSINESS_PREMIUM' = 'Microsoft 365 Business Standard'
+        'POWER_BI_PRO' = 'Power BI Pro'
+        'POWER_BI_STANDARD' = 'Power BI Free'
+        'PROJECTESSENTIALS' = 'Project Online Essentials'
+        'PROJECTPREMIUM' = 'Project Plan 5'
+        'PROJECTPROFESSIONAL' = 'Project Plan 3'
+        'SPE_E3' = 'Microsoft 365 E3'
+        'SPE_E5' = 'Microsoft 365 E5'
+        'STANDARDPACK' = 'Office 365 E1'
+        'VISIOCLIENT' = 'Visio Plan 2'
+        'VISIOONLINE_PLAN1' = 'Visio Plan 1'
+        'WIN10_PRO_ENT_SUB' = 'Windows Enterprise E3'
+        'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
+    }
+
+    if ($map.ContainsKey($key)) { return [string]$map[$key] }
+    $upperKey = $key.ToUpperInvariant()
+    if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+
+    $fallback = ($key -replace '_GOV$', ' GCC/GCC High') -replace '_', ' '
+    return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
+}
+
 function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
     [CmdletBinding()]
     param(
@@ -346,9 +398,11 @@ function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
     $assignmentSource = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('assignedByGroup','AssignedByGroup','AssignmentSource') -Default '')
     $disabledPlans = @(Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('disabledPlans','DisabledPlans') -Default @())
 
+    $friendlyName = ConvertTo-HybridMicrosoftGraphSkuFriendlyName -SkuPartNumber $skuPartNumber
+
     return [pscustomobject]@{
         PSTypeName = 'Hybrid.MicrosoftGraph.License'
-        DisplayName = $skuPartNumber
+        DisplayName = $friendlyName
         SkuPartNumber = $skuPartNumber
         SkuId = $skuId
         Status = $state
@@ -563,7 +617,7 @@ function Invoke-HybridMicrosoftGraphUserSearchRequest {
     $uri = ('{0}/v1.0/users?$top=25&$select={1}&$filter={2}' -f $graphEndpoint, $select, $filter)
     $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
-    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec ([int]$script:HybridMicrosoftGraphState.RequestTimeoutSeconds) -ErrorAction Stop
     $values = Get-HybridMicrosoftGraphObjectValue -InputObject $response -Names @('value','Value') -Default @()
     return @($values)
 }
