@@ -8,6 +8,32 @@ Set-StrictMode -Version Latest
 
 $script:HybridDirectorySimulatorState = @{
     Users = @{}
+    Devices = @{}
+}
+
+function New-HybridDirectorySimulatorDevice {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Id,
+        [Parameter(Mandatory=$true)][string]$Name,
+        [Parameter(Mandatory=$true)][string]$PrimaryUser,
+        [string]$OperatingSystem = 'Windows 11 Enterprise',
+        [string]$ComplianceState = 'Compliant',
+        [int]$LastCheckInHoursAgo = 2
+    )
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.Device'
+        Id = $Id
+        Name = $Name
+        OperatingSystem = $OperatingSystem
+        ComplianceState = $ComplianceState
+        PrimaryUser = $PrimaryUser
+        LastCheckInUtc = ([datetime]::UtcNow.AddHours(-1 * $LastCheckInHoursAgo))
+        Source = 'DirectorySimulator.MicrosoftGraph.Devices'
+        Attributes = @{ Simulator = $true }
+        CreatedUtc = [datetime]::UtcNow
+    }
 }
 
 function New-HybridSimulatorUser {
@@ -65,6 +91,22 @@ function Initialize-HybridDirectorySimulatorRecords {
     foreach ($record in $records) {
         $script:HybridDirectorySimulatorState.Users[$record.SamAccountName.ToLowerInvariant()] = $record
     }
+
+    $script:HybridDirectorySimulatorState.Devices.Clear()
+    $script:HybridDirectorySimulatorState.Devices['rwilliams'] = @(
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-rwilliams-01' -Name 'SIM-RWILLIAMS-PAW' -PrimaryUser 'rwilliams@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 3
+    )
+    $script:HybridDirectorySimulatorState.Devices['treed'] = @(
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-01' -Name 'SIM-TREED-LT01' -PrimaryUser 'treed@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 6
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-02' -Name 'SIM-TREED-TAB01' -PrimaryUser 'treed@atlas-tech.com' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Unknown' -LastCheckInHoursAgo 36
+    )
+    $script:HybridDirectorySimulatorState.Devices['amorgan'] = @(
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-01' -Name 'SIM-AMORGAN-LT01' -PrimaryUser 'amorgan@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 2
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-02' -Name 'SIM-AMORGAN-PAW01' -PrimaryUser 'amorgan@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 5
+    )
+    $script:HybridDirectorySimulatorState.Devices['jlee'] = @(
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-jlee-01' -Name 'SIM-JLEE-LT01' -PrimaryUser 'jlee@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 8
+    )
 }
 
 function Resolve-HybridDirectorySimulatorKey {
@@ -160,6 +202,28 @@ function Get-HybridDirectorySimulatorDirectReports {
     foreach ($reportSam in @($user.DirectReportSamAccountNames)) {
         if ($reportSam -and $reportSam -ne $user.SamAccountName) { Get-HybridDirectorySimulatorUser -Identity $reportSam }
     }
+}
+
+function Get-HybridDirectorySimulatorDevices {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Identity)
+
+    if ($script:HybridDirectorySimulatorState.Users.Count -eq 0) { Initialize-HybridDirectorySimulatorRecords }
+    $key = Resolve-HybridDirectorySimulatorKey -Query $Identity
+    if ($null -ne $key -and $script:HybridDirectorySimulatorState.Devices.ContainsKey($key)) {
+        return @($script:HybridDirectorySimulatorState.Devices[$key])
+    }
+
+    $user = Get-HybridDirectorySimulatorUser -Identity $Identity
+    if ($null -eq $user) { return @() }
+    $sam = [string]$user.SamAccountName
+    if ([string]::IsNullOrWhiteSpace($sam)) { return @() }
+    $hash = [Math]::Abs($sam.GetHashCode())
+    if ($hash % 4 -eq 0) { return @() }
+
+    return @(
+        New-HybridDirectorySimulatorDevice -Id "sim-device-$sam-01" -Name ("SIM-{0}-LT01" -f $sam.ToUpperInvariant()) -PrimaryUser $user.UserPrincipalName -ComplianceState $(if ($hash % 5 -eq 0) { 'NonCompliant' } else { 'Compliant' }) -LastCheckInHoursAgo (($hash % 96) + 1)
+    )
 }
 
 function Get-HybridDirectorySimulatorMailbox {
@@ -337,6 +401,8 @@ function New-HybridDirectorySimulatorProviders {
         GetManager = { param([string]$Identity) Get-HybridDirectorySimulatorManager -Identity $Identity }.GetNewClosure()
         GetGroups = { param([string]$Identity) Get-HybridDirectorySimulatorGroups -Identity $Identity }.GetNewClosure()
         GetDirectReports = { param([string]$Identity) @(Get-HybridDirectorySimulatorDirectReports -Identity $Identity) }.GetNewClosure()
+        GetUserDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
+        GetManagedDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.ActiveDirectory' } }.GetNewClosure()
     }
 
@@ -348,6 +414,9 @@ function New-HybridDirectorySimulatorProviders {
         GetAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
         GetUserAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
         GetGraphAuthenticationProfile = { param([string]$Identity) Get-HybridDirectorySimulatorAuthenticationProfile -Identity $Identity }.GetNewClosure()
+        GetUserDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
+        GetManagedDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
+        GetIntuneDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.MicrosoftGraph' } }.GetNewClosure()
     }
 
@@ -389,6 +458,7 @@ Export-ModuleMember -Function @(
     'Get-HybridDirectorySimulatorManager',
     'Get-HybridDirectorySimulatorGroups',
     'Get-HybridDirectorySimulatorDirectReports',
+    'Get-HybridDirectorySimulatorDevices',
     'Get-HybridDirectorySimulatorMailbox',
     'Get-HybridDirectorySimulatorMailboxStatistics',
     'Get-HybridDirectorySimulatorMailboxDelegations',

@@ -704,7 +704,7 @@ $xaml = @"
                 </Grid>
 
                 <!-- Milestone10DeviceManagement: read-only managed device lookup workflow. -->
-                <Grid x:Name="DeviceManagementView" Width="820" MinHeight="600" Visibility="Collapsed">
+                <Grid x:Name="DeviceManagementView" Width="1040" MinHeight="640" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="0,0,0,18">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -720,27 +720,64 @@ $xaml = @"
                         <Button x:Name="DeviceManagementSearchButton" Grid.Column="1" Content="Search Devices" MinWidth="132" Height="36" Margin="10,0,0,0"/>
                     </Grid>
                     <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="0.8*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="0.72*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.28*"/></Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="18">
                             <StackPanel>
                                 <TextBlock Text="Summary" Style="{StaticResource SectionTitle}"/>
                                 <TextBlock Text="Identity" Style="{StaticResource LabelText}"/>
                                 <TextBlock x:Name="DeviceManagementIdentityText" Text="-" Style="{StaticResource ValueText}" TextWrapping="Wrap"/>
-                                <TextBlock Text="Status" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
-                                <TextBlock x:Name="DeviceManagementStatusText" Text="Not loaded" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Device Count" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
-                                <TextBlock x:Name="DeviceManagementCountText" Text="0" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Non-Compliant" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
-                                <TextBlock x:Name="DeviceManagementNonCompliantText" Text="0" Style="{StaticResource ValueText}"/>
-                                <TextBlock Text="Stale Check-In" Style="{StaticResource LabelText}" Margin="0,12,0,0"/>
-                                <TextBlock x:Name="DeviceManagementStaleText" Text="0" Style="{StaticResource ValueText}"/>
+                                <Border Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,10,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Status" Foreground="#8EA4C2" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="DeviceManagementStatusText" Grid.Column="1" Text="Not loaded" Foreground="#F8FAFC" FontSize="16" FontWeight="SemiBold"/>
+                                    </Grid>
+                                </Border>
+                                <UniformGrid Columns="1">
+                                    <Border Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Devices" Foreground="#8EA4C2" FontSize="12"/><TextBlock x:Name="DeviceManagementCountText" Grid.Column="1" Text="0" Foreground="#E5E7EB" FontSize="20" FontWeight="SemiBold"/></Grid>
+                                    </Border>
+                                    <Border Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Non-Compliant" Foreground="#8EA4C2" FontSize="12"/><TextBlock x:Name="DeviceManagementNonCompliantText" Grid.Column="1" Text="0" Foreground="#FCA5A5" FontSize="20" FontWeight="SemiBold"/></Grid>
+                                    </Border>
+                                    <Border Background="#111827" BorderBrush="#26364F" BorderThickness="1" CornerRadius="8" Padding="12">
+                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Stale Check-In" Foreground="#8EA4C2" FontSize="12"/><TextBlock x:Name="DeviceManagementStaleText" Grid.Column="1" Text="0" Foreground="#FCD34D" FontSize="20" FontWeight="SemiBold"/></Grid>
+                                    </Border>
+                                </UniformGrid>
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="2" Background="#0F172A" CornerRadius="14" Padding="18">
-                            <StackPanel>
-                                <TextBlock Text="Managed Devices" Style="{StaticResource SectionTitle}"/>
-                                <ListBox x:Name="DeviceManagementDevicesList" MinHeight="340" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F"/>
-                            </StackPanel>
+                            <Grid>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Managed Devices" Style="{StaticResource SectionTitle}"/>
+                                <DataGrid x:Name="DeviceManagementDevicesList" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeaderWidth="0" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F" HorizontalGridLinesBrush="#26364F" VerticalGridLinesBrush="#26364F" RowBackground="#111827" AlternatingRowBackground="#0F172A" ColumnHeaderHeight="34" RowHeight="38" MinHeight="380">
+                                    <DataGrid.Resources>
+                                        <Style TargetType="{x:Type DataGridColumnHeader}">
+                                            <Setter Property="Background" Value="#1A2538"/>
+                                            <Setter Property="Foreground" Value="#CBD5E1"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                            <Setter Property="BorderBrush" Value="#26364F"/>
+                                            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                            <Setter Property="Padding" Value="8,0"/>
+                                        </Style>
+                                        <Style TargetType="{x:Type DataGridCell}">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="#E5E7EB"/>
+                                            <Setter Property="BorderBrush" Value="#26364F"/>
+                                            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                                            <Setter Property="Padding" Value="8,0"/>
+                                        </Style>
+                                    </DataGrid.Resources>
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Device" Binding="{Binding Name}" Width="1.35*"/>
+                                        <DataGridTextColumn Header="OS" Binding="{Binding OperatingSystem}" Width="1.2*"/>
+                                        <DataGridTextColumn Header="Compliance" Binding="{Binding ComplianceState}" Width="0.85*"/>
+                                        <DataGridTextColumn Header="Last Check-In" Binding="{Binding LastCheckInDisplay}" Width="0.95*"/>
+                                        <DataGridTextColumn Header="Source" Binding="{Binding Source}" Width="0.95*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock x:Name="DeviceManagementEmptyText" Grid.Row="2" Text="" Foreground="#94A3B8" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                            </Grid>
                         </Border>
                     </Grid>
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
@@ -1143,7 +1180,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementEmptyText','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -2149,20 +2186,38 @@ function Invoke-HybridDeviceManagementSearchFromUi {
         $controls.DeviceManagementCountText.Text = [string]$summary.DeviceCount
         $controls.DeviceManagementNonCompliantText.Text = [string]$summary.NonCompliantCount
         $controls.DeviceManagementStaleText.Text = [string]$summary.StaleCheckInCount
-        $controls.DeviceManagementDevicesList.Items.Clear()
+        if ([string]$summary.Status -eq 'Warning') {
+            $controls.DeviceManagementStatusText.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#FCD34D'))
+        }
+        elseif ([string]$summary.Status -eq 'Ready') {
+            $controls.DeviceManagementStatusText.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#86EFAC'))
+        }
+        else {
+            $controls.DeviceManagementStatusText.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#CBD5E1'))
+        }
 
+        $deviceRows = @()
         foreach ($device in @($summary.Devices)) {
             $lastCheckIn = if ($device.LastCheckInUtc -is [datetime] -and $device.LastCheckInUtc -gt [datetime]::MinValue) { $device.LastCheckInUtc.ToString('yyyy-MM-dd HH:mm') } else { 'unknown' }
-            $line = "{0} | {1} | {2} | Last check-in: {3}" -f $device.Name,$device.OperatingSystem,$device.ComplianceState,$lastCheckIn
-            [void]$controls.DeviceManagementDevicesList.Items.Add($line)
+            $deviceRows += [pscustomobject]@{
+                Name = [string]$device.Name
+                OperatingSystem = [string]$device.OperatingSystem
+                ComplianceState = [string]$device.ComplianceState
+                LastCheckInDisplay = $lastCheckIn
+                Source = [string]$device.Source
+            }
         }
-        if ($controls.DeviceManagementDevicesList.Items.Count -eq 0) { [void]$controls.DeviceManagementDevicesList.Items.Add('No managed devices returned for this identity.') }
+        $controls.DeviceManagementDevicesList.ItemsSource = @($deviceRows)
+        if ($controls.DeviceManagementEmptyText) {
+            $controls.DeviceManagementEmptyText.Text = if ($deviceRows.Count -eq 0) { 'No managed devices returned for this identity.' } else { '' }
+        }
         $controls.StatusText.Text = "Device lookup complete for $identity."
     }
     catch {
         $controls.DeviceManagementStatusText.Text = 'Failed'
-        $controls.DeviceManagementDevicesList.Items.Clear()
-        [void]$controls.DeviceManagementDevicesList.Items.Add("Device lookup failed: $($_.Exception.Message)")
+        $controls.DeviceManagementStatusText.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#FCA5A5'))
+        $controls.DeviceManagementDevicesList.ItemsSource = @()
+        if ($controls.DeviceManagementEmptyText) { $controls.DeviceManagementEmptyText.Text = "Device lookup failed: $($_.Exception.Message)" }
         $controls.StatusText.Text = 'Device Management lookup failed.'
     }
 }
