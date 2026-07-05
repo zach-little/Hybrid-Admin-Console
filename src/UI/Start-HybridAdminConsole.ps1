@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -1670,31 +1670,56 @@ function Format-HapNewUserOption {
 function Set-HapComboBoxItems {
     param(
         [AllowNull()][object]$ComboBox,
-        [AllowNull()][object[]]$Items,
+        [AllowNull()][object]$Items,
         [int]$SelectedIndex = -1
     )
 
     if ($null -eq $ComboBox) { return }
-    $ComboBox.ItemsSource = $null
-    $ComboBox.Items.Clear()
+
+    # Use a plain string ItemsSource instead of mixing manually-added ComboBoxItem
+    # instances with editable ComboBox text. Some WPF/PowerShell hosts throw
+    # "Argument types do not match" when a typed ItemCollection containing
+    # ComboBoxItem objects is cleared/repopulated and then Text/SelectedIndex is
+    # reset during the same launch cycle. A List[string] keeps the picker
+    # editable, data-bound, and safe for config-driven values.
+    $displayItems = New-Object 'System.Collections.Generic.List[string]'
     foreach ($item in @($Items)) {
         $display = Format-HapNewUserOption -Option $item
-        if ($null -ne $display) { [void]$ComboBox.Items.Add([string]$display) }
+        if ($null -ne $display) { [void]$displayItems.Add([string]$display) }
     }
-    if ($SelectedIndex -ge 0 -and $ComboBox.Items.Count -gt $SelectedIndex) { $ComboBox.SelectedIndex = $SelectedIndex }
-    else { $ComboBox.SelectedIndex = -1; $ComboBox.Text = '' }
+
+    $ComboBox.ItemsSource = $null
+    if ($ComboBox.Items.Count -gt 0) { $ComboBox.Items.Clear() }
+    $ComboBox.DisplayMemberPath = ''
+    $ComboBox.SelectedValuePath = ''
+    $ComboBox.ItemsSource = $displayItems
+
+    if ($SelectedIndex -ge 0 -and $displayItems.Count -gt $SelectedIndex) {
+        $ComboBox.SelectedIndex = $SelectedIndex
+    }
+    else {
+        $ComboBox.SelectedIndex = -1
+        if ($ComboBox.IsEditable) { $ComboBox.Text = '' }
+    }
 }
 
 function Update-HapNewUserWizardConfigurationFromConfig {
     $configuration = Get-HapNewUserWizardConfiguration
-    if (Get-Command Update-HybridNewUserWizardConfiguration -ErrorAction SilentlyContinue) {
-        Update-HybridNewUserWizardConfiguration -Configuration $configuration | Out-Null
-    }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items @($configuration.HomeOrganizations) -SelectedIndex -1 }
+    catch { throw "populating Home Organization values: $($_.Exception.Message)" }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items @($configuration.Locations) -SelectedIndex -1 }
+    catch { throw "populating Location values: $($_.Exception.Message)" }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items @($configuration.Departments) -SelectedIndex -1 }
+    catch { throw "populating Department values: $($_.Exception.Message)" }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items @($configuration.Portfolios) -SelectedIndex -1 }
+    catch { throw "populating Portfolio values: $($_.Exception.Message)" }
 
-    Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items @($configuration.HomeOrganizations) -SelectedIndex -1
-    Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items @($configuration.Locations) -SelectedIndex -1
-    Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items @($configuration.Departments) -SelectedIndex -1
-    Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items @($configuration.Portfolios) -SelectedIndex -1
+    if (Get-Command Update-HybridNewUserWizardConfiguration -ErrorAction SilentlyContinue) {
+        try { Update-HybridNewUserWizardConfiguration -Configuration $configuration | Out-Null }
+        catch {
+            if ($controls.StatusText) { $controls.StatusText.Text = "New User Wizard config loaded; service sync warning: $($_.Exception.Message)" }
+        }
+    }
 }
 
 function Get-HapRuntimeProfileProviderMap {
@@ -2448,20 +2473,27 @@ function Show-HybridWorkflowSelector {
 }
 
 function Show-HybridNewUserWizardView {
+    $openStep = 'starting'
     try {
+        $openStep = 'hiding other workflow views'
         Hide-HybridOverlayWorkflowViews
+        $openStep = 'loading New User Wizard configuration'
         Update-HapNewUserWizardConfigurationFromConfig
+        $openStep = 'resetting New User Wizard fields'
         Reset-HybridNewUserWizardFields -PreserveDefaults
+        $openStep = 'showing New User Wizard view'
         $controls.OverlayRegion.Visibility = 'Visible'
         $controls.NewUserWizardView.Visibility = 'Visible'
         $controls.StatusText.Text = 'New User Wizard opened.'
+        $openStep = 'loading manager options'
         Update-HybridNewUserManagerOptions
     }
     catch {
         $controls.OverlayRegion.Visibility = 'Visible'
         $controls.WorkflowSelectorView.Visibility = 'Visible'
-        $controls.StatusText.Text = "New User Wizard failed to open: $($_.Exception.Message)"
-        if ($controls.WorkflowSelectorProfileText) { $controls.WorkflowSelectorProfileText.Text = "New User Wizard failed to open: $($_.Exception.Message)" }
+        $message = "New User Wizard failed to open while $openStep`: $($_.Exception.Message)"
+        $controls.StatusText.Text = $message
+        if ($controls.WorkflowSelectorProfileText) { $controls.WorkflowSelectorProfileText.Text = $message }
     }
 }
 
@@ -2720,15 +2752,22 @@ function Update-HybridNewUserManagerOptions {
     if ($null -eq $controls.NewUserManagerComboBox) { return }
     try {
         $controls.NewUserManagerComboBox.ItemsSource = $null
+        if ($controls.NewUserManagerComboBox.Items.Count -gt 0) { $controls.NewUserManagerComboBox.Items.Clear() }
         $controls.NewUserManagerComboBox.DisplayMemberPath = 'Name'
         $controls.NewUserManagerComboBox.SelectedValuePath = 'Identity'
-        $managers = @(Get-HybridNewUserManagerOptions)
-        $controls.NewUserManagerComboBox.ItemsSource = $managers
-        if ($managers.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$managers[0].Identity)) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
-        $controls.StatusText.Text = "Loaded $($managers.Count) manager option(s)."
+
+        $managerItems = New-Object 'System.Collections.Generic.List[object]'
+        foreach ($manager in @(Get-HybridNewUserManagerOptions)) { [void]$managerItems.Add($manager) }
+
+        $controls.NewUserManagerComboBox.ItemsSource = $managerItems
+        if ($managerItems.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$managerItems[0].Identity)) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
+        else { $controls.NewUserManagerComboBox.SelectedIndex = -1; if ($controls.NewUserManagerComboBox.IsEditable) { $controls.NewUserManagerComboBox.Text = '' } }
+        $controls.StatusText.Text = "Loaded $($managerItems.Count) manager option(s)."
     }
     catch {
-        $controls.NewUserManagerComboBox.ItemsSource = @([pscustomobject]@{ Name = 'Manager lookup failed'; Identity = ''; Enabled = $false })
+        $fallbackManagers = New-Object 'System.Collections.Generic.List[object]'
+        [void]$fallbackManagers.Add([pscustomobject]@{ Name = 'Manager lookup failed'; Identity = ''; Enabled = $false })
+        $controls.NewUserManagerComboBox.ItemsSource = $fallbackManagers
         $controls.NewUserManagerComboBox.SelectedIndex = 0
         $controls.StatusText.Text = "Manager lookup failed: $($_.Exception.Message)"
     }
@@ -3654,10 +3693,11 @@ function ConvertTo-HybridUiLicenseFriendlyName {
     if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
     $key = $SkuPartNumber.Trim()
     $upperKey = $key.ToUpperInvariant()
+    $baseKey = $upperKey -replace '_USGOV_GCCHIGH$', '' -replace '_USGOV_DOD$', '' -replace '_GCCHIGH$', '' -replace '_GOV$', '' -replace '_DOD$', ''
     $map = @{
         'AAD_PREMIUM' = 'Microsoft Entra ID P1'; 'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'; 'ATP_ENTERPRISE' = 'Microsoft Defender for Office 365 Plan 1'
         'DESKLESSPACK' = 'Office 365 F3'; 'EMS' = 'Enterprise Mobility + Security E3'; 'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
-        'ENTERPRISEPACK' = 'Office 365 E3'; 'ENTERPRISEPREMIUM' = 'Office 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Office 365 E5 without Audio Conferencing'
+        'ENTERPRISEPACK' = 'Microsoft 365 E3'; 'ENTERPRISEPREMIUM' = 'Microsoft 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Microsoft 365 E5 without Audio Conferencing'
         'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'; 'EXCHANGESTANDARD' = 'Exchange Online Plan 1'; 'FLOW_FREE' = 'Power Automate Free'
         'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'; 'INTUNE_A' = 'Microsoft Intune Plan 1'
         'M365_F1' = 'Microsoft 365 F1'; 'M365_F3' = 'Microsoft 365 F3'; 'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'; 'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
@@ -3670,8 +3710,9 @@ function ConvertTo-HybridUiLicenseFriendlyName {
     }
     if ($map.ContainsKey($key)) { return [string]$map[$key] }
     if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+    if ($map.ContainsKey($baseKey)) { return [string]$map[$baseKey] }
     if ($upperKey -match '^[A-Z0-9_]+$') {
-        $fallback = $key -replace '_GOV$', ' GCC/GCC High' -replace '_GCCHIGH$', ' GCC High' -replace '_DOD$', ' DoD' -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
+        $fallback = $baseKey -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
         return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
     }
     return $key
@@ -3684,10 +3725,14 @@ function Format-HybridGraphListItem {
     if ($null -eq $Item) { return '-' }
     if ($Item -is [string]) { return (ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $Item) }
 
-    $display = Get-DisplayValue -InputObject $Item -Names @('FriendlyName','DisplayName','Name','SkuPartNumber','RoleName','RoleDefinitionName','Value','Id') -Default ''
+    $display = Get-DisplayValue -InputObject $Item -Names @('FriendlyName','DisplayName','Name','RoleName','RoleDefinitionName','Value','Id') -Default ''
     $skuPartNumber = Get-DisplayValue -InputObject $Item -Names @('SkuPartNumber','skuPartNumber') -Default ''
-    if (-not [string]::IsNullOrWhiteSpace($skuPartNumber) -and $skuPartNumber -ne '-') { $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $skuPartNumber }
-    elseif (-not [string]::IsNullOrWhiteSpace($display) -and $display -ne '-') { $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $display }
+    if ([string]::IsNullOrWhiteSpace($display) -or $display -eq '-') {
+        $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $skuPartNumber
+    }
+    elseif ($display -match '^[A-Z0-9_]+(_USGOV_GCCHIGH|_USGOV_DOD|_GCCHIGH|_GOV|_DOD)?$') {
+        $display = ConvertTo-HybridUiLicenseFriendlyName -SkuPartNumber $display
+    }
     $source = Get-DisplayValue -InputObject $Item -Names @('AssignmentSource','AssignmentType','State','Status') -Default ''
     if (-not [string]::IsNullOrWhiteSpace($display)) {
         if (-not [string]::IsNullOrWhiteSpace($source) -and $source -ne '-') { return "$display ($source)" }

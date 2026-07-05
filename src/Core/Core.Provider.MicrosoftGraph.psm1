@@ -500,8 +500,6 @@ function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject {
     $assignmentSource = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('assignedByGroup','AssignedByGroup','AssignmentSource') -Default '')
     $disabledPlans = @(Get-HybridMicrosoftGraphObjectValue -InputObject $License -Names @('disabledPlans','DisabledPlans') -Default @())
 
-    $friendlyName = ConvertTo-HybridMicrosoftGraphSkuFriendlyName -SkuPartNumber $skuPartNumber
-
     return [pscustomobject]@{
         PSTypeName = 'Hybrid.MicrosoftGraph.License'
         DisplayName = $friendlyName
