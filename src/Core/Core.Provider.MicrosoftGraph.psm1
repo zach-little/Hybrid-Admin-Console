@@ -439,10 +439,7 @@ function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName {
         'STANDARDPACK' = 'Office 365 E1'; 'STANDARDWOFFPACK' = 'Office 365 E2'; 'STREAM' = 'Microsoft Stream'; 'TEAMS_EXPLORATORY' = 'Microsoft Teams Exploratory'
         'VISIOCLIENT' = 'Visio Plan 2'; 'VISIOONLINE_PLAN1' = 'Visio Plan 1'; 'WIN10_PRO_ENT_SUB' = 'Windows Enterprise E3'; 'WIN_DEF_ATP' = 'Microsoft Defender for Endpoint'
         'SPE_E5_SEC' = 'Microsoft 365 E5 Security'
-        'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'
         'THREAT_INTELLIGENCE' = 'Microsoft Defender for Office 365 Plan 2'
-        'RIGHTSMANAGEMENT' = 'Azure Information Protection Plan 1'
-        'POWERAPPS_PER_USER' = 'Power Apps Premium'
         'EXCHANGE_S_ENTERPRISE_GOV' = 'Exchange Online Plan 2 GCC/GCC High'
         'EXCHANGE_S_STANDARD_GOV' = 'Exchange Online Plan 1 GCC/GCC High'
     }

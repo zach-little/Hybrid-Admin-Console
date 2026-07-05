@@ -325,6 +325,10 @@ Assert-ContainsText $graphProviderText "/auditLogs/signIns" 'Microsoft Graph pro
 Assert-ContainsText $graphProviderText "/identityProtection/riskyUsers" 'Microsoft Graph provider requests risky user state when available'
 Assert-ContainsText $graphProviderText "`$select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'" 'Microsoft Graph base user request uses a conservative select set'
 Assert-ContainsText $graphProviderText 'Invoke-HybridMicrosoftGraphOptionalRequest -Uri $profileUri' 'Microsoft Graph extended user fields are loaded with optional fallback requests'
+$friendlyLicenseMapText = $graphProviderText.Substring($graphProviderText.IndexOf('function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName'), $graphProviderText.IndexOf('function ConvertTo-HybridMicrosoftGraphLicenseDisplayObject') - $graphProviderText.IndexOf('function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName'))
+foreach ($skuKey in @('IDENTITY_THREAT_PROTECTION','RIGHTSMANAGEMENT','POWERAPPS_PER_USER')) {
+    Assert-True ((([regex]::Matches($friendlyLicenseMapText, "'$skuKey'\s*=")).Count) -eq 1) "Microsoft Graph friendly license map contains one $skuKey entry"
+}
 Assert-ContainsText $graphProviderText 'RequestTimeoutSeconds' 'Microsoft Graph base user requests have explicit timeout configuration'
 Assert-ContainsText $graphProviderText 'OptionalRequestTimeoutSeconds' 'Microsoft Graph optional enrichment requests have explicit timeout configuration'
 Assert-ContainsText $graphProviderText 'OptionalRequestTimeoutSeconds) -ErrorAction Stop' 'Microsoft Graph optional enrichment requests cannot hang indefinitely'
