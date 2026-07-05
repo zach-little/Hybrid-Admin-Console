@@ -598,7 +598,15 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $lazyState = @{ Service = $null; LastError = $null }
         $getInnerService = {
             if ($null -eq $lazyState.Service) {
-                $lazyState.Service = Initialize-HybridMicrosoftGraphProvider -Context $providerContext
+                # Delegated Microsoft Graph must prompt during launch/profile bootstrap.
+                # ForceRefresh prevents an existing app-only or stale cached session from satisfying
+                # the request silently and skipping the browser credential prompt.
+                if ($delegatedEnabled) {
+                    $lazyState.Service = Initialize-HybridMicrosoftGraphProvider -Context $providerContext -ForceRefresh
+                }
+                else {
+                    $lazyState.Service = Initialize-HybridMicrosoftGraphProvider -Context $providerContext
+                }
             }
             return $lazyState.Service
         }.GetNewClosure()
