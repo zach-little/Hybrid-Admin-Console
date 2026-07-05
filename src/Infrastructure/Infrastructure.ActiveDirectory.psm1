@@ -18,6 +18,8 @@ $script:ProviderCapabilities = @(
     'Groups',
     'Manager',
     'DirectReports',
+    'Devices',
+    'SearchDevice',
     'PasswordReset',
     'EnableDisable',
     'Unlock',
@@ -31,7 +33,7 @@ $script:ProviderCapabilities = @(
 )
 
 $script:ProviderState = if (Get-Command New-HybridProviderState -ErrorAction SilentlyContinue) {
-    New-HybridProviderState -Name 'ActiveDirectory' -Module 'Infrastructure.ActiveDirectory' -Capabilities $script:ProviderCapabilities -CacheBuckets @('Users','Groups','Managers','DirectReports','OUs')
+    New-HybridProviderState -Name 'ActiveDirectory' -Module 'Infrastructure.ActiveDirectory' -Capabilities $script:ProviderCapabilities -CacheBuckets @('Users','Groups','Managers','DirectReports','OUs','Devices')
 }
 else {
     [pscustomobject]@{
@@ -53,6 +55,7 @@ else {
             Managers      = @{}
             DirectReports = @{}
             OUs           = @{}
+            Devices       = @{}
         }
     }
 }
@@ -73,6 +76,7 @@ $script:State = @{
         Managers      = @{}
         DirectReports = @{}
         OUs           = @{}
+        Devices       = @{}
     }
 }
 
@@ -536,6 +540,10 @@ function Initialize-HybridActiveDirectoryProvider {
         AddUserToGroup       = { param([string]$Identity, [string]$GroupIdentity) Add-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
         RemoveUserFromGroup  = { param([string]$Identity, [string]$GroupIdentity) Remove-HybridADUserGroupMembership -Identity $Identity -GroupIdentity $GroupIdentity }
         SearchOU             = { param([string]$Query) Search-HybridADOrganizationalUnit -Query $Query }
+        SearchDevice         = { param([string]$Query) Search-HybridADDevice -Query $Query }
+        SearchDevices        = { param([string]$Query) Search-HybridADDevice -Query $Query }
+        GetDevice            = { param([string]$Identity) Search-HybridADDevice -Query $Identity }
+        GetComputer          = { param([string]$Identity) Search-HybridADDevice -Query $Identity }
         GetHealth            = { Get-HybridADProviderHealth }
         GetProviderHealth    = { Get-HybridADProviderHealth }
         InitializeRuntime    = { Initialize-HybridActiveDirectoryRuntime }
@@ -578,6 +586,10 @@ function Initialize-HybridActiveDirectoryProvider {
             AddUserToGroup       = $operations.AddUserToGroup
             RemoveUserFromGroup  = $operations.RemoveUserFromGroup
             SearchOU             = $operations.SearchOU
+            SearchDevice         = $operations.SearchDevice
+            SearchDevices        = $operations.SearchDevices
+            GetDevice            = $operations.GetDevice
+            GetComputer          = $operations.GetComputer
         }
     }
 
@@ -1168,6 +1180,52 @@ function Search-HybridADOrganizationalUnit {
     return $ous
 }
 
+function Search-HybridADDevice {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Query,
+        [int]$ResultSetSize = 25
+    )
+
+    Assert-HybridADProviderAvailable
+
+    $cacheKey = Get-HybridADCacheKey -Prefix 'device' -Value "$Query|$ResultSetSize"
+    $cachedDevices = Get-HybridADCacheValue -Bucket 'Devices' -Key $cacheKey
+    if ($null -ne $cachedDevices) { return @($cachedDevices) }
+
+    $adParams = New-HybridADCommonParameters
+    $adParams.ResultSetSize = $ResultSetSize
+    $adParams.Properties = @('name','dNSHostName','operatingSystem','lastLogonTimestamp','managedBy','distinguishedName','objectGUID')
+    if (-not [string]::IsNullOrWhiteSpace($script:State.SearchBase)) {
+        $adParams.SearchBase = $script:State.SearchBase
+    }
+
+    $escaped = $Query.Replace("'", "''")
+    $adParams.Filter = "Name -like '*$escaped*' -or DNSHostName -like '*$escaped*' -or DistinguishedName -like '*$escaped*'"
+
+    $devices = @(Invoke-HybridADCommand -CommandName 'Get-ADComputer' -Parameters $adParams -Operation 'Search AD computer devices' | ForEach-Object {
+        $lastLogon = [datetime]::MinValue
+        if ($_.lastLogonTimestamp) {
+            try { $lastLogon = [datetime]::FromFileTimeUtc([int64]$_.lastLogonTimestamp) } catch { $lastLogon = [datetime]::MinValue }
+        }
+        [pscustomobject]@{
+            PSTypeName = 'Hybrid.Device'
+            Id = [string]$_.ObjectGUID
+            Name = [string]$_.Name
+            OperatingSystem = [string]$_.OperatingSystem
+            ComplianceState = 'Unknown'
+            PrimaryUser = [string]$_.ManagedBy
+            LastCheckInUtc = $lastLogon
+            Source = 'ActiveDirectory'
+            Attributes = @{ DistinguishedName = [string]$_.DistinguishedName; DNSHostName = [string]$_.DNSHostName; RawDevice = $_ }
+            CreatedUtc = [datetime]::UtcNow
+        }
+    })
+
+    Set-HybridADCacheValue -Bucket 'Devices' -Key $cacheKey -Value $devices
+    return $devices
+}
+
 function Move-HybridADUserOU {
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
@@ -1221,6 +1279,7 @@ Export-ModuleMember -Function @(
     'Add-HybridADUserGroupMembership',
     'Remove-HybridADUserGroupMembership',
     'Search-HybridADOrganizationalUnit',
+    'Search-HybridADDevice',
     'ConvertTo-HybridADUser',
     'Clear-HybridADProviderCache'
 )

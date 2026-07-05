@@ -15,6 +15,10 @@ $script:HybridMicrosoftGraphCapabilities = @(
     'Users',
     'SearchUser',
     'GetUser',
+    'Devices',
+    'SearchDevice',
+    'GetManagedDevices',
+    'GetIntuneDevices',
     'MockGraphData',
     'ProviderHealth',
     'CapabilityDiscovery',
@@ -53,7 +57,7 @@ $script:HybridMicrosoftGraphState = @{
     LastAuthenticationSession = $null
     RequestTimeoutSeconds     = 12
     OptionalRequestTimeoutSeconds = 4
-    Cache                     = @{ Users = @{} }
+    Cache                     = @{ Users = @{}; Devices = @{} }
 }
 
 $script:HybridMicrosoftGraphProviderState.Cache = $script:HybridMicrosoftGraphState.Cache
@@ -358,6 +362,20 @@ function Get-HybridMicrosoftGraphSubscribedSkuMap {
     return $map
 }
 
+function Resolve-HybridMicrosoftGraphSkuBasePartNumber {
+    [CmdletBinding()]
+    param([AllowNull()][string]$SkuPartNumber)
+
+    if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
+    $key = $SkuPartNumber.Trim().ToUpperInvariant()
+    foreach ($suffix in @('_USGOV_GCCHIGH','_USGOV_GCC_HIGH','_USGOV_DOD','_GCCHIGH','_GCC_HIGH','_GOV','_DOD')) {
+        if ($key.EndsWith($suffix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $key.Substring(0, $key.Length - $suffix.Length)
+        }
+    }
+    return $key
+}
+
 
 function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
     [CmdletBinding()]
@@ -365,6 +383,7 @@ function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
 
     if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
     $key = $SkuPartNumber.Trim()
+    $baseKey = Resolve-HybridMicrosoftGraphSkuBasePartNumber -SkuPartNumber $key
     $map = @{
         'AAD_PREMIUM' = 'Microsoft Entra ID P1'
         'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'
@@ -373,8 +392,8 @@ function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
         'DESKLESSPACK' = 'Office 365 F3'
         'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
         'EMS' = 'Enterprise Mobility + Security E3'
-        'ENTERPRISEPACK' = 'Office 365 E3'
-        'ENTERPRISEPREMIUM' = 'Office 365 E5'
+        'ENTERPRISEPACK' = 'Microsoft 365 E3'
+        'ENTERPRISEPREMIUM' = 'Microsoft 365 E5'
         'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'
         'EXCHANGESTANDARD' = 'Exchange Online Plan 1'
         'FLOW_FREE' = 'Power Automate Free'
@@ -412,8 +431,9 @@ function ConvertTo-HybridMicrosoftGraphSkuFriendlyName {
     if ($map.ContainsKey($key)) { return [string]$map[$key] }
     $upperKey = $key.ToUpperInvariant()
     if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+    if ($map.ContainsKey($baseKey)) { return [string]$map[$baseKey] }
 
-    $fallback = ($key -replace '_GOV$', ' GCC/GCC High') -replace '_', ' '
+    $fallback = $baseKey -replace '_', ' '
     return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
 }
 
@@ -425,10 +445,11 @@ function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName {
     if ([string]::IsNullOrWhiteSpace($SkuPartNumber)) { return '' }
     $key = $SkuPartNumber.Trim()
     $upperKey = $key.ToUpperInvariant()
+    $baseKey = Resolve-HybridMicrosoftGraphSkuBasePartNumber -SkuPartNumber $key
     $map = @{
         'AAD_PREMIUM' = 'Microsoft Entra ID P1'; 'AAD_PREMIUM_P2' = 'Microsoft Entra ID P2'; 'ATP_ENTERPRISE' = 'Microsoft Defender for Office 365 Plan 1'
         'DESKLESSPACK' = 'Office 365 F3'; 'EMS' = 'Enterprise Mobility + Security E3'; 'EMSPREMIUM' = 'Enterprise Mobility + Security E5'
-        'ENTERPRISEPACK' = 'Office 365 E3'; 'ENTERPRISEPREMIUM' = 'Office 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Office 365 E5 without Audio Conferencing'
+        'ENTERPRISEPACK' = 'Microsoft 365 E3'; 'ENTERPRISEPREMIUM' = 'Microsoft 365 E5'; 'ENTERPRISEPREMIUM_NOPSTNCONF' = 'Microsoft 365 E5 without Audio Conferencing'
         'EXCHANGEENTERPRISE' = 'Exchange Online Plan 2'; 'EXCHANGESTANDARD' = 'Exchange Online Plan 1'; 'FLOW_FREE' = 'Power Automate Free'
         'IDENTITY_THREAT_PROTECTION' = 'Microsoft 365 E5 Security'; 'INTUNE_A' = 'Microsoft Intune Plan 1'
         'M365_F1' = 'Microsoft 365 F1'; 'M365_F3' = 'Microsoft 365 F3'; 'M365_G3_GOV' = 'Microsoft 365 G3 GCC/GCC High'; 'M365_G5_GOV' = 'Microsoft 365 G5 GCC/GCC High'
@@ -445,8 +466,9 @@ function ConvertTo-HybridMicrosoftGraphFriendlyLicenseName {
     }
     if ($map.ContainsKey($key)) { return [string]$map[$key] }
     if ($map.ContainsKey($upperKey)) { return [string]$map[$upperKey] }
+    if ($map.ContainsKey($baseKey)) { return [string]$map[$baseKey] }
     if ($upperKey -match '^[A-Z0-9_]+$') {
-        $fallback = $key -replace '_GOV$', ' GCC/GCC High' -replace '_GCCHIGH$', ' GCC High' -replace '_DOD$', ' DoD' -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
+        $fallback = $baseKey -replace '^SPE_', 'Microsoft 365 ' -replace '_', ' '
         return (Get-Culture).TextInfo.ToTitleCase($fallback.ToLowerInvariant())
     }
     return $key
@@ -702,6 +724,122 @@ function Invoke-HybridMicrosoftGraphUserSearchRequest {
     return @($values)
 }
 
+function ConvertTo-HybridMicrosoftGraphDevice {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Device,
+        [string]$Source = 'MicrosoftGraph.Device'
+    )
+
+    if ($null -eq $Device) { return $null }
+    $displayName = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('deviceName','displayName','Name','DisplayName') -Default '')
+    $id = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('id','Id','azureADDeviceId','azureAdDeviceId','deviceId','DeviceId') -Default '')
+    $operatingSystem = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('operatingSystem','OperatingSystem') -Default '')
+    $complianceState = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('complianceState','ComplianceState','managementState','ManagementState') -Default 'Unknown')
+    $primaryUser = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('userPrincipalName','UserPrincipalName','emailAddress','EmailAddress','primaryUser','PrimaryUser') -Default '')
+    $lastCheckIn = Get-HybridMicrosoftGraphObjectValue -InputObject $Device -Names @('lastSyncDateTime','LastSyncDateTime','approximateLastSignInDateTime','ApproximateLastSignInDateTime') -Default ([datetime]::MinValue)
+
+    [pscustomobject]@{
+        PSTypeName = 'Hybrid.Device'
+        Id = $id
+        Name = $displayName
+        OperatingSystem = $operatingSystem
+        ComplianceState = $complianceState
+        PrimaryUser = $primaryUser
+        LastCheckInUtc = $lastCheckIn
+        Source = $Source
+        Attributes = @{ RawDevice = $Device }
+        CreatedUtc = [datetime]::UtcNow
+    }
+}
+
+function Search-HybridMicrosoftGraphDevice {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Query,
+        [switch]$ForceRefresh
+    )
+
+    $operation = {
+        $session = Get-HybridMicrosoftGraphAuthenticationSession -AuthenticationRequest $script:HybridMicrosoftGraphState.AuthenticationRequest -ForceRefresh:$ForceRefresh
+        $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+        $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+        $escapedQuery = $Query.Replace("'", "''")
+        $devices = New-Object System.Collections.Generic.List[object]
+
+        $entraFilter = [System.Uri]::EscapeDataString("startswith(displayName,'$escapedQuery')")
+        $entraUri = ('{0}/v1.0/devices?$top=25&$select=id,displayName,operatingSystem,approximateLastSignInDateTime&$filter={1}' -f $graphEndpoint, $entraFilter)
+        $entraResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $entraUri -Session $session
+        foreach ($device in @(Get-HybridMicrosoftGraphObjectValue -InputObject $entraResponse -Names @('value','Value') -Default @())) {
+            $converted = ConvertTo-HybridMicrosoftGraphDevice -Device $device -Source 'MicrosoftGraph.EntraDevice'
+            if ($null -ne $converted) { $devices.Add($converted) | Out-Null }
+        }
+
+        $intuneFilter = [System.Uri]::EscapeDataString("contains(deviceName,'$escapedQuery')")
+        $intuneUri = ('{0}/v1.0/deviceManagement/managedDevices?$top=25&$select=id,deviceName,operatingSystem,complianceState,lastSyncDateTime,userPrincipalName,emailAddress,azureADDeviceId&$filter={1}' -f $graphEndpoint, $intuneFilter)
+        $intuneResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $intuneUri -Session $session
+        foreach ($device in @(Get-HybridMicrosoftGraphObjectValue -InputObject $intuneResponse -Names @('value','Value') -Default @())) {
+            $converted = ConvertTo-HybridMicrosoftGraphDevice -Device $device -Source 'MicrosoftGraph.IntuneManagedDevice'
+            if ($null -ne $converted) { $devices.Add($converted) | Out-Null }
+        }
+
+        return @($devices | Sort-Object Name, Id -Unique)
+    }
+
+    if (Get-Command Invoke-HybridProviderCommand -ErrorAction SilentlyContinue) {
+        return Invoke-HybridProviderCommand -ProviderState $script:HybridMicrosoftGraphProviderState -CommandName 'Search-HybridMicrosoftGraphDevice' -Operation 'SearchDevice' -ScriptBlock $operation
+    }
+
+    return & $operation
+}
+
+function Get-HybridMicrosoftGraphManagedDevices {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [switch]$ForceRefresh
+    )
+
+    $operation = {
+        $session = Get-HybridMicrosoftGraphAuthenticationSession -AuthenticationRequest $script:HybridMicrosoftGraphState.AuthenticationRequest -ForceRefresh:$ForceRefresh
+        $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+        $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+        $escapedIdentity = $Identity.Replace("'", "''")
+        $devices = New-Object System.Collections.Generic.List[object]
+
+        $userDeviceUri = ('{0}/v1.0/users/{1}/managedDevices?$select=id,deviceName,operatingSystem,complianceState,lastSyncDateTime,userPrincipalName,emailAddress,azureADDeviceId' -f $graphEndpoint, [System.Uri]::EscapeDataString($Identity))
+        $userDeviceResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $userDeviceUri -Session $session
+        foreach ($device in @(Get-HybridMicrosoftGraphObjectValue -InputObject $userDeviceResponse -Names @('value','Value') -Default @())) {
+            $converted = ConvertTo-HybridMicrosoftGraphDevice -Device $device -Source 'MicrosoftGraph.IntuneManagedDevice'
+            if ($null -ne $converted) { $devices.Add($converted) | Out-Null }
+        }
+
+        if ($devices.Count -eq 0) {
+            $filter = [System.Uri]::EscapeDataString("userPrincipalName eq '$escapedIdentity' or emailAddress eq '$escapedIdentity'")
+            $uri = ('{0}/v1.0/deviceManagement/managedDevices?$top=25&$select=id,deviceName,operatingSystem,complianceState,lastSyncDateTime,userPrincipalName,emailAddress,azureADDeviceId&$filter={1}' -f $graphEndpoint, $filter)
+            $response = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $uri -Session $session
+            foreach ($device in @(Get-HybridMicrosoftGraphObjectValue -InputObject $response -Names @('value','Value') -Default @())) {
+                $converted = ConvertTo-HybridMicrosoftGraphDevice -Device $device -Source 'MicrosoftGraph.IntuneManagedDevice'
+                if ($null -ne $converted) { $devices.Add($converted) | Out-Null }
+            }
+        }
+
+        if ($devices.Count -eq 0) {
+            foreach ($device in @(Search-HybridMicrosoftGraphDevice -Query $Identity -ForceRefresh:$ForceRefresh)) {
+                if ($null -ne $device) { $devices.Add($device) | Out-Null }
+            }
+        }
+
+        return @($devices | Sort-Object Name, Id -Unique)
+    }
+
+    if (Get-Command Invoke-HybridProviderCommand -ErrorAction SilentlyContinue) {
+        return Invoke-HybridProviderCommand -ProviderState $script:HybridMicrosoftGraphProviderState -CommandName 'Get-HybridMicrosoftGraphManagedDevices' -Operation 'GetManagedDevices' -ScriptBlock $operation
+    }
+
+    return & $operation
+}
+
 function Get-HybridMicrosoftGraphUserCacheKey {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Value)
@@ -916,6 +1054,11 @@ function Initialize-HybridMicrosoftGraphProvider {
     $operations = @{
         SearchUser = { param([string]$Query) Search-HybridMicrosoftGraphUser -Query $Query }.GetNewClosure()
         GetUser = { param([string]$Identity) Get-HybridMicrosoftGraphUser -Identity $Identity }.GetNewClosure()
+        SearchDevice = { param([string]$Query) Search-HybridMicrosoftGraphDevice -Query $Query }.GetNewClosure()
+        SearchDevices = { param([string]$Query) Search-HybridMicrosoftGraphDevice -Query $Query }.GetNewClosure()
+        GetDevice = { param([string]$Identity) Search-HybridMicrosoftGraphDevice -Query $Identity }.GetNewClosure()
+        GetManagedDevices = { param([string]$Identity) Get-HybridMicrosoftGraphManagedDevices -Identity $Identity }.GetNewClosure()
+        GetIntuneDevices = { param([string]$Identity) Get-HybridMicrosoftGraphManagedDevices -Identity $Identity }.GetNewClosure()
         ClearCache = { Clear-HybridMicrosoftGraphProviderCache | Out-Null }.GetNewClosure()
         GetHealth = { Get-HybridMicrosoftGraphProviderHealth }.GetNewClosure()
         GetProviderHealth = { Get-HybridMicrosoftGraphProviderHealth }.GetNewClosure()
@@ -935,6 +1078,11 @@ function Initialize-HybridMicrosoftGraphProvider {
             Capabilities       = @($script:HybridMicrosoftGraphProviderState.Capabilities)
             SearchUser         = $operations.SearchUser
             GetUser            = $operations.GetUser
+            SearchDevice       = $operations.SearchDevice
+            SearchDevices      = $operations.SearchDevices
+            GetDevice          = $operations.GetDevice
+            GetManagedDevices  = $operations.GetManagedDevices
+            GetIntuneDevices   = $operations.GetIntuneDevices
             ClearCache         = $operations.ClearCache
             GetHealth          = $operations.GetHealth
             SupportsCapability = $operations.SupportsCapability
@@ -958,5 +1106,8 @@ Export-ModuleMember -Function @(
     'Test-HybridMicrosoftGraphProviderCapability',
     'Search-HybridMicrosoftGraphUser',
     'Get-HybridMicrosoftGraphUser',
+    'Search-HybridMicrosoftGraphDevice',
+    'Get-HybridMicrosoftGraphManagedDevices',
+    'ConvertTo-HybridMicrosoftGraphLicenseDisplayObject',
     'Clear-HybridMicrosoftGraphProviderCache'
 )

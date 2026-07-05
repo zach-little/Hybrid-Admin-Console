@@ -16,6 +16,7 @@ function Assert-ContainsText {
 $profileModule = Join-Path $repoRoot 'src\Core\Core.RuntimeProfile.psm1'
 $runtimeModule = Join-Path $repoRoot 'src\Core\Core.Runtime.psm1'
 $msalModule = Join-Path $repoRoot 'src\Core\Core.Authentication.MSAL.psm1'
+$graphProviderPath = Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1'
 $exchangeOnlineModule = Join-Path $repoRoot 'src\Core\Core.Provider.ExchangeOnline.psm1'
 $serviceModule = Join-Path $repoRoot 'src\Application\Application.HybridUserService.psm1'
 $aggregationModule = Join-Path $repoRoot 'src\Application\Application.HybridUserAggregationService.psm1'
@@ -301,7 +302,7 @@ Assert-True (@($authProfile.AuthenticationMethods).Count -eq 2 -and [bool]$authP
 
 $runtimeText = Get-Content -LiteralPath $runtimeModule -Raw
 $msalText = Get-Content -LiteralPath $msalModule -Raw
-$graphProviderText = Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.psm1') -Raw
+$graphProviderText = Get-Content -LiteralPath $graphProviderPath -Raw
 $authManagerText = Get-Content -LiteralPath (Join-Path $repoRoot 'src\Core\Core.Authentication.Manager.psm1') -Raw
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveExchangeOnlineProvider' 'Runtime bootstrap can initialize Exchange Online provider'
 Assert-ContainsText $runtimeText 'Initialize-HybridRuntimeLiveMicrosoftGraphProvider' 'Runtime bootstrap can initialize Microsoft Graph provider'
@@ -329,6 +330,14 @@ $friendlyLicenseMapText = $graphProviderText.Substring($graphProviderText.IndexO
 foreach ($skuKey in @('IDENTITY_THREAT_PROTECTION','RIGHTSMANAGEMENT','POWERAPPS_PER_USER')) {
     Assert-True ((([regex]::Matches($friendlyLicenseMapText, "'$skuKey'\s*=")).Count) -eq 1) "Microsoft Graph friendly license map contains one $skuKey entry"
 }
+Assert-ContainsText $graphProviderText 'Resolve-HybridMicrosoftGraphSkuBasePartNumber' 'Microsoft Graph license mapping normalizes sovereign SKU suffixes before display'
+foreach ($rawSku in @('ENTERPRISEPACK_USGOV_GCCHIGH','ENTERPRISEPREMIUM_USGOV_GCCHIGH','VISIOCLIENT_USGOV_GCCHIGH','ATP_ENTERPRISE_USGOV_GCCHIGH')) {
+    $normalized = powershell -NoProfile -ExecutionPolicy Bypass -Command "Import-Module '$graphProviderPath' -Force; `$license = ConvertTo-HybridMicrosoftGraphLicenseDisplayObject -License '$rawSku'; `$license.DisplayName"
+    Assert-True (-not ([string]$normalized -match 'Usgov|Gcchigh|Enterprisepack|Atp Enterprise')) "Microsoft Graph friendly license display normalizes $rawSku"
+}
+Assert-ContainsText $graphProviderText '/v1.0/devices?' 'Microsoft Graph provider searches Entra devices'
+Assert-ContainsText $graphProviderText '/v1.0/deviceManagement/managedDevices?' 'Microsoft Graph provider searches Intune managed devices'
+Assert-ContainsText $runtimeText 'SearchDevice = $searchGraphDevices' 'Runtime Graph lazy provider exposes direct device search'
 Assert-ContainsText $graphProviderText 'RequestTimeoutSeconds' 'Microsoft Graph base user requests have explicit timeout configuration'
 Assert-ContainsText $graphProviderText 'OptionalRequestTimeoutSeconds' 'Microsoft Graph optional enrichment requests have explicit timeout configuration'
 Assert-ContainsText $graphProviderText 'OptionalRequestTimeoutSeconds) -ErrorAction Stop' 'Microsoft Graph optional enrichment requests cannot hang indefinitely'

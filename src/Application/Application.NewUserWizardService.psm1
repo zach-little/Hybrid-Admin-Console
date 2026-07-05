@@ -7,6 +7,9 @@ $script:HybridNewUserWizardState = @{
     LastError = $null
     DefaultUpnSuffix = 'atlas-tech.com'
     RemoteRoutingDomain = 'atlastechcloud.mail.onmicrosoft.com'
+    NotificationRecipient = 'ITSupport@atlas-tech.com'
+    NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com'
+    Configuration = $null
 }
 
 function Invoke-HybridNewUserProviderOperation {
@@ -35,13 +38,19 @@ function Initialize-HybridNewUserWizardService {
         [AllowNull()][object]$ActiveDirectoryProvider,
         [AllowNull()][object]$ExchangeOnlineProvider,
         [string]$DefaultUpnSuffix = 'atlas-tech.com',
-        [string]$RemoteRoutingDomain = 'atlastechcloud.mail.onmicrosoft.com'
+        [string]$RemoteRoutingDomain = 'atlastechcloud.mail.onmicrosoft.com',
+        [AllowNull()][string]$NotificationRecipient,
+        [AllowNull()][string]$NotificationSender,
+        [AllowNull()][object]$Configuration = $null
     )
 
     $script:HybridNewUserWizardState.ActiveDirectory = $ActiveDirectoryProvider
     $script:HybridNewUserWizardState.ExchangeOnline = $ExchangeOnlineProvider
+    $script:HybridNewUserWizardState.Configuration = Resolve-HybridNewUserWizardConfiguration -Configuration $Configuration
     $script:HybridNewUserWizardState.DefaultUpnSuffix = if ([string]::IsNullOrWhiteSpace($DefaultUpnSuffix)) { 'atlas-tech.com' } else { $DefaultUpnSuffix }
     $script:HybridNewUserWizardState.RemoteRoutingDomain = if ([string]::IsNullOrWhiteSpace($RemoteRoutingDomain)) { 'atlastechcloud.mail.onmicrosoft.com' } else { $RemoteRoutingDomain }
+    $script:HybridNewUserWizardState.NotificationRecipient = if ([string]::IsNullOrWhiteSpace($NotificationRecipient)) { [string]$script:HybridNewUserWizardState.Configuration.NotificationRecipient } else { $NotificationRecipient.Trim() }
+    $script:HybridNewUserWizardState.NotificationSender = if ([string]::IsNullOrWhiteSpace($NotificationSender)) { [string]$script:HybridNewUserWizardState.Configuration.NotificationSender } else { $NotificationSender.Trim() }
     $script:HybridNewUserWizardState.LastError = $null
     $script:HybridNewUserWizardState.Initialized = $true
 
@@ -53,7 +62,65 @@ function Initialize-HybridNewUserWizardService {
         Validate = ({ param([object]$Request) Test-HybridNewUserRequest -Request $Request }).GetNewClosure()
         Preview = ({ param([object]$Request) Get-HybridNewUserPreviewPlan -Request $Request }).GetNewClosure()
         Execute = ({ param([object]$Request, [securestring]$AccountPassword) Invoke-HybridNewUserCreation -Request $Request -AccountPassword $AccountPassword }).GetNewClosure()
+        GetDefaults = ({ [pscustomobject]@{ NotificationRecipient = $script:HybridNewUserWizardState.NotificationRecipient; NotificationSender = $script:HybridNewUserWizardState.NotificationSender; Configuration = $script:HybridNewUserWizardState.Configuration } }).GetNewClosure()
     }
+}
+
+function Update-HybridNewUserWizardConfiguration {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Configuration)
+
+    $resolved = Resolve-HybridNewUserWizardConfiguration -Configuration $Configuration
+    $script:HybridNewUserWizardState.Configuration = $resolved
+    if (-not [string]::IsNullOrWhiteSpace([string]$resolved.NotificationRecipient)) { $script:HybridNewUserWizardState.NotificationRecipient = [string]$resolved.NotificationRecipient }
+    if (-not [string]::IsNullOrWhiteSpace([string]$resolved.NotificationSender)) { $script:HybridNewUserWizardState.NotificationSender = [string]$resolved.NotificationSender }
+    return $resolved
+}
+
+function Resolve-HybridNewUserWizardConfiguration {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Configuration)
+
+    $defaults = [ordered]@{
+        NotificationRecipient = 'ITSupport@atlas-tech.com'
+        NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com'
+        HomeOrganizations = @(
+            [pscustomobject]@{ Number = 1; Name = 'Draco'; GroupName = 'Draco.Team'; DisplayGroupName = 'Draco Team' },
+            [pscustomobject]@{ Number = 2; Name = 'Pavo'; GroupName = 'Pavo.Team'; DisplayGroupName = 'Pavo Team' },
+            [pscustomobject]@{ Number = 3; Name = 'Corvus'; GroupName = 'Corvus.Team'; DisplayGroupName = 'Corvus Team' }
+        )
+        Locations = @(
+            [pscustomobject]@{ Number = 1; Name = 'Rivers'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '5416-A Rivers Avenue - Suite 105'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
+            [pscustomobject]@{ Number = 2; Name = 'Remount'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '1101 Remount Rd, Suite 800'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
+            [pscustomobject]@{ Number = 3; Name = 'Virginia Beach'; LocationGroup = 'Atlas-VABeach'; City = 'Virginia Beach'; StreetAddress = '168 Business Park Drive, Suite 103'; State = 'VA'; PostalCode = '23462'; OuKey = '3' },
+            [pscustomobject]@{ Number = 4; Name = 'San Diego'; LocationGroup = 'Atlas-SD'; City = 'San Diego'; StreetAddress = '4250 Pacific Highway, 105'; State = 'CA'; PostalCode = '92110'; OuKey = '4' },
+            [pscustomobject]@{ Number = 5; Name = 'Alexandria'; LocationGroup = 'Atlas-DC'; City = 'Alexandria'; StreetAddress = '5911 Kingstowne Village Parkway Suite 310'; State = 'VA'; PostalCode = '22315'; OuKey = '5' },
+            [pscustomobject]@{ Number = 6; Name = 'Lexington'; LocationGroup = 'Atlas-MD'; City = 'Lexington'; StreetAddress = 'Not Available'; State = 'MD'; PostalCode = 'Not Available'; OuKey = '6' }
+        )
+        Departments = @(
+            [pscustomobject]@{ Number = 1; Name = 'Dept 00 - Accounting'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 2; Name = 'Dept 00 - Information Technology'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 3; Name = 'Dept 00 - Executive'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 4; Name = 'Dept 00 - Human Resources'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 5; Name = 'Dept 01 - Contracts'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 6; Name = 'Dept 01 - Operations'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 7; Name = 'Dept 02 - DC/PAX/Charleston Division'; DisplayName = '02'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '5' = 'OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '6' = 'OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 8; Name = 'Dept 03 - VABeach Division'; DisplayName = '03'; TargetOuByLocation = @{ '3' = 'OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 9; Name = 'Dept 04 - San Diego Division'; DisplayName = '04'; TargetOuByLocation = @{ '4' = 'OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 10; Name = 'Service Account'; DisplayName = 'Service Account'; TargetOu = 'OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com'; IsServiceAccount = $true }
+        )
+        Portfolios = @('', 'Corporate', 'Contracts', 'Operations', 'Information Technology', 'Human Resources')
+        Groups = [pscustomobject]@{ CgUsersSc = 'SC_CGUsers'; CgUsersSd = 'SD_CGUsers'; CgUsersVa = 'VABeach_CGUsers'; CacGroup = 'CAC_Holders' }
+        DefaultTargetOu = 'CN=Users,DC=atlas-tech,DC=com'
+    }
+
+    if ($null -ne $Configuration) {
+        foreach ($key in @($defaults.Keys)) {
+            if ($Configuration.PSObject.Properties.Name -contains $key -and $null -ne $Configuration.$key) { $defaults[$key] = $Configuration.$key }
+        }
+    }
+
+    return [pscustomobject]$defaults
 }
 
 function Get-HybridNewUserSelectedNumber {
@@ -74,55 +141,38 @@ function Get-HybridNewUserMappings {
         [Nullable[int]]$HomeOrganizationNumber
     )
 
-    $officeMap = @{
-        1 = @{ AtlasLocation = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '5416-A Rivers Avenue - Suite 105'; State = 'SC'; PostalCode = '29406' }
-        2 = @{ AtlasLocation = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '1101 Remount Rd, Suite 800'; State = 'SC'; PostalCode = '29406' }
-        3 = @{ AtlasLocation = 'Atlas-VABeach'; City = 'Virginia Beach'; StreetAddress = '168 Business Park Drive, Suite 103'; State = 'VA'; PostalCode = '23462' }
-        4 = @{ AtlasLocation = 'Atlas-SD'; City = 'San Diego'; StreetAddress = '4250 Pacific Highway, 105'; State = 'CA'; PostalCode = '92110' }
-        5 = @{ AtlasLocation = 'Atlas-DC'; City = 'Alexandria'; StreetAddress = '5911 Kingstowne Village Parkway Suite 310'; State = 'VA'; PostalCode = '22315' }
-        6 = @{ AtlasLocation = 'Atlas-MD'; City = 'Lexington'; StreetAddress = 'Not Available'; State = 'MD'; PostalCode = 'Not Available' }
-    }
+    $configuration = if ($null -ne $script:HybridNewUserWizardState.Configuration) { $script:HybridNewUserWizardState.Configuration } else { Resolve-HybridNewUserWizardConfiguration -Configuration $null }
+    $office = @($configuration.Locations | Where-Object { [int]$_.Number -eq [int]$OfficeNumber } | Select-Object -First 1)[0]
+    $department = @($configuration.Departments | Where-Object { [int]$_.Number -eq [int]$DepartmentNumber } | Select-Object -First 1)[0]
+    $homeOrganization = @($configuration.HomeOrganizations | Where-Object { [int]$_.Number -eq [int]$HomeOrganizationNumber } | Select-Object -First 1)[0]
+    $groups = $configuration.Groups
 
-    $homeOrganizationMap = @{
-        1 = @{ GroupName = 'Draco.Team'; DisplayName = 'Draco Team' }
-        2 = @{ GroupName = 'Pavo.Team'; DisplayName = 'Pavo Team' }
-        3 = @{ GroupName = 'Corvus.Team'; DisplayName = 'Corvus Team' }
-    }
+    if ($null -eq $office) { $office = [pscustomobject]@{ LocationGroup = ''; City = 'Not Entered'; StreetAddress = 'Not Entered'; State = 'NA'; PostalCode = 'Not Available'; OuKey = '' } }
+    if ($null -eq $department) { $department = [pscustomobject]@{ TargetOu = ''; TargetOuByLocation = $null; IsServiceAccount = $false } }
+    if ($null -eq $homeOrganization) { $homeOrganization = [pscustomobject]@{ GroupName = 'NA'; DisplayGroupName = $null } }
+    if ($null -eq $groups) { $groups = [pscustomobject]@{} }
 
-    $ouMap = @{
-        'HQ:1' = 'OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:2' = 'OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:3' = 'OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:4' = 'OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:5' = 'OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:6' = 'OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        'HQ:7' = 'OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        '3:8'  = 'OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        '4:9'  = 'OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        '5:7'  = 'OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com'
-        '6:7'  = 'OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com'
+    $targetOu = ''
+    if ($department.PSObject.Properties.Name -contains 'TargetOu' -and -not [string]::IsNullOrWhiteSpace([string]$department.TargetOu)) {
+        $targetOu = [string]$department.TargetOu
     }
-
-    $office = if ($officeMap.ContainsKey($OfficeNumber)) { $officeMap[$OfficeNumber] } else { @{ AtlasLocation = 'Atlas-Charleston'; City = 'Not Entered'; StreetAddress = 'Not Entered'; State = 'NA'; PostalCode = 'Not Available' } }
-    $homeOrganization = if ($homeOrganizationMap.ContainsKey($HomeOrganizationNumber)) { $homeOrganizationMap[$HomeOrganizationNumber] } else { @{ GroupName = 'NA'; DisplayName = $null } }
-
-    if ($DepartmentNumber -eq 10) {
-        $targetOu = 'OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com'
+    elseif ($department.PSObject.Properties.Name -contains 'TargetOuByLocation' -and $null -ne $department.TargetOuByLocation) {
+        $locationKey = if ($office.PSObject.Properties.Name -contains 'OuKey' -and -not [string]::IsNullOrWhiteSpace([string]$office.OuKey)) { [string]$office.OuKey } else { [string]$OfficeNumber }
+        $ouMap = $department.TargetOuByLocation
+        if ($ouMap -is [System.Collections.IDictionary] -and $ouMap.Contains($locationKey)) { $targetOu = [string]$ouMap[$locationKey] }
+        elseif ($ouMap.PSObject.Properties.Name -contains $locationKey) { $targetOu = [string]$ouMap.$locationKey }
     }
-    else {
-        $ouKey = if ($OfficeNumber -in @(1,2)) { "HQ:$DepartmentNumber" } else { "${OfficeNumber}:$DepartmentNumber" }
-        $targetOu = if ($ouMap.ContainsKey($ouKey)) { $ouMap[$ouKey] } else { 'CN=Users,DC=atlas-tech,DC=com' }
-    }
+    if ([string]::IsNullOrWhiteSpace($targetOu)) { $targetOu = [string]$configuration.DefaultTargetOu }
 
     [pscustomobject]@{
         PSTypeName = 'Hybrid.NewUserWizard.Mappings'
-        CgUsersSc = 'SC_CGUsers'
-        CgUsersSd = 'SD_CGUsers'
-        CgUsersVa = 'VABeach_CGUsers'
-        CacGroup = 'CAC_Holders'
-        AtlasLocation = $office.AtlasLocation
+        CgUsersSc = if ($groups.PSObject.Properties.Name -contains 'CgUsersSc') { [string]$groups.CgUsersSc } else { '' }
+        CgUsersSd = if ($groups.PSObject.Properties.Name -contains 'CgUsersSd') { [string]$groups.CgUsersSd } else { '' }
+        CgUsersVa = if ($groups.PSObject.Properties.Name -contains 'CgUsersVa') { [string]$groups.CgUsersVa } else { '' }
+        CacGroup = if ($groups.PSObject.Properties.Name -contains 'CacGroup') { [string]$groups.CacGroup } else { '' }
+        AtlasLocation = if ($office.PSObject.Properties.Name -contains 'LocationGroup') { [string]$office.LocationGroup } else { '' }
         HomeOrganizationGroup = $homeOrganization.GroupName
-        HomeOrganizationDisplayGroup = $homeOrganization.DisplayName
+        HomeOrganizationDisplayGroup = if ($homeOrganization.PSObject.Properties.Name -contains 'DisplayGroupName') { $homeOrganization.DisplayGroupName } elseif ($homeOrganization.PSObject.Properties.Name -contains 'DisplayName') { $homeOrganization.DisplayName } else { $null }
         TargetOu = $targetOu
         City = $office.City
         StreetAddress = $office.StreetAddress
@@ -192,8 +242,8 @@ function New-HybridNewUserRequest {
         [bool]$SendNewHireNotice,
         [bool]$CacRequired,
         [AllowNull()][string]$Portfolio,
-        [AllowNull()][string]$NotificationRecipient = 'ITSupport@atlas-tech.com',
-        [AllowNull()][string]$NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com',
+        [AllowNull()][string]$NotificationRecipient,
+        [AllowNull()][string]$NotificationSender,
         [bool]$NothingRequested,
         [bool]$TemporaryOfficeSpace,
         [bool]$PermanentOfficeSpace,
@@ -243,8 +293,8 @@ function New-HybridNewUserRequest {
         SendNewHireNotice = $SendNewHireNotice
         CacRequired = $CacRequired
         Portfolio = if ($null -eq $Portfolio) { '' } else { $Portfolio.Trim() }
-        NotificationRecipient = if ([string]::IsNullOrWhiteSpace($NotificationRecipient)) { 'ITSupport@atlas-tech.com' } else { $NotificationRecipient.Trim() }
-        NotificationSender = if ([string]::IsNullOrWhiteSpace($NotificationSender)) { 'NEW-HIRE-INFO@atlas-tech.com' } else { $NotificationSender.Trim() }
+        NotificationRecipient = if ([string]::IsNullOrWhiteSpace($NotificationRecipient)) { $script:HybridNewUserWizardState.NotificationRecipient } else { $NotificationRecipient.Trim() }
+        NotificationSender = if ([string]::IsNullOrWhiteSpace($NotificationSender)) { $script:HybridNewUserWizardState.NotificationSender } else { $NotificationSender.Trim() }
         EquipmentRequests = [pscustomobject]@{
             NothingRequested = $NothingRequested
             TemporaryOfficeSpace = $TemporaryOfficeSpace
@@ -468,6 +518,7 @@ function Invoke-HybridNewUserCreation {
 
 Export-ModuleMember -Function @(
     'Initialize-HybridNewUserWizardService',
+    'Update-HybridNewUserWizardConfiguration',
     'Get-HybridNewUserSelectedNumber',
     'Get-HybridNewUserMappings',
     'ConvertTo-HybridNewUserAccountName',

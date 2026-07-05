@@ -227,6 +227,26 @@ function Get-HybridDirectorySimulatorDevices {
     )
 }
 
+function Search-HybridDirectorySimulatorDevices {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Query)
+
+    if ($script:HybridDirectorySimulatorState.Users.Count -eq 0) { Initialize-HybridDirectorySimulatorRecords }
+    $needle = $Query.Trim()
+    $devices = @()
+    foreach ($deviceSet in @($script:HybridDirectorySimulatorState.Devices.Values)) {
+        foreach ($device in @($deviceSet)) {
+            $name = if ($device.PSObject.Properties.Name -contains 'Name') { [string]$device.Name } elseif ($device.PSObject.Properties.Name -contains 'DisplayName') { [string]$device.DisplayName } else { '' }
+            $id = if ($device.PSObject.Properties.Name -contains 'Id') { [string]$device.Id } elseif ($device.PSObject.Properties.Name -contains 'DeviceId') { [string]$device.DeviceId } else { '' }
+            $primaryUser = if ($device.PSObject.Properties.Name -contains 'PrimaryUser') { [string]$device.PrimaryUser } elseif ($device.PSObject.Properties.Name -contains 'UserPrincipalName') { [string]$device.UserPrincipalName } else { '' }
+            if ($name -like "*$needle*" -or $id -like "*$needle*" -or $primaryUser -like "*$needle*") {
+                $devices += $device
+            }
+        }
+    }
+    return @($devices)
+}
+
 function Get-HybridDirectorySimulatorMailbox {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
@@ -404,6 +424,8 @@ function New-HybridDirectorySimulatorProviders {
         GetDirectReports = { param([string]$Identity) @(Get-HybridDirectorySimulatorDirectReports -Identity $Identity) }.GetNewClosure()
         GetUserDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
         GetManagedDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
+        SearchDevices = { param([string]$Query) @(Search-HybridDirectorySimulatorDevices -Query $Query) }.GetNewClosure()
+        GetDevice = { param([string]$Identity) @(Search-HybridDirectorySimulatorDevices -Query $Identity) }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.ActiveDirectory' } }.GetNewClosure()
     }
 
@@ -418,6 +440,8 @@ function New-HybridDirectorySimulatorProviders {
         GetUserDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
         GetManagedDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
         GetIntuneDevices = { param([string]$Identity) @(Get-HybridDirectorySimulatorDevices -Identity $Identity) }.GetNewClosure()
+        SearchDevices = { param([string]$Query) @(Search-HybridDirectorySimulatorDevices -Query $Query) }.GetNewClosure()
+        GetDevice = { param([string]$Identity) @(Search-HybridDirectorySimulatorDevices -Query $Identity) }.GetNewClosure()
         GetHealth = { [pscustomobject]@{ PSTypeName = 'Hybrid.ProviderHealth.DirectorySimulator'; Initialized = $true; Available = $true; Connected = $true; LastError = $null; Provider = 'DirectorySimulator.MicrosoftGraph' } }.GetNewClosure()
     }
 
@@ -460,6 +484,7 @@ Export-ModuleMember -Function @(
     'Get-HybridDirectorySimulatorGroups',
     'Get-HybridDirectorySimulatorDirectReports',
     'Get-HybridDirectorySimulatorDevices',
+    'Search-HybridDirectorySimulatorDevices',
     'Get-HybridDirectorySimulatorMailbox',
     'Get-HybridDirectorySimulatorMailboxStatistics',
     'Get-HybridDirectorySimulatorMailboxDelegations',

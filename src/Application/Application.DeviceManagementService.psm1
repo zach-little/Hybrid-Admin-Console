@@ -89,6 +89,8 @@ function Initialize-HybridDeviceManagementService {
         Name = 'DeviceManagementService'
         Initialized = $true
         GetDevicesForUser = ({ param([string]$Identity) Get-HybridManagedDevicesForUser -Identity $Identity }).GetNewClosure()
+        SearchDevices = ({ param([string]$Query) Search-HybridManagedDevices -Query $Query }).GetNewClosure()
+        GetDevice = ({ param([string]$Identity) Search-HybridManagedDevices -Query $Identity }).GetNewClosure()
         GetSummaryForUser = ({ param([string]$Identity) Get-HybridManagedDeviceSummary -Identity $Identity }).GetNewClosure()
     }
 }
@@ -114,11 +116,37 @@ function Get-HybridManagedDevicesForUser {
     return @($devices | ForEach-Object { ConvertTo-HybridManagedDevice -Device $_ } | Where-Object { $null -ne $_ } | Sort-Object Name -Unique)
 }
 
+function Search-HybridManagedDevices {
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$true)][string]$Query)
+
+    if (-not $script:HybridDeviceManagementState.Initialized) { throw 'Device Management service has not been initialized.' }
+    if ([string]::IsNullOrWhiteSpace($Query)) { throw 'Device identity is required for device lookup.' }
+
+    $devices = @()
+    $devices += @(Get-HybridManagedDevicesForUser -Identity $Query)
+    $devices += @(Invoke-HybridDeviceProviderOperation -Provider $script:HybridDeviceManagementState.DirectoryProvider -OperationNames @('SearchDevices','SearchDevice','GetDevice','GetComputer','SearchComputer','GetManagedDevice') -Arguments @($Query))
+    $devices += @(Invoke-HybridDeviceProviderOperation -Provider $script:HybridDeviceManagementState.MicrosoftGraphProvider -OperationNames @('SearchDevices','SearchDevice','GetDevice','GetManagedDevice','GetManagedDevices','GetIntuneDevices') -Arguments @($Query))
+
+    $needle = $Query.Trim()
+    return @($devices |
+        ForEach-Object { ConvertTo-HybridManagedDevice -Device $_ } |
+        Where-Object {
+            $null -ne $_ -and (
+                [string]::IsNullOrWhiteSpace($needle) -or
+                $_.Name -like "*$needle*" -or
+                $_.Id -like "*$needle*" -or
+                $_.PrimaryUser -like "*$needle*"
+            )
+        } |
+        Sort-Object Name, Id -Unique)
+}
+
 function Get-HybridManagedDeviceSummary {
     [CmdletBinding()]
     param([Parameter(Mandatory=$true)][string]$Identity)
 
-    $devices = @(Get-HybridManagedDevicesForUser -Identity $Identity)
+    $devices = @(Search-HybridManagedDevices -Query $Identity)
     $nonCompliant = @($devices | Where-Object { $_.ComplianceState -and $_.ComplianceState -notin @('Compliant','Unknown') })
     $stale = @($devices | Where-Object {
         $lastCheckIn = $_.LastCheckInUtc
@@ -140,5 +168,6 @@ Export-ModuleMember -Function @(
     'Initialize-HybridDeviceManagementService',
     'ConvertTo-HybridManagedDevice',
     'Get-HybridManagedDevicesForUser',
+    'Search-HybridManagedDevices',
     'Get-HybridManagedDeviceSummary'
 )

@@ -579,7 +579,7 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
         $certificatePath = [string](Get-HybridRuntimeObjectValue -InputObject $appOnly -Names @('CertificatePath') -Default '')
         $methodName = if ($delegatedEnabled) { 'InteractiveBrowser' } elseif ($appOnlyCanLaunch -and $credentialMode -eq 'Certificate') { 'AppOnlyClientCredentials' } else { 'InteractiveBrowser' }
         $graphScopeSuffix = [string](Get-HybridRuntimeObjectValue -InputObject $cloud.Endpoints -Names @('GraphScopeSuffix') -Default 'https://graph.microsoft.com/.default')
-        $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory') }
+        $scopes = if ($methodName -eq 'AppOnlyClientCredentials') { @($graphScopeSuffix) } else { @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory','DeviceManagementManagedDevices.Read.All') }
         $verifiedDomains = if ([string]::IsNullOrWhiteSpace($tenantDomain)) { @() } else { @($tenantDomain) }
 
         if ([string]::IsNullOrWhiteSpace($tenantId)) { throw 'Microsoft Graph live provider requires a tenant ID in the runtime profile authentication settings.' }
@@ -652,6 +652,36 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
                 throw
             }
         }.GetNewClosure()
+        $searchGraphDevices = {
+            param([string]$Query)
+            try {
+                $inner = & $getInnerService
+                if ($null -eq $inner) { return @() }
+                foreach ($operationName in @('SearchDevices','SearchDevice','GetDevice','GetManagedDevices','GetIntuneDevices')) {
+                    if ($inner.PSObject.Properties.Name -contains $operationName -and $inner.$operationName -is [scriptblock]) { return @(& $inner.$operationName $Query) }
+                }
+                return @()
+            }
+            catch {
+                $lazyState.LastError = $_.Exception.Message
+                throw
+            }
+        }.GetNewClosure()
+        $getGraphManagedDevices = {
+            param([string]$Identity)
+            try {
+                $inner = & $getInnerService
+                if ($null -eq $inner) { return @() }
+                foreach ($operationName in @('GetManagedDevices','GetIntuneDevices','SearchDevices','SearchDevice','GetDevice')) {
+                    if ($inner.PSObject.Properties.Name -contains $operationName -and $inner.$operationName -is [scriptblock]) { return @(& $inner.$operationName $Identity) }
+                }
+                return @()
+            }
+            catch {
+                $lazyState.LastError = $_.Exception.Message
+                throw
+            }
+        }.GetNewClosure()
         $getGraphHealth = {
             if ($null -ne $lazyState.Service -and $lazyState.Service.PSObject.Properties.Name -contains 'GetHealth' -and $lazyState.Service.GetHealth -is [scriptblock]) {
                 return & $lazyState.Service.GetHealth
@@ -678,6 +708,11 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
             EnsureAuthenticated = $connectGraph
             SearchUser = $searchGraphUsers
             Search = $searchGraphUsers
+            SearchDevice = $searchGraphDevices
+            SearchDevices = $searchGraphDevices
+            GetDevice = $searchGraphDevices
+            GetManagedDevices = $getGraphManagedDevices
+            GetIntuneDevices = $getGraphManagedDevices
             GetUser = $invokeGraphUser
             Get = $invokeGraphUser
             GetGraphProfile = $invokeGraphUser
@@ -774,7 +809,8 @@ function Initialize-HybridRuntimeApplicationServices {
         [Parameter(Mandatory=$true)][string]$RootPath,
         [Parameter(Mandatory=$true)][hashtable]$ProviderRegistry,
         [Parameter(Mandatory=$true)][hashtable]$ServiceRegistry,
-        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records
+        [Parameter(Mandatory=$true)][System.Collections.Generic.List[object]]$Records,
+        [AllowNull()][object]$Context = $null
     )
 
     Import-HybridRuntimeModule -RootPath $RootPath -RelativePath 'src\Application\Application.HybridUserService.psm1' -Required | Out-Null
@@ -793,6 +829,10 @@ function Initialize-HybridRuntimeApplicationServices {
     if ($ProviderRegistry.ContainsKey('MicrosoftGraph')) { $graphProvider = $ProviderRegistry['MicrosoftGraph'].Service }
     if ($ProviderRegistry.ContainsKey('ExchangeOnline')) { $exchangeProvider = $ProviderRegistry['ExchangeOnline'].Service }
     if ($ProviderRegistry.ContainsKey('ExchangeOnPremises')) { $exchangeOnPremisesProvider = $ProviderRegistry['ExchangeOnPremises'].Service }
+    $profile = if ($null -ne $Context -and $Context.PSObject.Properties.Name -contains 'Profile') { $Context.Profile } else { $null }
+    $newUserWizardSettings = Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
+    $newUserNotificationRecipient = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationRecipient','Recipient') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default 'ITSupport@atlas-tech.com'))
+    $newUserNotificationSender = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationSender','Sender') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default 'NEW-HIRE-INFO@atlas-tech.com'))
 
     $userService = Initialize-HybridUserService -ActiveDirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider -ExchangeOnlineProvider $exchangeProvider -ExchangeOnPremisesProvider $exchangeOnPremisesProvider
     Register-HybridService -Name 'HybridUser' -Instance $userService -Description 'Unified hybrid user application service.' -Provider 'Application' -Force | Out-Null
@@ -809,7 +849,7 @@ function Initialize-HybridRuntimeApplicationServices {
     $userAdministrationService = Initialize-HybridUserAdministrationService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider -MicrosoftGraphProvider $graphProvider
     Register-HybridService -Name 'UserAdministration' -Instance $userAdministrationService -Description 'Selected-user administration command service.' -Provider 'Application' -Force | Out-Null
 
-    $newUserWizardService = Initialize-HybridNewUserWizardService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider
+    $newUserWizardService = Initialize-HybridNewUserWizardService -ActiveDirectoryProvider $adProvider -ExchangeOnlineProvider $exchangeProvider -NotificationRecipient $newUserNotificationRecipient -NotificationSender $newUserNotificationSender -Configuration $newUserWizardSettings
     Register-HybridService -Name 'NewUserWizard' -Instance $newUserWizardService -Description 'New user onboarding wizard application service.' -Provider 'Application' -Force | Out-Null
 
     $deviceManagementService = Initialize-HybridDeviceManagementService -UserService $userService -DirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider
@@ -954,7 +994,7 @@ function Initialize-HybridRuntime {
             }
         }
 
-        Initialize-HybridRuntimeApplicationServices -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ServiceRegistry $serviceRegistry -Records $records
+        Initialize-HybridRuntimeApplicationServices -RootPath $resolvedRoot -ProviderRegistry $providerRegistry -ServiceRegistry $serviceRegistry -Records $records -Context $context
 
         $elapsed = [int]((Get-Date) - $started).TotalMilliseconds
         Add-HybridRuntimeMember -InputObject $context -Name InitializedUtc -Value ([datetime]::UtcNow)

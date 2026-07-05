@@ -14,6 +14,8 @@ $graphProviderPath = Join-Path $repoRoot 'src\Core\Core.Provider.MicrosoftGraph.
 $graphProfileServicePath = Join-Path $repoRoot 'src\Application\Application.GraphProfileService.psm1'
 $runtimePath = Join-Path $repoRoot 'src\Core\Core.Runtime.psm1'
 $adProviderPath = Join-Path $repoRoot 'src\Infrastructure\Infrastructure.ActiveDirectory.psm1'
+$atlasConfigPath = Join-Path $repoRoot 'profiles\Atlas\config.json'
+$simulationProfilePath = Join-Path $repoRoot 'profiles\Runtime\Simulation.json'
 
 Assert-True (Test-Path -LiteralPath $uiPath) 'Hybrid Admin Console UI script exists'
 Assert-True (Test-Path -LiteralPath $servicePath) 'New User Wizard application service exists'
@@ -24,6 +26,8 @@ $graphProvider = Get-Content -LiteralPath $graphProviderPath -Raw
 $graphProfileService = Get-Content -LiteralPath $graphProfileServicePath -Raw
 $runtime = Get-Content -LiteralPath $runtimePath -Raw
 $adProvider = Get-Content -LiteralPath $adProviderPath -Raw
+$atlasConfig = Get-Content -LiteralPath $atlasConfigPath -Raw
+$simulationProfile = Get-Content -LiteralPath $simulationProfilePath -Raw
 
 Assert-True ($ui -match 'v0\.9C WorkflowSelector') 'UI declares v0.9C workflow selector marker'
 Assert-True ($ui -match 'WorkflowSelectorView') 'UI contains workflow selector view'
@@ -31,6 +35,28 @@ Assert-True ($ui -match 'WorkflowUserLookupButton') 'Workflow selector exposes U
 Assert-True ($ui -match 'WorkflowNewUserWizardButton') 'Workflow selector exposes New User Wizard button'
 Assert-True ($ui -match 'Show-HybridWorkflowSelector') 'Runtime launch routes to workflow selector'
 Assert-True ($ui -match 'NewUserWizardView') 'UI contains New User Wizard shell'
+Assert-True ($ui -match 'NewUserWizardView" Width="1240"') 'New User Wizard shell is widened for enterprise workflow content'
+Assert-True ($ui -match 'Enterprise Ready onboarding') 'New User Wizard header uses enterprise-ready messaging'
+Assert-True ($ui -notmatch 'v0\.9D aligns this workflow') 'New User Wizard header no longer shows milestone filler text'
+foreach ($button in @('NewUserWizardCloseButton','NewUserRefreshManagersButton','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserBackToWorkflowButton','NewUserOpenLookupButton')) {
+    Assert-True ($ui -match "$button`"[^`r`n]+Style=`"{StaticResource GlassCommandButton}`"") "New User Wizard themes $button"
+}
+foreach ($checkbox in @('NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox')) {
+    Assert-True ($ui -match "$checkbox`"[^`r`n]+Style=`"{StaticResource WizardCheckBox}`"") "Equipment checkbox $checkbox uses readable wizard styling"
+}
+Assert-True ($ui -match 'Get-HapNewUserWizardNotificationDefaults') 'UI resolves New User Wizard notification defaults from config/profile settings'
+Assert-True ($ui -match 'Get-HapNewUserWizardConfiguration') 'UI resolves full New User Wizard configuration from config/profile settings'
+Assert-True ($ui -match 'Update-HapNewUserWizardConfigurationFromConfig') 'New User Wizard refreshes combo values from configuration when opened'
+Assert-True ($ui -match 'WizardNewUserConfigButton' -and $ui -match 'Show-HybridNewUserWizardConfigurationEditor') 'Runtime Profile Wizard exposes dedicated New User Wizard configuration editor'
+Assert-True ($ui -notmatch 'NewUserLocationComboBox[^`r`n]+ComboBoxItem Content') 'New User Wizard locations are not hardcoded in XAML'
+Assert-True ($ui -notmatch 'NewUserDepartmentComboBox[^`r`n]+ComboBoxItem Content') 'New User Wizard departments are not hardcoded in XAML'
+Assert-True ($ui -notmatch 'NewUserHomeOrgComboBox[^`r`n]+ComboBoxItem Content') 'New User Wizard home organizations are not hardcoded in XAML'
+Assert-True ($ui -notmatch 'NewUserPortfolioComboBox[^`r`n]+ComboBoxItem Content') 'New User Wizard portfolios are not hardcoded in XAML'
+Assert-True ($ui -match 'profiles''\) \(Join-Path \$organization ''config\.json''\)') 'UI reads organization config.json for New User Wizard defaults'
+Assert-True ($ui -notmatch 'NewUserNotificationRecipientTextBox" Height="34" Text=') 'Notification recipient default is not hardcoded in XAML'
+Assert-True ($ui -notmatch 'NewUserNotificationSenderTextBox" Height="34" Text=') 'Notification sender default is not hardcoded in XAML'
+Assert-True ($ui -match 'WizardNewUserNotificationRecipientTextBox' -and $ui -match 'WizardNewUserNotificationSenderTextBox') 'Runtime Profile Wizard exposes configurable New User notification defaults'
+Assert-True ($ui -match 'NewUserWizard = \$newUserConfiguration' -and $ui -match "\['NotificationRecipient'\]" -and $ui -match "\['NotificationSender'\]") 'Runtime Profile Wizard saves New User notification defaults into profile configuration'
 Assert-True ($ui -match 'NewUserValidateButton') 'New User Wizard supports validate preview action'
 Assert-True ($ui -match 'NewUserExecuteButton') 'New User Wizard exposes explicit create execution action'
 Assert-True ($ui -match 'Confirm New User Creation') 'New User Wizard requires operator confirmation before execution'
@@ -39,7 +65,7 @@ Assert-True ($ui -match 'Update-HybridNewUserManagerOptions') 'New User Wizard r
 Assert-True ($ui -match 'Application\.NewUserWizardService\.psm1') 'UI imports New User Wizard service'
 Assert-True ($ui -notmatch 'New-ADUser|Add-ADGroupMember|Enable-RemoteMailbox') 'UI does not call AD or Exchange write commands directly'
 
-foreach ($export in @('New-HybridNewUserRequest','Test-HybridNewUserRequest','Get-HybridNewUserPreviewPlan','Get-HybridNewUserMappings','ConvertTo-HybridNewUserAccountName','Get-HybridNewUserManagerOptions','Invoke-HybridNewUserCreation')) {
+foreach ($export in @('New-HybridNewUserRequest','Test-HybridNewUserRequest','Get-HybridNewUserPreviewPlan','Get-HybridNewUserMappings','ConvertTo-HybridNewUserAccountName','Get-HybridNewUserManagerOptions','Invoke-HybridNewUserCreation','Update-HybridNewUserWizardConfiguration')) {
     Assert-True ($service -match $export) "New User Wizard service includes $export"
 }
 
@@ -47,14 +73,21 @@ Assert-True ($service -match 'OU=Service Accounts') 'Service preserves legacy se
 Assert-True ($service -match 'CAC_Holders') 'Service preserves legacy CAC group mapping'
 Assert-True ($service -match 'TEEntry') 'Service preserves legacy TEEntry group mapping'
 Assert-True ($service -match 'atlastechcloud\.mail\.onmicrosoft\.com') 'Service preserves legacy remote routing domain preview'
+Assert-True ($service -match 'NotificationRecipient = ''ITSupport@atlas-tech\.com''' -and $service -match 'NotificationSender = ''NEW-HIRE-INFO@atlas-tech\.com''') 'Service keeps notification fallback defaults'
+Assert-True ($service -match 'GetDefaults') 'Service exposes resolved New User Wizard defaults'
+Assert-True ($service -match 'Resolve-HybridNewUserWizardConfiguration') 'Service resolves configurable New User Wizard mappings'
+Assert-True ($service -match 'TargetOuByLocation') 'Service supports configurable department/location OU mappings'
 Assert-True ($service -match 'GetUsersWithDirectReports') 'Service manager lookup uses AD provider manager operation'
 Assert-True ($service -match 'CreateUser') 'Service creates users through the AD provider'
 Assert-True ($service -match 'AddUserToGroup') 'Service assigns groups through the AD provider'
 Assert-True ($service -match 'EnableRemoteMailbox') 'Service enables mailbox through the Exchange provider'
 Assert-True (($service.IndexOf('function Get-HybridNewUserPreviewPlan') -lt $service.IndexOf('function Invoke-HybridNewUserCreation')) -and ($service.Substring($service.IndexOf('function Get-HybridNewUserPreviewPlan'), $service.IndexOf('function Invoke-HybridNewUserCreation') - $service.IndexOf('function Get-HybridNewUserPreviewPlan')) -notmatch 'CreateUser|AddUserToGroup|EnableRemoteMailbox')) 'Preview planning contains no provider write operations'
 Assert-True ($adProvider -match 'directReports -like "\*"') 'AD provider manager lookup filters users with direct reports'
+Assert-True ($runtime -match 'NewUserWizard' -and $runtime -match 'NotificationRecipient' -and $runtime -match 'NotificationSender') 'Runtime passes profile-backed New User Wizard notification defaults to the service'
+Assert-True ($atlasConfig -match 'new_user_notification_recipient' -and $atlasConfig -match 'new_user_notification_sender') 'Atlas config.json includes New User Wizard notification defaults'
+Assert-True ($simulationProfile -match '"NewUserWizard"' -and $simulationProfile -match '"NotificationRecipient"' -and $simulationProfile -match '"NotificationSender"') 'Runtime profile configuration exposes New User Wizard notification defaults'
 
-foreach ($scope in @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory')) {
+foreach ($scope in @('User.Read.All','AuditLog.Read.All','UserAuthenticationMethod.Read.All','Directory.Read.All','RoleManagement.Read.Directory','DeviceManagementManagedDevices.Read.All')) {
     Assert-True ($runtime -match [regex]::Escape($scope)) "Delegated Graph scopes include $scope"
 }
 

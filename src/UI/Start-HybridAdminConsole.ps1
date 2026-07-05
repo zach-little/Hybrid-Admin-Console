@@ -295,6 +295,11 @@ $xaml = @"
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="WizardCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#E5E7EB"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
         <Style TargetType="Separator">
             <Setter Property="Background" Value="#26364F"/>
             <Setter Property="Margin" Value="4,4"/>
@@ -810,14 +815,14 @@ $xaml = @"
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Device Management" Foreground="#F8FAFC" FontSize="28" FontWeight="SemiBold"/>
-                            <TextBlock Text="Milestone 10 starts with read-only managed device lookup, compliance summary, and last check-in review through the runtime service layer." Foreground="#F59E0B" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <TextBlock Text="Search by user or device name to review AD, Entra ID, and Intune device inventory, compliance posture, and last check-in details." Foreground="#F59E0B" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
                         </StackPanel>
-                        <Button x:Name="DeviceManagementCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
+                        <Button x:Name="DeviceManagementCloseButton" Grid.Column="1" Content="X" Style="{StaticResource GlassCommandButton}" Width="34" Height="30" Padding="0" Margin="12,0,0,0"/>
                     </Grid>
                     <Grid Grid.Row="1" Margin="0,0,0,16">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBox x:Name="DeviceManagementIdentityTextBox" Grid.Column="0" Height="36" VerticalContentAlignment="Center" ToolTip="Enter a user's SamAccountName, UPN, or mail address."/>
-                        <Button x:Name="DeviceManagementSearchButton" Grid.Column="1" Content="Search Devices" MinWidth="132" Height="36" Margin="10,0,0,0"/>
+                        <TextBox x:Name="DeviceManagementIdentityTextBox" Grid.Column="0" Height="36" VerticalContentAlignment="Center" ToolTip="Enter a user's SamAccountName, UPN, mail address, device name, or device ID."/>
+                        <Button x:Name="DeviceManagementSearchButton" Grid.Column="1" Content="Search Devices" Style="{StaticResource GlassCommandButton}" MinWidth="132" Height="36" Padding="14,0" Margin="10,0,0,0"/>
                     </Grid>
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="0.58*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.42*"/></Grid.ColumnDefinitions>
@@ -881,24 +886,24 @@ $xaml = @"
                         </Border>
                     </Grid>
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-                        <Button x:Name="DeviceManagementBackToWorkflowButton" Content="Back to Workflows" MinWidth="132" Height="36" Margin="0,0,10,0"/>
-                        <Button x:Name="DeviceManagementOpenLookupButton" Content="Open User Lookup" MinWidth="132" Height="36"/>
+                        <Button x:Name="DeviceManagementBackToWorkflowButton" Content="Back to Workflows" Style="{StaticResource GlassCommandButton}" MinWidth="132" Height="36" Padding="14,0" Margin="0,0,10,0"/>
+                        <Button x:Name="DeviceManagementOpenLookupButton" Content="Open User Lookup" Style="{StaticResource GlassCommandButton}" MinWidth="132" Height="36" Padding="14,0"/>
                     </StackPanel>
                 </Grid>
 
                 <!-- v0.9C NewUserWizardShell: service-backed intake, preview, and explicit confirmed execution. -->
-                <Grid x:Name="NewUserWizardView" Width="820" MinHeight="700" Visibility="Collapsed">
+                <Grid x:Name="NewUserWizardView" Width="1240" MinHeight="720" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <Grid Grid.Row="0" Margin="0,0,0,18">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="New User Wizard" Foreground="#F8FAFC" FontSize="28" FontWeight="SemiBold"/>
-                            <TextBlock Text="v0.9D aligns this workflow with legacy\New_User_Wizard.ps1 page 4 review behavior, direct-report manager lookup, and confirmed provider-backed create execution." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <TextBlock Text="Enterprise Ready onboarding with validated identity intake, manager lookup, preview, and confirmed provider-backed creation." Foreground="#38BDF8" FontSize="13" TextWrapping="Wrap" Margin="0,6,0,0"/>
                         </StackPanel>
-                        <Button x:Name="NewUserWizardCloseButton" Grid.Column="1" Content="X" Width="34" Height="30" Margin="12,0,0,0"/>
+                        <Button x:Name="NewUserWizardCloseButton" Grid.Column="1" Content="X" Style="{StaticResource GlassCommandButton}" Width="34" Height="30" Padding="0" Margin="12,0,0,0"/>
                     </Grid>
                     <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.02*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.08*"/></Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.08*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="1.32*"/></Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="18">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel>
@@ -907,51 +912,51 @@ $xaml = @"
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="First Name" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserFirstNameTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Last Name" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserLastNameTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Middle Initial" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserMiddleInitialTextBox" Height="34" MaxLength="1"/></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Use MI in Username" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserIncludeMiddleInitialCheckBox" IsChecked="False" Margin="0,8,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Use MI in Username" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserIncludeMiddleInitialCheckBox" Style="{StaticResource WizardCheckBox}" IsChecked="False" Margin="0,8,0,0"/></StackPanel>
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Employee ID" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserEmployeeIdTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Badge ID" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserBadgeIdTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Start Date" Style="{StaticResource LabelText}"/><DatePicker x:Name="NewUserStartDatePicker" Height="34"/></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="CAC Holder" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCacCheckBox" IsChecked="False" Margin="0,8,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="CAC Holder" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCacCheckBox" Style="{StaticResource WizardCheckBox}" IsChecked="False" Margin="0,8,0,0"/></StackPanel>
                                     </UniformGrid>
                                     <TextBlock Text="Organization" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
-                                    <TextBlock Text="Home Organization" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserHomeOrgComboBox" Height="34" SelectedIndex="-1" Margin="0,4,0,12"><ComboBoxItem Content=""/><ComboBoxItem Content="1. Draco"/><ComboBoxItem Content="2. Pavo"/><ComboBoxItem Content="3. Corvus"/></ComboBox>
-                                    <TextBlock Text="Location" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserLocationComboBox" Height="34" SelectedIndex="0" Margin="0,4,0,12"><ComboBoxItem Content="1. Rivers"/><ComboBoxItem Content="2. Remount"/><ComboBoxItem Content="3. Virginia Beach"/><ComboBoxItem Content="4. San Diego"/><ComboBoxItem Content="5. Alexandria"/><ComboBoxItem Content="6. Lexington"/></ComboBox>
-                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserDepartmentComboBox" Height="34" SelectedIndex="1" Margin="0,4,0,12"><ComboBoxItem Content="1. Dept 00 - Accounting"/><ComboBoxItem Content="2. Dept 00 - Information Technology"/><ComboBoxItem Content="3. Dept 00 - Executive"/><ComboBoxItem Content="4. Dept 00 - Human Resources"/><ComboBoxItem Content="5. Dept 01 - Contracts"/><ComboBoxItem Content="6. Dept 01 - Operations"/><ComboBoxItem Content="7. Dept 02 - DC/PAX/Charleston Division"/><ComboBoxItem Content="8. Dept 03 - VABeach Division"/><ComboBoxItem Content="9. Dept 04 - San Diego Division"/><ComboBoxItem Content="10. Service Account"/></ComboBox>
+                                    <TextBlock Text="Home Organization" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserHomeOrgComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Location" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserLocationComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserDepartmentComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
                                     <TextBlock Text="Job Title" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserJobTitleTextBox" Height="34" Margin="0,4,0,12"/>
                                     <TextBlock Text="Manager" Style="{StaticResource LabelText}"/>
                                     <Grid Margin="0,4,0,12">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <ComboBox x:Name="NewUserManagerComboBox" Grid.Column="0" Height="34" IsEditable="True" IsTextSearchEnabled="True" ToolTip="Managers are loaded from Active Directory users with direct reports. You can type a SamAccountName or select a manager."/>
-                                        <Button x:Name="NewUserRefreshManagersButton" Grid.Column="1" Content="Refresh" Width="82" Height="34" Margin="8,0,0,0"/>
+                                        <Button x:Name="NewUserRefreshManagersButton" Grid.Column="1" Content="Refresh" Style="{StaticResource GlassCommandButton}" Width="92" Height="34" Padding="12,0" Margin="8,0,0,0"/>
                                     </Grid>
-                                    <TextBlock Text="Portfolio" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserPortfolioComboBox" Height="34" IsEditable="True" SelectedIndex="0" Margin="0,4,0,12" ToolTip="Optional. Leave blank when no portfolio applies."><ComboBoxItem Content=""/><ComboBoxItem Content="Corporate"/><ComboBoxItem Content="Contracts"/><ComboBoxItem Content="Operations"/><ComboBoxItem Content="Information Technology"/><ComboBoxItem Content="Human Resources"/></ComboBox>
+                                    <TextBlock Text="Portfolio" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserPortfolioComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12" ToolTip="Optional. Leave blank when no portfolio applies."/>
                                     <UniformGrid Columns="2" Rows="2">
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Office Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserOfficePhoneTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Mobile Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserMobilePhoneTextBox" Height="34"/></StackPanel>
-                                        <StackPanel Margin="0,0,10,12"><TextBlock Text="Create Mailbox" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCreateMailboxCheckBox" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Send Notice" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserSendNoticeCheckBox" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,10,12"><TextBlock Text="Create Mailbox" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCreateMailboxCheckBox" Style="{StaticResource WizardCheckBox}" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Send Notice" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserSendNoticeCheckBox" Style="{StaticResource WizardCheckBox}" IsChecked="True" Margin="0,8,0,0"/></StackPanel>
                                     </UniformGrid>
                                     <TextBlock Text="Temporary Password" Style="{StaticResource LabelText}"/><PasswordBox x:Name="NewUserTemporaryPasswordBox" Height="34" Margin="0,4,0,12" ToolTip="Required only when you press Create User. Preview never uses or stores this value."/>
                                     <TextBlock Text="Notification" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
                                     <UniformGrid Columns="2" Rows="1">
-                                        <StackPanel Margin="0,0,10,12"><TextBlock Text="Recipient" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationRecipientTextBox" Height="34" Text="ITSupport@atlas-tech.com"/></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Sender" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationSenderTextBox" Height="34" Text="NEW-HIRE-INFO@atlas-tech.com"/></StackPanel>
+                                        <StackPanel Margin="0,0,10,12"><TextBlock Text="Recipient" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationRecipientTextBox" Height="34"/></StackPanel>
+                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Sender" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserNotificationSenderTextBox" Height="34"/></StackPanel>
                                     </UniformGrid>
                                     <TextBlock Text="Equipment" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
                                     <UniformGrid Columns="2" Rows="7">
-                                        <CheckBox x:Name="NewUserNothingRequestedCheckBox" Content="Nothing Requested" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserTemporaryOfficeSpaceCheckBox" Content="Temporary Office Space" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserPermanentOfficeSpaceCheckBox" Content="Permanent Office Space" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserDesktopCheckBox" Content="Desktop" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserLaptopCheckBox" Content="Laptop" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserDockingStationCheckBox" Content="Docking Station" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserMouseKeyboardCheckBox" Content="Mouse/Keyboard" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserMonitorCheckBox" Content="Monitor" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserDualMonitorCheckBox" Content="Dual Monitor" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserDeskPhoneCheckBox" Content="Desk Phone" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserCellPhoneCheckBox" Content="Cell Phone" Margin="0,0,10,8"/>
-                                        <CheckBox x:Name="NewUserSpeakersCheckBox" Content="Speakers" Margin="0,0,0,8"/>
-                                        <CheckBox x:Name="NewUserJamisClaimSetupCheckBox" Content="JAMIS Claim Setup" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserNothingRequestedCheckBox" Content="Nothing Requested" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserTemporaryOfficeSpaceCheckBox" Content="Temporary Office Space" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserPermanentOfficeSpaceCheckBox" Content="Permanent Office Space" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDesktopCheckBox" Content="Desktop" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserLaptopCheckBox" Content="Laptop" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDockingStationCheckBox" Content="Docking Station" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserMouseKeyboardCheckBox" Content="Mouse/Keyboard" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserMonitorCheckBox" Content="Monitor" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserDualMonitorCheckBox" Content="Dual Monitor" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserDeskPhoneCheckBox" Content="Desk Phone" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserCellPhoneCheckBox" Content="Cell Phone" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
+                                        <CheckBox x:Name="NewUserSpeakersCheckBox" Content="Speakers" Style="{StaticResource WizardCheckBox}" Margin="0,0,0,8"/>
+                                        <CheckBox x:Name="NewUserJamisClaimSetupCheckBox" Content="JAMIS Claim Setup" Style="{StaticResource WizardCheckBox}" Margin="0,0,10,8"/>
                                     </UniformGrid>
                                 </StackPanel>
                             </ScrollViewer>
@@ -971,9 +976,9 @@ $xaml = @"
                                     <TextBlock Text="Target OU" Style="{StaticResource LabelText}"/><TextBlock x:Name="NewUserPreviewOuText" Text="-" Style="{StaticResource ValueText}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,16,0,12">
-                                    <Button x:Name="NewUserValidateButton" Content="Validate / Preview" MinWidth="140" Height="36" Margin="0,0,10,0"/>
-                                    <Button x:Name="NewUserExecuteButton" Content="Create User" MinWidth="108" Height="36" Margin="0,0,10,0"/>
-                                    <Button x:Name="NewUserClearButton" Content="Clear" MinWidth="80" Height="36"/>
+                                    <Button x:Name="NewUserValidateButton" Content="Validate / Preview" Style="{StaticResource GlassCommandButton}" MinWidth="140" Height="36" Padding="14,0" Margin="0,0,10,0"/>
+                                    <Button x:Name="NewUserExecuteButton" Content="Create User" Style="{StaticResource GlassCommandButton}" MinWidth="108" Height="36" Padding="14,0" Margin="0,0,10,0"/>
+                                    <Button x:Name="NewUserClearButton" Content="Clear" Style="{StaticResource GlassCommandButton}" MinWidth="80" Height="36" Padding="14,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2">
                                     <TextBlock Text="Legacy Page 4 Review" Style="{StaticResource SectionTitle}"/>
@@ -988,8 +993,8 @@ $xaml = @"
                     </Grid>
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
                         <TextBlock Text="Create requires a second confirmation and uses the loaded runtime providers." Foreground="#FACC15" VerticalAlignment="Center" Margin="0,0,18,0"/>
-                        <Button x:Name="NewUserBackToWorkflowButton" Content="Back to Workflows" MinWidth="132" Height="36" Margin="0,0,10,0"/>
-                        <Button x:Name="NewUserOpenLookupButton" Content="Open User Lookup" MinWidth="132" Height="36"/>
+                        <Button x:Name="NewUserBackToWorkflowButton" Content="Back to Workflows" Style="{StaticResource GlassCommandButton}" MinWidth="132" Height="36" Padding="14,0" Margin="0,0,10,0"/>
+                        <Button x:Name="NewUserOpenLookupButton" Content="Open User Lookup" Style="{StaticResource GlassCommandButton}" MinWidth="132" Height="36" Padding="14,0"/>
                     </StackPanel>
                 </Grid>
 
@@ -1112,7 +1117,12 @@ $xaml = @"
                                     <TextBlock Text="Organization" Style="{StaticResource LabelText}"/>
                                     <TextBox x:Name="WizardOrganizationTextBox" Text="" Height="34" Margin="0,4,0,12"/>
                                     <TextBlock Text="Tenant ID" Style="{StaticResource LabelText}"/>
-                                    <TextBox x:Name="WizardTenantIdTextBox" Text="" Height="34" Margin="0,4,0,0"/>
+                                    <TextBox x:Name="WizardTenantIdTextBox" Text="" Height="34" Margin="0,4,0,12"/>
+                                    <TextBlock Text="New User Notice Recipient" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="WizardNewUserNotificationRecipientTextBox" Text="" Height="34" Margin="0,4,0,12" ToolTip="Default recipient address for New User Wizard notification requests."/>
+                                    <TextBlock Text="New User Notice Sender" Style="{StaticResource LabelText}"/>
+                                    <TextBox x:Name="WizardNewUserNotificationSenderTextBox" Text="" Height="34" Margin="0,4,0,0" ToolTip="Default sender address for New User Wizard notification requests."/>
+                                    <Button x:Name="WizardNewUserConfigButton" Content="Configure New User Wizard" Style="{StaticResource GlassCommandButton}" HorizontalAlignment="Left" MinWidth="210" Height="36" Padding="14,0" Margin="0,16,0,0"/>
                                 </StackPanel>
 
                                 <StackPanel x:Name="WizardStepEnvironmentPanel" Visibility="Collapsed">
@@ -1280,7 +1290,7 @@ $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $controls = @{}
-@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementEmptyText','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeReadinessHeadlineText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthRiskDetailsList','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
+@('ShellRoot','StartupRegion','MainRegion','StatusBarRegion','OverlayRegion','OverlayHost','LaunchProgressView','LaunchProgressText','LaunchProgressBar','WorkflowSelectorView','WorkflowSelectorProfileText','WorkflowUserLookupButton','WorkflowNewUserWizardButton','WorkflowDeviceManagementButton','WorkflowBackToProfilesButton','WorkflowCloseButton','DeviceManagementView','DeviceManagementCloseButton','DeviceManagementIdentityTextBox','DeviceManagementSearchButton','DeviceManagementIdentityText','DeviceManagementStatusText','DeviceManagementCountText','DeviceManagementNonCompliantText','DeviceManagementStaleText','DeviceManagementDevicesList','DeviceManagementEmptyText','DeviceManagementBackToWorkflowButton','DeviceManagementOpenLookupButton','NewUserWizardView','NewUserWizardCloseButton','NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserIncludeMiddleInitialCheckBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserStartDatePicker','NewUserCacCheckBox','NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserJobTitleTextBox','NewUserManagerComboBox','NewUserRefreshManagersButton','NewUserPortfolioComboBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox','NewUserCreateMailboxCheckBox','NewUserSendNoticeCheckBox','NewUserTemporaryPasswordBox','NewUserNotificationRecipientTextBox','NewUserNotificationSenderTextBox','NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox','NewUserValidationText','NewUserPreviewDisplayNameText','NewUserPreviewSamText','NewUserPreviewUpnText','NewUserPreviewOuText','NewUserValidateButton','NewUserExecuteButton','NewUserClearButton','NewUserReviewSummaryTextBox','NewUserReviewGroupsTextBox','NewUserExecutionLogList','NewUserBackToWorkflowButton','NewUserOpenLookupButton','RuntimeProfileListBox','RefreshRuntimeProfilesButton','NewRuntimeProfileButton','DeleteRuntimeProfileButton','ImportExportRuntimeProfileButton','SetDefaultRuntimeProfileButton','ManageRuntimeThemeButton','RuntimeThemeEditorView','ThemeEditorSubtitleText','ThemePackageNameTextBox','ThemeWindowTitleTextBox','ThemeOrganizationNameTextBox','ThemeAccentColorTextBox','ThemeBackgroundColorTextBox','ThemeSurfaceColorTextBox','ThemePanelColorTextBox','ThemeBorderColorTextBox','ThemeForegroundColorTextBox','ThemeTextColorTextBox','ThemeMutedTextColorTextBox','ThemeLogoPathTextBox','ThemeIconPathTextBox','ThemeSplashPathTextBox','ThemePreviewShell','ThemePreviewWindow','ThemePreviewTitleText','ThemePreviewAccentText','ThemePreviewCard','ThemePreviewMutedText','ThemeEditorStatusText','ThemeEditorCancelButton','ThemeEditorPathText','ThemeEditorPreviewButton','ThemeEditorSaveButton','ThemeEditorCloseButton','RuntimeProfileWizardView','WizardProfileNameTextBox','WizardOrganizationTextBox','WizardTenantIdTextBox','WizardNewUserNotificationRecipientTextBox','WizardNewUserNotificationSenderTextBox','WizardNewUserConfigButton','WizardCloudComboBox','WizardModeComboBox','WizardDirectorySimulatorEnabledCheckBox','WizardDirectorySimulatorModeComboBox','WizardActiveDirectoryEnabledCheckBox','WizardActiveDirectoryModeComboBox','WizardMicrosoftGraphEnabledCheckBox','WizardMicrosoftGraphModeComboBox','WizardExchangeOnlineEnabledCheckBox','WizardExchangeOnlineModeComboBox','WizardExchangeOnPremisesEnabledCheckBox','WizardExchangeOnPremisesModeComboBox','WizardExchangeOnPremisesServerTextBox','WizardExchangeOnPremisesConnectionUriTextBox','WizardExchangeOnPremisesAuthenticationComboBox','WizardAppOnlyEnabledCheckBox','WizardAppOnlyCredentialModeComboBox','WizardAppOnlyTenantIdTextBox','WizardAppOnlyTenantDomainTextBox','WizardAppOnlyClientIdTextBox','WizardCertificateThumbprintTextBox','WizardCertificatePathTextBox','WizardSecretReferenceTextBox','WizardDelegatedEnabledCheckBox','WizardStepProfileText','WizardStepEnvironmentText','WizardStepRuntimeText','WizardStepProvidersText','WizardStepValidationText','WizardStepSummaryText','WizardStepProfilePanel','WizardStepEnvironmentPanel','WizardStepRuntimePanel','WizardStepProvidersPanel','WizardStepValidationPanel','WizardStepSummaryPanel','WizardSummaryText','WizardStepStatusText','WizardBackButton','WizardNextButton','WizardCloseButton','WizardValidationText','WizardValidateButton','WizardSaveButton','WizardCancelButton','MainDashboardGrid','UserIdentityColumn','OperationsColumn','RuntimeColumn','HeaderRuntimeBadgeText','ShellStatusText','ShellStatusPanel','StatusProfileText','StatusCloudText','StatusModeText','StatusAuthText','StatusHealthText','StartupBrandIcon','ConsoleBrandIcon','SummaryBrandIcon','StartupView','ConsoleView','LaunchConsoleButton','EditRuntimeProfileButton','ExitButton','RuntimeVersionText','RuntimeProfileText','RuntimeCloudText','RuntimeModeText','RuntimeProviderSummaryText','RuntimeProviderDetailsText','RuntimeReadinessHeadlineText','RuntimeDiagnosticsText','RuntimeAuthenticationText','RuntimeActiveDirectoryStatusText','RuntimeStatusText','RuntimePreviewText','SearchBox','SearchButton','ResultHeader','StatusText','DisplayNameText','UpnText','SamText','MailText','DepartmentText','TitleText','MailboxText','SourcesText','ProviderStatusText','ProviderDot','BackToStartButton','SearchProgressPanel','SearchProgressStageText','SearchProgressIndicator','CancelSearchButton','CompanyText','OfficeText','EmployeeIdText','BadgeIdText','StateText','PhoneNumberText','DistinguishedNameText','AccountStateText','OrganizationalUnitText','ManagerText','GroupsList','DirectReportsList','ConsoleMenuBar','PreferencesMenuItem','ExitMenuItem','EditCurrentUserMenuItem','MoveReportsMenuItem','UpdateDistributionGroupsMenuItem','ShowHideGalMenuItem','ChangeManagerMenuItem','AddDelegatesMenuItem','EmailForwardingMenuItem','RecipientTypeText','MailboxStatusText','ForwardingText','MailboxDelegationList','DistributionGroupsList','ExchangeSummaryText','ExchangeMailboxCard','AggregationStatusCard','AggregationSummaryText','AggregationIdentityText','AggregationVerticalsText','AggregationStatusText','AggregationRetrievedText','MicrosoftGraphCard','GraphSummaryText','GraphObjectIdText','GraphUserTypeText','GraphUsageLocationText','GraphPreferredLanguageText','GraphMfaRegisteredText','GraphMfaCapableText','GraphAuthenticationMethodsText','GraphLastSignInText','GraphPasswordLastChangedText','GraphRiskStateText','GraphLicensesList','GraphPimRolesList','AuthenticationPostureCard','AuthenticationSummaryText','AuthDefaultMethodText','AuthMfaRegisteredText','AuthPasswordlessText','AuthStrengthText','AuthConditionalAccessText','AuthRiskText','AuthRiskDetailsList','AuthMethodsList') | ForEach-Object { $controls[$_] = $window.FindName($_) }
 
 function Resolve-HybridBrandAssetPath {
     [CmdletBinding()]
@@ -1554,6 +1564,137 @@ function Get-HapSelectedRuntimeProfileRaw {
         catch { return $null }
     }
     return $Profile
+}
+
+function Read-HapJsonObject {
+    param([AllowNull()][string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+    try { return (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop) }
+    catch { return $null }
+}
+
+function Get-HapNewUserWizardNotificationDefaults {
+    $configuration = Get-HapNewUserWizardConfiguration
+
+    return [pscustomobject]@{
+        Recipient = [string]$configuration.NotificationRecipient
+        Sender = [string]$configuration.NotificationSender
+    }
+}
+
+function Get-HapNewUserWizardConfiguration {
+    $defaults = [ordered]@{
+        NotificationRecipient = 'ITSupport@atlas-tech.com'
+        NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com'
+        HomeOrganizations = @(
+            [pscustomobject]@{ Number = 1; Name = 'Draco'; GroupName = 'Draco.Team'; DisplayGroupName = 'Draco Team' },
+            [pscustomobject]@{ Number = 2; Name = 'Pavo'; GroupName = 'Pavo.Team'; DisplayGroupName = 'Pavo Team' },
+            [pscustomobject]@{ Number = 3; Name = 'Corvus'; GroupName = 'Corvus.Team'; DisplayGroupName = 'Corvus Team' }
+        )
+        Locations = @(
+            [pscustomobject]@{ Number = 1; Name = 'Rivers'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '5416-A Rivers Avenue - Suite 105'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
+            [pscustomobject]@{ Number = 2; Name = 'Remount'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '1101 Remount Rd, Suite 800'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
+            [pscustomobject]@{ Number = 3; Name = 'Virginia Beach'; LocationGroup = 'Atlas-VABeach'; City = 'Virginia Beach'; StreetAddress = '168 Business Park Drive, Suite 103'; State = 'VA'; PostalCode = '23462'; OuKey = '3' },
+            [pscustomobject]@{ Number = 4; Name = 'San Diego'; LocationGroup = 'Atlas-SD'; City = 'San Diego'; StreetAddress = '4250 Pacific Highway, 105'; State = 'CA'; PostalCode = '92110'; OuKey = '4' },
+            [pscustomobject]@{ Number = 5; Name = 'Alexandria'; LocationGroup = 'Atlas-DC'; City = 'Alexandria'; StreetAddress = '5911 Kingstowne Village Parkway Suite 310'; State = 'VA'; PostalCode = '22315'; OuKey = '5' },
+            [pscustomobject]@{ Number = 6; Name = 'Lexington'; LocationGroup = 'Atlas-MD'; City = 'Lexington'; StreetAddress = 'Not Available'; State = 'MD'; PostalCode = 'Not Available'; OuKey = '6' }
+        )
+        Departments = @(
+            [pscustomobject]@{ Number = 1; Name = 'Dept 00 - Accounting'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 2; Name = 'Dept 00 - Information Technology'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 3; Name = 'Dept 00 - Executive'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 4; Name = 'Dept 00 - Human Resources'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 5; Name = 'Dept 01 - Contracts'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 6; Name = 'Dept 01 - Operations'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 7; Name = 'Dept 02 - DC/PAX/Charleston Division'; DisplayName = '02'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '5' = 'OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '6' = 'OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 8; Name = 'Dept 03 - VABeach Division'; DisplayName = '03'; TargetOuByLocation = @{ '3' = 'OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 9; Name = 'Dept 04 - San Diego Division'; DisplayName = '04'; TargetOuByLocation = @{ '4' = 'OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
+            [pscustomobject]@{ Number = 10; Name = 'Service Account'; DisplayName = 'Service Account'; TargetOu = 'OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com'; IsServiceAccount = $true }
+        )
+        Portfolios = @('', 'Corporate', 'Contracts', 'Operations', 'Information Technology', 'Human Resources')
+        Groups = [pscustomobject]@{ CgUsersSc = 'SC_CGUsers'; CgUsersSd = 'SD_CGUsers'; CgUsersVa = 'VABeach_CGUsers'; CacGroup = 'CAC_Holders' }
+        DefaultTargetOu = 'CN=Users,DC=atlas-tech,DC=com'
+    }
+
+    $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $script:SelectedRuntimeProfileSummary
+    $profileConfigObjects = New-Object System.Collections.Generic.List[object]
+    $organization = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Organization') -Default (Get-HapProfileObjectValue -InputObject $script:SelectedRuntimeProfileSummary -Names @('Organization') -Default ''))
+    if (-not [string]::IsNullOrWhiteSpace($organization)) {
+        $profileConfig = Read-HapJsonObject -Path (Join-Path (Join-Path $repoRoot 'profiles') (Join-Path $organization 'config.json'))
+        if ($null -ne $profileConfig) { $profileConfigObjects.Add($profileConfig) | Out-Null }
+    }
+
+    $legacyConfig = Read-HapJsonObject -Path (Join-Path $repoRoot 'legacy\config.json')
+    if ($null -ne $legacyConfig) { $profileConfigObjects.Add($legacyConfig) | Out-Null }
+
+    $configuration = [ordered]@{}
+    foreach ($key in $defaults.Keys) { $configuration[$key] = $defaults[$key] }
+
+    foreach ($configObject in @($profileConfigObjects)) {
+        $settings = Get-HapProfileObjectValue -InputObject $configObject -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
+        if ($null -ne $settings) {
+            foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
+                $value = Get-HapProfileObjectValue -InputObject $settings -Names @($property) -Default $null
+                if ($null -ne $value) { $configuration[$property] = $value }
+            }
+        }
+        $recipient = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationRecipient','notification_recipient','Recipient','recipient') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_recipient','NewUserNotificationRecipient','NotificationRecipient') -Default $null)
+        $sender = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationSender','notification_sender','Sender','sender') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_sender','NewUserNotificationSender','NotificationSender') -Default $null)
+        if (-not [string]::IsNullOrWhiteSpace([string]$recipient)) { $configuration.NotificationRecipient = [string]$recipient }
+        if (-not [string]::IsNullOrWhiteSpace([string]$sender)) { $configuration.NotificationSender = [string]$sender }
+    }
+
+    $runtimeSettings = Get-HapProfileObjectValue -InputObject $rawProfile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
+    if ($null -ne $runtimeSettings) {
+        foreach ($property in @('NotificationRecipient','NotificationSender','HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
+            $value = Get-HapProfileObjectValue -InputObject $runtimeSettings -Names @($property) -Default $null
+            if ($null -ne $value) { $configuration[$property] = $value }
+        }
+    }
+
+    return [pscustomobject]$configuration
+}
+
+function Format-HapNewUserOption {
+    param([AllowNull()][object]$Option)
+
+    if ($null -eq $Option) { return '' }
+    if ($Option -is [string]) { return [string]$Option }
+    $number = Get-HapProfileObjectValue -InputObject $Option -Names @('Number','Id','Key') -Default $null
+    $name = Get-HapProfileObjectValue -InputObject $Option -Names @('Name','DisplayName','Label','Value') -Default ''
+    if (-not [string]::IsNullOrWhiteSpace([string]$number) -and -not [string]::IsNullOrWhiteSpace([string]$name)) { return ('{0}. {1}' -f $number, $name) }
+    return [string]$name
+}
+
+function Set-HapComboBoxItems {
+    param(
+        [AllowNull()][object]$ComboBox,
+        [AllowNull()][object[]]$Items,
+        [int]$SelectedIndex = -1
+    )
+
+    if ($null -eq $ComboBox) { return }
+    $ComboBox.ItemsSource = $null
+    $ComboBox.Items.Clear()
+    foreach ($item in @($Items)) {
+        $display = Format-HapNewUserOption -Option $item
+        if ($null -ne $display) { [void]$ComboBox.Items.Add([string]$display) }
+    }
+    if ($SelectedIndex -ge 0 -and $ComboBox.Items.Count -gt $SelectedIndex) { $ComboBox.SelectedIndex = $SelectedIndex }
+    else { $ComboBox.SelectedIndex = -1; $ComboBox.Text = '' }
+}
+
+function Update-HapNewUserWizardConfigurationFromConfig {
+    $configuration = Get-HapNewUserWizardConfiguration
+    if (Get-Command Update-HybridNewUserWizardConfiguration -ErrorAction SilentlyContinue) {
+        Update-HybridNewUserWizardConfiguration -Configuration $configuration | Out-Null
+    }
+
+    Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items @($configuration.HomeOrganizations) -SelectedIndex -1
+    Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items @($configuration.Locations) -SelectedIndex -1
+    Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items @($configuration.Departments) -SelectedIndex -1
+    Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items @($configuration.Portfolios) -SelectedIndex -1
 }
 
 function Get-HapRuntimeProfileProviderMap {
@@ -2307,12 +2448,21 @@ function Show-HybridWorkflowSelector {
 }
 
 function Show-HybridNewUserWizardView {
-    Hide-HybridOverlayWorkflowViews
-    $controls.OverlayRegion.Visibility = 'Visible'
-    $controls.NewUserWizardView.Visibility = 'Visible'
-    $controls.StatusText.Text = 'New User Wizard opened.'
-    Reset-HybridNewUserWizardFields -PreserveDefaults
-    Update-HybridNewUserManagerOptions
+    try {
+        Hide-HybridOverlayWorkflowViews
+        Update-HapNewUserWizardConfigurationFromConfig
+        Reset-HybridNewUserWizardFields -PreserveDefaults
+        $controls.OverlayRegion.Visibility = 'Visible'
+        $controls.NewUserWizardView.Visibility = 'Visible'
+        $controls.StatusText.Text = 'New User Wizard opened.'
+        Update-HybridNewUserManagerOptions
+    }
+    catch {
+        $controls.OverlayRegion.Visibility = 'Visible'
+        $controls.WorkflowSelectorView.Visibility = 'Visible'
+        $controls.StatusText.Text = "New User Wizard failed to open: $($_.Exception.Message)"
+        if ($controls.WorkflowSelectorProfileText) { $controls.WorkflowSelectorProfileText.Text = "New User Wizard failed to open: $($_.Exception.Message)" }
+    }
 }
 
 function Show-HybridDeviceManagementView {
@@ -2365,7 +2515,7 @@ function Invoke-HybridDeviceManagementSearchFromUi {
         $identity = if ($controls.DeviceManagementIdentityTextBox) { [string]$controls.DeviceManagementIdentityTextBox.Text } else { '' }
         $identity = $identity.Trim()
         if ([string]::IsNullOrWhiteSpace($identity)) {
-            $controls.StatusText.Text = 'Enter a user identity for device lookup.'
+            $controls.StatusText.Text = 'Enter a user or device identity for device lookup.'
             return
         }
 
@@ -2624,21 +2774,22 @@ function Invoke-HybridNewUserExecutionFromUi {
 
 function Reset-HybridNewUserWizardFields {
     param([switch]$PreserveDefaults)
+    $notificationDefaults = Get-HapNewUserWizardNotificationDefaults
     foreach ($name in @('NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserJobTitleTextBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox')) {
         if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Text = '' }
     }
     if ($controls.NewUserManagerComboBox) { $controls.NewUserManagerComboBox.Text = ''; $controls.NewUserManagerComboBox.SelectedIndex = -1 }
     if ($controls.NewUserTemporaryPasswordBox) { $controls.NewUserTemporaryPasswordBox.Password = '' }
-    if ($controls.NewUserNotificationRecipientTextBox) { $controls.NewUserNotificationRecipientTextBox.Text = 'ITSupport@atlas-tech.com' }
-    if ($controls.NewUserNotificationSenderTextBox) { $controls.NewUserNotificationSenderTextBox.Text = 'NEW-HIRE-INFO@atlas-tech.com' }
+    if ($controls.NewUserNotificationRecipientTextBox) { $controls.NewUserNotificationRecipientTextBox.Text = [string]$notificationDefaults.Recipient }
+    if ($controls.NewUserNotificationSenderTextBox) { $controls.NewUserNotificationSenderTextBox.Text = [string]$notificationDefaults.Sender }
     $controls.NewUserIncludeMiddleInitialCheckBox.IsChecked = $false
     $controls.NewUserCacCheckBox.IsChecked = $false
     $controls.NewUserCreateMailboxCheckBox.IsChecked = $true
     $controls.NewUserSendNoticeCheckBox.IsChecked = $true
     $controls.NewUserHomeOrgComboBox.SelectedIndex = -1
-    $controls.NewUserLocationComboBox.SelectedIndex = 0
-    $controls.NewUserDepartmentComboBox.SelectedIndex = 1
-    if ($controls.NewUserPortfolioComboBox) { $controls.NewUserPortfolioComboBox.SelectedIndex = 0; $controls.NewUserPortfolioComboBox.Text = '' }
+    $controls.NewUserLocationComboBox.SelectedIndex = -1
+    $controls.NewUserDepartmentComboBox.SelectedIndex = -1
+    if ($controls.NewUserPortfolioComboBox) { $controls.NewUserPortfolioComboBox.SelectedIndex = -1; $controls.NewUserPortfolioComboBox.Text = '' }
     foreach ($name in @('NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox')) {
         if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].IsChecked = $false }
     }
@@ -2772,6 +2923,7 @@ $script:HybridRuntimeProfileWizardStep = 0
 $script:HybridRuntimeProfileWizardStepCount = 6
 $script:HybridRuntimeProfileWizardSourcePath = ''
 $script:HybridRuntimeProfileWizardMode = 'New'
+$script:HybridRuntimeProfileWizardNewUserConfiguration = $null
 
 function Set-HybridRuntimeProfileWizardStep {
     param([int]$Step)
@@ -2866,9 +3018,12 @@ function Set-HybridWizardProviderControls {
 function Reset-HybridRuntimeProfileWizardFields {
     $script:HybridRuntimeProfileWizardSourcePath = ''
     $script:HybridRuntimeProfileWizardMode = 'New'
+    $script:HybridRuntimeProfileWizardNewUserConfiguration = $null
     $controls.WizardProfileNameTextBox.Text = ''
     $controls.WizardOrganizationTextBox.Text = ''
     $controls.WizardTenantIdTextBox.Text = ''
+    $controls.WizardNewUserNotificationRecipientTextBox.Text = 'ITSupport@atlas-tech.com'
+    $controls.WizardNewUserNotificationSenderTextBox.Text = 'NEW-HIRE-INFO@atlas-tech.com'
     Set-HybridWizardComboValue -ComboBox $controls.WizardCloudComboBox -Value 'Commercial'
     Set-HybridWizardComboValue -ComboBox $controls.WizardModeComboBox -Value 'Simulation'
     $controls.WizardDirectorySimulatorEnabledCheckBox.IsChecked = $true
@@ -2913,10 +3068,16 @@ function Load-HybridRuntimeProfileIntoWizard {
         $mode = Get-HybridRuntimeDisplayValue -InputObject $profile -Names @('Mode','RuntimeMode') -Default $ProfileSummary.RuntimeMode
         $organization = Get-HybridRuntimeDisplayValue -InputObject $profile -Names @('Organization') -Default $ProfileSummary.Organization
         $tenantId = Get-HybridRuntimeDisplayValue -InputObject $profile -Names @('TenantId','TenantID','Tenant') -Default ''
+        $newUserWizard = Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
+        $script:HybridRuntimeProfileWizardNewUserConfiguration = $newUserWizard
+        $notificationRecipient = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationRecipient','Recipient') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default 'ITSupport@atlas-tech.com')
+        $notificationSender = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationSender','Sender') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default 'NEW-HIRE-INFO@atlas-tech.com')
 
         $controls.WizardProfileNameTextBox.Text = $profileName
         $controls.WizardOrganizationTextBox.Text = $organization
         $controls.WizardTenantIdTextBox.Text = $tenantId
+        $controls.WizardNewUserNotificationRecipientTextBox.Text = [string]$notificationRecipient
+        $controls.WizardNewUserNotificationSenderTextBox.Text = [string]$notificationSender
         Set-HybridWizardComboValue -ComboBox $controls.WizardCloudComboBox -Value $cloud
         Set-HybridWizardComboValue -ComboBox $controls.WizardModeComboBox -Value $mode
 
@@ -3008,6 +3169,102 @@ function Normalize-HybridWizardCertificateThumbprint {
     return ([regex]::Replace($Thumbprint.Trim(), '[^0-9A-Fa-f]', '')).ToUpperInvariant()
 }
 
+function ConvertTo-HapEditorJson {
+    param([AllowNull()][object]$Value)
+
+    if ($null -eq $Value) { return 'null' }
+    return ($Value | ConvertTo-Json -Depth 20)
+}
+
+function Show-HybridNewUserWizardConfigurationEditor {
+    try {
+        $configuration = if ($null -ne $script:HybridRuntimeProfileWizardNewUserConfiguration) { $script:HybridRuntimeProfileWizardNewUserConfiguration } else { Get-HapNewUserWizardConfiguration }
+        $editorXaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New User Wizard Configuration" Height="760" Width="1040" WindowStartupLocation="CenterOwner" Background="#0B1220">
+    <Window.Resources>
+        <Style x:Key="EditorLabel" TargetType="TextBlock"><Setter Property="Foreground" Value="#CBD5E1"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,10,0,4"/></Style>
+        <Style x:Key="EditorTextBox" TargetType="TextBox"><Setter Property="Background" Value="#111827"/><Setter Property="Foreground" Value="#E5E7EB"/><Setter Property="BorderBrush" Value="#26364F"/><Setter Property="AcceptsReturn" Value="True"/><Setter Property="VerticalScrollBarVisibility" Value="Auto"/><Setter Property="HorizontalScrollBarVisibility" Value="Auto"/><Setter Property="TextWrapping" Value="NoWrap"/></Style>
+        <Style x:Key="EditorButton" TargetType="Button"><Setter Property="Foreground" Value="#E0F2FE"/><Setter Property="Background" Value="#152033"/><Setter Property="BorderBrush" Value="#38BDF8"/><Setter Property="BorderThickness" Value="1"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Padding" Value="14,0"/><Setter Property="Height" Value="36"/></Style>
+    </Window.Resources>
+    <Grid Margin="18">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="New User Wizard Configuration" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold"/>
+            <TextBlock Text="Edit or remove existing values. Locations and departments use JSON because they include address, group, and OU routing metadata." Foreground="#38BDF8" TextWrapping="Wrap" Margin="0,5,0,0"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Home Organizations" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorHomeOrganizationsTextBox" Style="{StaticResource EditorTextBox}" MinHeight="105"/>
+                <TextBlock Text="Locations" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorLocationsTextBox" Style="{StaticResource EditorTextBox}" MinHeight="165"/>
+                <TextBlock Text="Departments" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorDepartmentsTextBox" Style="{StaticResource EditorTextBox}" MinHeight="210"/>
+                <TextBlock Text="Portfolios" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorPortfoliosTextBox" Style="{StaticResource EditorTextBox}" MinHeight="75"/>
+                <TextBlock Text="Groups" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorGroupsTextBox" Style="{StaticResource EditorTextBox}" MinHeight="90"/>
+                <TextBlock Text="Default Target OU" Style="{StaticResource EditorLabel}"/>
+                <TextBox x:Name="EditorDefaultTargetOuTextBox" Background="#111827" Foreground="#E5E7EB" BorderBrush="#26364F" Height="34" VerticalContentAlignment="Center"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <TextBlock x:Name="EditorStatusText" Text="" Foreground="#FACC15" VerticalAlignment="Center" Margin="0,0,16,0"/>
+            <Button x:Name="EditorSaveButton" Content="Save" Style="{StaticResource EditorButton}" MinWidth="96" Margin="0,0,10,0"/>
+            <Button x:Name="EditorCancelButton" Content="Cancel" Style="{StaticResource EditorButton}" MinWidth="96"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$editorXaml)
+        $editor = [Windows.Markup.XamlReader]::Load($reader)
+        $editor.Owner = $window
+        $homeBox = $editor.FindName('EditorHomeOrganizationsTextBox')
+        $locationBox = $editor.FindName('EditorLocationsTextBox')
+        $departmentBox = $editor.FindName('EditorDepartmentsTextBox')
+        $portfolioBox = $editor.FindName('EditorPortfoliosTextBox')
+        $groupBox = $editor.FindName('EditorGroupsTextBox')
+        $defaultOuBox = $editor.FindName('EditorDefaultTargetOuTextBox')
+        $statusText = $editor.FindName('EditorStatusText')
+        $homeBox.Text = ConvertTo-HapEditorJson -Value $configuration.HomeOrganizations
+        $locationBox.Text = ConvertTo-HapEditorJson -Value $configuration.Locations
+        $departmentBox.Text = ConvertTo-HapEditorJson -Value $configuration.Departments
+        $portfolioBox.Text = ConvertTo-HapEditorJson -Value $configuration.Portfolios
+        $groupBox.Text = ConvertTo-HapEditorJson -Value $configuration.Groups
+        $defaultOuBox.Text = [string]$configuration.DefaultTargetOu
+
+        $editor.FindName('EditorCancelButton').Add_Click({ $editor.DialogResult = $false; $editor.Close() })
+        $editor.FindName('EditorSaveButton').Add_Click({
+            try {
+                $updated = [ordered]@{
+                    NotificationRecipient = $controls.WizardNewUserNotificationRecipientTextBox.Text.Trim()
+                    NotificationSender = $controls.WizardNewUserNotificationSenderTextBox.Text.Trim()
+                    HomeOrganizations = @($homeBox.Text | ConvertFrom-Json -ErrorAction Stop)
+                    Locations = @($locationBox.Text | ConvertFrom-Json -ErrorAction Stop)
+                    Departments = @($departmentBox.Text | ConvertFrom-Json -ErrorAction Stop)
+                    Portfolios = @($portfolioBox.Text | ConvertFrom-Json -ErrorAction Stop)
+                    Groups = ($groupBox.Text | ConvertFrom-Json -ErrorAction Stop)
+                    DefaultTargetOu = $defaultOuBox.Text.Trim()
+                }
+                $script:HybridRuntimeProfileWizardNewUserConfiguration = $updated
+                $editor.DialogResult = $true
+                $editor.Close()
+            }
+            catch {
+                $statusText.Text = "Invalid configuration JSON: $($_.Exception.Message)"
+            }
+        })
+
+        [void]$editor.ShowDialog()
+    }
+    catch {
+        $controls.WizardValidationText.Text = "New User Wizard configuration editor failed: $($_.Exception.Message)"
+        $controls.StatusText.Text = 'New User Wizard configuration editor failed.'
+    }
+}
+
 function New-HybridRuntimeProfileFromWizard {
     $profileName = $controls.WizardProfileNameTextBox.Text.Trim()
     if ([string]::IsNullOrWhiteSpace($profileName)) { throw 'Profile name is required.' }
@@ -3016,6 +3273,8 @@ function New-HybridRuntimeProfileFromWizard {
     $mode = Get-HybridWizardComboValue -ComboBox $controls.WizardModeComboBox
     $organization = $controls.WizardOrganizationTextBox.Text.Trim()
     $tenantId = $controls.WizardTenantIdTextBox.Text.Trim()
+    $newUserNotificationRecipient = $controls.WizardNewUserNotificationRecipientTextBox.Text.Trim()
+    $newUserNotificationSender = $controls.WizardNewUserNotificationSenderTextBox.Text.Trim()
 
     $providerMap = [ordered]@{
         DirectorySimulator = @{
@@ -3093,6 +3352,15 @@ function New-HybridRuntimeProfileFromWizard {
         }
     }
 
+    $newUserConfiguration = if ($null -ne $script:HybridRuntimeProfileWizardNewUserConfiguration) { $script:HybridRuntimeProfileWizardNewUserConfiguration } else { Get-HapNewUserWizardConfiguration }
+    if ($newUserConfiguration -isnot [System.Collections.IDictionary]) {
+        $convertedConfiguration = [ordered]@{}
+        foreach ($property in $newUserConfiguration.PSObject.Properties) { $convertedConfiguration[$property.Name] = $property.Value }
+        $newUserConfiguration = $convertedConfiguration
+    }
+    $newUserConfiguration['NotificationRecipient'] = if ([string]::IsNullOrWhiteSpace($newUserNotificationRecipient)) { 'ITSupport@atlas-tech.com' } else { $newUserNotificationRecipient }
+    $newUserConfiguration['NotificationSender'] = if ([string]::IsNullOrWhiteSpace($newUserNotificationSender)) { 'NEW-HIRE-INFO@atlas-tech.com' } else { $newUserNotificationSender }
+
     return [ordered]@{
         ProfileName = $profileName
         Mode = $mode
@@ -3100,6 +3368,7 @@ function New-HybridRuntimeProfileFromWizard {
         Environment = 'Development'
         Organization = $organization
         TenantId = $tenantId
+        NewUserWizard = $newUserConfiguration
         Authentication = $authentication
         Providers = $providers
     }
@@ -4895,6 +5164,7 @@ $controls.WizardBackButton.Add_Click({ Move-HybridRuntimeProfileWizardBack })
 $controls.WizardNextButton.Add_Click({ Move-HybridRuntimeProfileWizardNext })
 $controls.WizardValidateButton.Add_Click({ [void](Test-HybridRuntimeProfileWizardInput) })
 $controls.WizardSaveButton.Add_Click({ Save-HybridRuntimeProfileFromWizard })
+if ($controls.WizardNewUserConfigButton) { $controls.WizardNewUserConfigButton.Add_Click({ Show-HybridNewUserWizardConfigurationEditor }) }
 $controls.ExitButton.Add_Click({ $window.Close() })
 
 Initialize-HybridRuntimeProfileList
