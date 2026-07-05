@@ -767,7 +767,7 @@ $xaml = @"
                         <TextBlock Text="The dashboard will open after validation and runtime initialization complete." Foreground="#94A3B8" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Grid>
-                <!-- WorkflowSelector: profile launch routes to an enterprise workflow. -->
+                <!-- v0.9C WorkflowSelector: profile launch routes to an enterprise workflow. -->
                 <Grid x:Name="WorkflowSelectorView" Width="980" MinHeight="420" Visibility="Collapsed">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,0,0,22">
@@ -2076,50 +2076,45 @@ function Show-HybridHomeView {
 }
 
 
-function Invoke-HapLaunchGraphDelegatedPrompt {
-    param(
-        [AllowNull()][object]$Runtime,
-        [AllowNull()][object]$Profile
-    )
+function Assert-HapRuntimeLaunchReadiness {
+    param([AllowNull()][object]$Runtime)
 
     if ($null -eq $Runtime -or $null -eq $Runtime.ProviderRegistry) { return }
+
+    foreach ($providerName in @($Runtime.ProviderRegistry.Keys)) {
+        $record = $Runtime.ProviderRegistry[$providerName]
+        if ($null -eq $record) { continue }
+
+        $required = [bool](Get-HapProfileObjectValue -InputObject $record -Names @('Required') -Default $false)
+        $status = [string](Get-HapProfileObjectValue -InputObject $record -Names @('Status') -Default '')
+        if (-not $required -or $status -ne 'Failed') { continue }
+
+        $message = [string](Get-HapProfileObjectValue -InputObject $record -Names @('Message') -Default '')
+        if ([string]::IsNullOrWhiteSpace($message)) { $message = 'No provider failure detail was returned.' }
+        throw "Required provider $providerName failed during launch: $message"
+    }
+
     if (-not $Runtime.ProviderRegistry.ContainsKey('MicrosoftGraph')) { return }
 
     $graphRecord = $Runtime.ProviderRegistry['MicrosoftGraph']
     if ($null -eq $graphRecord) { return }
 
-    $authLabel = [string](Get-HybridRuntimeDisplayValue -InputObject $graphRecord -Names @('Authentication') -Default '')
-    $requiresDelegated = ($authLabel -match '^(Interactive|Delegated|Browser|User)$')
+    $runtimeMode = [string](Get-HapProfileObjectValue -InputObject $Runtime -Names @('RuntimeMode','Mode') -Default '')
+    $graphMode = [string](Get-HapProfileObjectValue -InputObject $graphRecord -Names @('Mode') -Default '')
+    if ($runtimeMode -eq 'Simulation' -or $graphMode -eq 'Simulation') { return }
 
-    $profileAuth = Get-HapProfileObjectValue -InputObject $Profile -Names @('Authentication') -Default $null
-    $delegated = Get-HapProfileObjectValue -InputObject $profileAuth -Names @('Delegated') -Default $null
-    $delegatedEnabled = [bool](Get-HapProfileObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
-    if ($delegatedEnabled) { $requiresDelegated = $true }
-
+    $authLabel = [string](Get-HapProfileObjectValue -InputObject $graphRecord -Names @('Authentication') -Default '')
+    $service = Get-HapProfileObjectValue -InputObject $graphRecord -Names @('Service') -Default $null
+    $serviceAuth = [string](Get-HapProfileObjectValue -InputObject $service -Names @('AuthenticationMethod') -Default '')
+    $requiresDelegated = (($authLabel -match '^(Interactive|Delegated|Browser|User)$') -or ($serviceAuth -match '^(Interactive|InteractiveBrowser|Delegated|Browser|User)$'))
     if (-not $requiresDelegated) { return }
 
-    $service = Get-HybridRuntimeDisplayValue -InputObject $graphRecord -Names @('Service') -Default $null
-    if ($null -eq $service) { return }
+    $status = [string](Get-HapProfileObjectValue -InputObject $graphRecord -Names @('Status') -Default '')
+    if ($status -eq 'Connected') { return }
 
-    $connectors = @('Connect','EnsureAuthenticated','Initialize','Authenticate')
-    foreach ($name in $connectors) {
-        if ($service.PSObject.Properties.Name -contains $name -and $service.$name -is [scriptblock]) {
-            $controls.LaunchProgressText.Text = 'Starting delegated Microsoft Graph sign-in...'
-            $controls.LaunchProgressBar.Value = 94
-            [System.Windows.Forms.Application]::DoEvents()
-            $null = & $service.$name
-            return
-        }
-    }
-
-    # Fallback for older runtime service objects: GetHealth is intentionally not enough
-    # because lazy Graph providers can report Deferred without acquiring a delegated token.
-    if ($service.PSObject.Properties.Name -contains 'SearchUser' -and $service.SearchUser -is [scriptblock]) {
-        $controls.LaunchProgressText.Text = 'Starting delegated Microsoft Graph sign-in...'
-        $controls.LaunchProgressBar.Value = 94
-        [System.Windows.Forms.Application]::DoEvents()
-        try { $null = @(& $service.SearchUser '__hap_launch_auth_probe__') } catch { throw }
-    }
+    $message = [string](Get-HapProfileObjectValue -InputObject $graphRecord -Names @('Message') -Default '')
+    if ([string]::IsNullOrWhiteSpace($message)) { $message = 'Microsoft Graph did not report a completed delegated sign-in.' }
+    throw "Microsoft Graph delegated sign-in did not complete during launch. Status: $status. $message"
 }
 
 function Invoke-HybridRuntimeProfileLaunch {
@@ -2147,7 +2142,7 @@ function Invoke-HybridRuntimeProfileLaunch {
             $controls.LaunchProgressBar.Value = 90
             [System.Windows.Forms.Application]::DoEvents()
             $script:HybridRuntime = Initialize-HybridRuntime -ProfilePath $script:SelectedRuntimeProfileSummary.Path -RootPath $repoRoot -Force
-            Invoke-HapLaunchGraphDelegatedPrompt -Runtime $script:HybridRuntime -Profile $script:SelectedRuntimeProfileSummary
+            Assert-HapRuntimeLaunchReadiness -Runtime $script:HybridRuntime
         }
         $controls.LaunchProgressView.Visibility = 'Collapsed'
         $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'
