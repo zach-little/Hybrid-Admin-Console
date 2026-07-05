@@ -2075,6 +2075,53 @@ function Show-HybridHomeView {
     Update-HybridStartupView
 }
 
+
+function Invoke-HapLaunchGraphDelegatedPrompt {
+    param(
+        [AllowNull()][object]$Runtime,
+        [AllowNull()][object]$Profile
+    )
+
+    if ($null -eq $Runtime -or $null -eq $Runtime.ProviderRegistry) { return }
+    if (-not $Runtime.ProviderRegistry.ContainsKey('MicrosoftGraph')) { return }
+
+    $graphRecord = $Runtime.ProviderRegistry['MicrosoftGraph']
+    if ($null -eq $graphRecord) { return }
+
+    $authLabel = [string](Get-HybridRuntimeDisplayValue -InputObject $graphRecord -Names @('Authentication') -Default '')
+    $requiresDelegated = ($authLabel -match '^(Interactive|Delegated|Browser|User)$')
+
+    $profileAuth = Get-HapProfileObjectValue -InputObject $Profile -Names @('Authentication') -Default $null
+    $delegated = Get-HapProfileObjectValue -InputObject $profileAuth -Names @('Delegated') -Default $null
+    $delegatedEnabled = [bool](Get-HapProfileObjectValue -InputObject $delegated -Names @('Enabled') -Default $false)
+    if ($delegatedEnabled) { $requiresDelegated = $true }
+
+    if (-not $requiresDelegated) { return }
+
+    $service = Get-HybridRuntimeDisplayValue -InputObject $graphRecord -Names @('Service') -Default $null
+    if ($null -eq $service) { return }
+
+    $connectors = @('Connect','EnsureAuthenticated','Initialize','Authenticate')
+    foreach ($name in $connectors) {
+        if ($service.PSObject.Properties.Name -contains $name -and $service.$name -is [scriptblock]) {
+            $controls.LaunchProgressText.Text = 'Starting delegated Microsoft Graph sign-in...'
+            $controls.LaunchProgressBar.Value = 94
+            [System.Windows.Forms.Application]::DoEvents()
+            $null = & $service.$name
+            return
+        }
+    }
+
+    # Fallback for older runtime service objects: GetHealth is intentionally not enough
+    # because lazy Graph providers can report Deferred without acquiring a delegated token.
+    if ($service.PSObject.Properties.Name -contains 'SearchUser' -and $service.SearchUser -is [scriptblock]) {
+        $controls.LaunchProgressText.Text = 'Starting delegated Microsoft Graph sign-in...'
+        $controls.LaunchProgressBar.Value = 94
+        [System.Windows.Forms.Application]::DoEvents()
+        try { $null = @(& $service.SearchUser '__hap_launch_auth_probe__') } catch { throw }
+    }
+}
+
 function Invoke-HybridRuntimeProfileLaunch {
     if ($script:HybridRuntimeLaunchInProgress) { return }
     if ($null -eq $script:SelectedRuntimeProfileSummary) { $controls.StatusText.Text = 'Select a runtime profile before launch.'; return }
@@ -2100,6 +2147,7 @@ function Invoke-HybridRuntimeProfileLaunch {
             $controls.LaunchProgressBar.Value = 90
             [System.Windows.Forms.Application]::DoEvents()
             $script:HybridRuntime = Initialize-HybridRuntime -ProfilePath $script:SelectedRuntimeProfileSummary.Path -RootPath $repoRoot -Force
+            Invoke-HapLaunchGraphDelegatedPrompt -Runtime $script:HybridRuntime -Profile $script:SelectedRuntimeProfileSummary
         }
         $controls.LaunchProgressView.Visibility = 'Collapsed'
         $controls.RuntimeProfileWizardView.Visibility = 'Collapsed'

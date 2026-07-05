@@ -638,6 +638,20 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
                 throw
             }
         }.GetNewClosure()
+        $connectGraph = {
+            try {
+                $inner = & $getInnerService
+                if ($null -ne $inner) {
+                    $lazyState.LastError = $null
+                    return $true
+                }
+                return $false
+            }
+            catch {
+                $lazyState.LastError = $_.Exception.Message
+                throw
+            }
+        }.GetNewClosure()
         $getGraphHealth = {
             if ($null -ne $lazyState.Service -and $lazyState.Service.PSObject.Properties.Name -contains 'GetHealth' -and $lazyState.Service.GetHealth -is [scriptblock]) {
                 return & $lazyState.Service.GetHealth
@@ -660,6 +674,8 @@ function Initialize-HybridRuntimeLiveMicrosoftGraphProvider {
             ProviderConnected = $false
             AuthenticationMethod = $methodName
             Scopes = @($scopes)
+            Connect = $connectGraph
+            EnsureAuthenticated = $connectGraph
             SearchUser = $searchGraphUsers
             Search = $searchGraphUsers
             GetUser = $invokeGraphUser
