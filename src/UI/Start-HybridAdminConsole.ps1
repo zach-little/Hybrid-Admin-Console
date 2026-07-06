@@ -1,4 +1,4 @@
-﻿[CmdletBinding()]
+[CmdletBinding()]
 param(
     [switch]$Mock,
     [string]$InitialQuery = '',
@@ -1670,55 +1670,54 @@ function Format-HapNewUserOption {
 function Set-HapComboBoxItems {
     param(
         [AllowNull()][object]$ComboBox,
-        [AllowNull()][object]$Items,
+        [AllowNull()][object[]]$Items,
         [int]$SelectedIndex = -1
     )
 
     if ($null -eq $ComboBox) { return }
 
-    # Use a plain string ItemsSource instead of mixing manually-added ComboBoxItem
-    # instances with editable ComboBox text. Some WPF/PowerShell hosts throw
-    # "Argument types do not match" when a typed ItemCollection containing
-    # ComboBoxItem objects is cleared/repopulated and then Text/SelectedIndex is
-    # reset during the same launch cycle. A List[string] keeps the picker
-    # editable, data-bound, and safe for config-driven values.
-    $displayItems = New-Object 'System.Collections.Generic.List[string]'
+    # Keep these wizard dropdowns as plain string items.  Recent WPF/PowerShell builds can
+    # throw "Argument types do not match" when editable ComboBoxes are mixed with
+    # ComboBoxItem objects, ItemsSource bindings, and direct Text/SelectedIndex resets.
+    try { $ComboBox.ItemsSource = $null } catch { }
+    try { $ComboBox.DisplayMemberPath = '' } catch { }
+    try { $ComboBox.SelectedValuePath = '' } catch { }
+    try { $ComboBox.Items.Clear() } catch { }
+
     foreach ($item in @($Items)) {
         $display = Format-HapNewUserOption -Option $item
-        if ($null -ne $display) { [void]$displayItems.Add([string]$display) }
+        if ($null -ne $display) {
+            try { [void]$ComboBox.Items.Add([string]$display) } catch { }
+        }
     }
 
-    $ComboBox.ItemsSource = $null
-    if ($ComboBox.Items.Count -gt 0) { $ComboBox.Items.Clear() }
-    $ComboBox.DisplayMemberPath = ''
-    $ComboBox.SelectedValuePath = ''
-    $ComboBox.ItemsSource = $displayItems
-
-    if ($SelectedIndex -ge 0 -and $displayItems.Count -gt $SelectedIndex) {
-        $ComboBox.SelectedIndex = $SelectedIndex
-    }
-    else {
-        $ComboBox.SelectedIndex = -1
-        if ($ComboBox.IsEditable) { $ComboBox.Text = '' }
-    }
+    try {
+        if ($SelectedIndex -ge 0 -and $ComboBox.Items.Count -gt $SelectedIndex) { $ComboBox.SelectedIndex = $SelectedIndex }
+        else { $ComboBox.SelectedIndex = -1 }
+    } catch { }
+    try { if ($SelectedIndex -lt 0) { $ComboBox.Text = '' } } catch { }
 }
 
 function Update-HapNewUserWizardConfigurationFromConfig {
     $configuration = Get-HapNewUserWizardConfiguration
+    $warnings = New-Object System.Collections.Generic.List[string]
+
     try { Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items @($configuration.HomeOrganizations) -SelectedIndex -1 }
-    catch { throw "populating Home Organization values: $($_.Exception.Message)" }
+    catch { [void]$warnings.Add("Home Organization values: $($_.Exception.Message)") }
     try { Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items @($configuration.Locations) -SelectedIndex -1 }
-    catch { throw "populating Location values: $($_.Exception.Message)" }
+    catch { [void]$warnings.Add("Location values: $($_.Exception.Message)") }
     try { Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items @($configuration.Departments) -SelectedIndex -1 }
-    catch { throw "populating Department values: $($_.Exception.Message)" }
+    catch { [void]$warnings.Add("Department values: $($_.Exception.Message)") }
     try { Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items @($configuration.Portfolios) -SelectedIndex -1 }
-    catch { throw "populating Portfolio values: $($_.Exception.Message)" }
+    catch { [void]$warnings.Add("Portfolio values: $($_.Exception.Message)") }
 
     if (Get-Command Update-HybridNewUserWizardConfiguration -ErrorAction SilentlyContinue) {
         try { Update-HybridNewUserWizardConfiguration -Configuration $configuration | Out-Null }
-        catch {
-            if ($controls.StatusText) { $controls.StatusText.Text = "New User Wizard config loaded; service sync warning: $($_.Exception.Message)" }
-        }
+        catch { [void]$warnings.Add("service sync: $($_.Exception.Message)") }
+    }
+
+    if ($warnings.Count -gt 0 -and $controls.StatusText) {
+        $controls.StatusText.Text = 'New User Wizard config loaded with warning(s): ' + ($warnings -join '; ')
     }
 }
 
@@ -2473,27 +2472,28 @@ function Show-HybridWorkflowSelector {
 }
 
 function Show-HybridNewUserWizardView {
-    $openStep = 'starting'
-    try {
-        $openStep = 'hiding other workflow views'
-        Hide-HybridOverlayWorkflowViews
-        $openStep = 'loading New User Wizard configuration'
-        Update-HapNewUserWizardConfigurationFromConfig
-        $openStep = 'resetting New User Wizard fields'
-        Reset-HybridNewUserWizardFields -PreserveDefaults
-        $openStep = 'showing New User Wizard view'
-        $controls.OverlayRegion.Visibility = 'Visible'
-        $controls.NewUserWizardView.Visibility = 'Visible'
-        $controls.StatusText.Text = 'New User Wizard opened.'
-        $openStep = 'loading manager options'
-        Update-HybridNewUserManagerOptions
-    }
-    catch {
-        $controls.OverlayRegion.Visibility = 'Visible'
-        $controls.WorkflowSelectorView.Visibility = 'Visible'
-        $message = "New User Wizard failed to open while $openStep`: $($_.Exception.Message)"
-        $controls.StatusText.Text = $message
-        if ($controls.WorkflowSelectorProfileText) { $controls.WorkflowSelectorProfileText.Text = $message }
+    $warnings = New-Object System.Collections.Generic.List[string]
+
+    try { Hide-HybridOverlayWorkflowViews }
+    catch { [void]$warnings.Add("hiding other workflow views: $($_.Exception.Message)") }
+
+    try { Update-HapNewUserWizardConfigurationFromConfig }
+    catch { [void]$warnings.Add("loading configuration: $($_.Exception.Message)") }
+
+    try { Reset-HybridNewUserWizardFields -PreserveDefaults }
+    catch { [void]$warnings.Add("resetting fields: $($_.Exception.Message)") }
+
+    try { $controls.OverlayRegion.Visibility = [System.Windows.Visibility]::Visible } catch { [void]$warnings.Add("showing overlay: $($_.Exception.Message)") }
+    try { $controls.WorkflowSelectorView.Visibility = [System.Windows.Visibility]::Collapsed } catch { }
+    try { $controls.NewUserWizardView.Visibility = [System.Windows.Visibility]::Visible } catch { [void]$warnings.Add("showing New User Wizard view: $($_.Exception.Message)") }
+
+    # Manager lookup should never block opening the wizard.  It depends on AD and can be slow/fail.
+    try { Update-HybridNewUserManagerOptions }
+    catch { [void]$warnings.Add("loading manager options: $($_.Exception.Message)") }
+
+    if ($controls.StatusText) {
+        if ($warnings.Count -gt 0) { $controls.StatusText.Text = 'New User Wizard opened with warning(s): ' + ($warnings -join '; ') }
+        else { $controls.StatusText.Text = 'New User Wizard opened.' }
     }
 }
 
@@ -2605,7 +2605,10 @@ function Get-HybridNewUserManagerIdentityFromUi {
     if ($null -ne $selected -and $selected.PSObject.Properties.Name -contains 'Identity') {
         return [string]$selected.Identity
     }
-    return [string]$controls.NewUserManagerComboBox.Text
+    $text = [string]$controls.NewUserManagerComboBox.Text
+    if ([string]::IsNullOrWhiteSpace($text) -and $null -ne $selected) { $text = [string]$selected }
+    if ($text -match '<([^<>]+)>\s*$') { return $matches[1] }
+    return $text
 }
 
 function Get-HybridNewUserRequestFromUi {
@@ -2751,25 +2754,32 @@ function Update-HybridNewUserPreviewFromUi {
 function Update-HybridNewUserManagerOptions {
     if ($null -eq $controls.NewUserManagerComboBox) { return }
     try {
-        $controls.NewUserManagerComboBox.ItemsSource = $null
-        if ($controls.NewUserManagerComboBox.Items.Count -gt 0) { $controls.NewUserManagerComboBox.Items.Clear() }
-        $controls.NewUserManagerComboBox.DisplayMemberPath = 'Name'
-        $controls.NewUserManagerComboBox.SelectedValuePath = 'Identity'
+        try { $controls.NewUserManagerComboBox.ItemsSource = $null } catch { }
+        try { $controls.NewUserManagerComboBox.DisplayMemberPath = '' } catch { }
+        try { $controls.NewUserManagerComboBox.SelectedValuePath = '' } catch { }
+        try { $controls.NewUserManagerComboBox.Items.Clear() } catch { }
 
-        $managerItems = New-Object 'System.Collections.Generic.List[object]'
-        foreach ($manager in @(Get-HybridNewUserManagerOptions)) { [void]$managerItems.Add($manager) }
-
-        $controls.NewUserManagerComboBox.ItemsSource = $managerItems
-        if ($managerItems.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$managerItems[0].Identity)) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
-        else { $controls.NewUserManagerComboBox.SelectedIndex = -1; if ($controls.NewUserManagerComboBox.IsEditable) { $controls.NewUserManagerComboBox.Text = '' } }
-        $controls.StatusText.Text = "Loaded $($managerItems.Count) manager option(s)."
+        $managers = @(Get-HybridNewUserManagerOptions)
+        foreach ($manager in $managers) {
+            $name = [string](Get-HapProfileObjectValue -InputObject $manager -Names @('Name','DisplayName') -Default '')
+            $identity = [string](Get-HapProfileObjectValue -InputObject $manager -Names @('Identity','SamAccountName','UserPrincipalName') -Default '')
+            $display = if (-not [string]::IsNullOrWhiteSpace($identity) -and $name -ne $identity) { "$name <$identity>" } elseif (-not [string]::IsNullOrWhiteSpace($name)) { $name } else { $identity }
+            if (-not [string]::IsNullOrWhiteSpace($display)) { try { [void]$controls.NewUserManagerComboBox.Items.Add($display) } catch { } }
+        }
+        try {
+            if ($controls.NewUserManagerComboBox.Items.Count -gt 0) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
+            else { $controls.NewUserManagerComboBox.SelectedIndex = -1; $controls.NewUserManagerComboBox.Text = '' }
+        } catch { }
+        if ($controls.StatusText) { $controls.StatusText.Text = "Loaded $($managers.Count) manager option(s)." }
     }
     catch {
-        $fallbackManagers = New-Object 'System.Collections.Generic.List[object]'
-        [void]$fallbackManagers.Add([pscustomobject]@{ Name = 'Manager lookup failed'; Identity = ''; Enabled = $false })
-        $controls.NewUserManagerComboBox.ItemsSource = $fallbackManagers
-        $controls.NewUserManagerComboBox.SelectedIndex = 0
-        $controls.StatusText.Text = "Manager lookup failed: $($_.Exception.Message)"
+        try {
+            $controls.NewUserManagerComboBox.ItemsSource = $null
+            $controls.NewUserManagerComboBox.Items.Clear()
+            [void]$controls.NewUserManagerComboBox.Items.Add('Manager lookup failed')
+            $controls.NewUserManagerComboBox.SelectedIndex = 0
+        } catch { }
+        if ($controls.StatusText) { $controls.StatusText.Text = "Manager lookup failed: $($_.Exception.Message)" }
     }
 }
 
@@ -2814,33 +2824,54 @@ function Invoke-HybridNewUserExecutionFromUi {
 function Reset-HybridNewUserWizardFields {
     param([switch]$PreserveDefaults)
     $notificationDefaults = Get-HapNewUserWizardNotificationDefaults
+
     foreach ($name in @('NewUserFirstNameTextBox','NewUserLastNameTextBox','NewUserMiddleInitialTextBox','NewUserEmployeeIdTextBox','NewUserBadgeIdTextBox','NewUserJobTitleTextBox','NewUserOfficePhoneTextBox','NewUserMobilePhoneTextBox')) {
-        if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Text = '' }
+        try { if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].Text = '' } } catch { }
     }
-    if ($controls.NewUserManagerComboBox) { $controls.NewUserManagerComboBox.Text = ''; $controls.NewUserManagerComboBox.SelectedIndex = -1 }
-    if ($controls.NewUserTemporaryPasswordBox) { $controls.NewUserTemporaryPasswordBox.Password = '' }
-    if ($controls.NewUserNotificationRecipientTextBox) { $controls.NewUserNotificationRecipientTextBox.Text = [string]$notificationDefaults.Recipient }
-    if ($controls.NewUserNotificationSenderTextBox) { $controls.NewUserNotificationSenderTextBox.Text = [string]$notificationDefaults.Sender }
-    $controls.NewUserIncludeMiddleInitialCheckBox.IsChecked = $false
-    $controls.NewUserCacCheckBox.IsChecked = $false
-    $controls.NewUserCreateMailboxCheckBox.IsChecked = $true
-    $controls.NewUserSendNoticeCheckBox.IsChecked = $true
-    $controls.NewUserHomeOrgComboBox.SelectedIndex = -1
-    $controls.NewUserLocationComboBox.SelectedIndex = -1
-    $controls.NewUserDepartmentComboBox.SelectedIndex = -1
-    if ($controls.NewUserPortfolioComboBox) { $controls.NewUserPortfolioComboBox.SelectedIndex = -1; $controls.NewUserPortfolioComboBox.Text = '' }
-    foreach ($name in @('NewUserNothingRequestedCheckBox','NewUserTemporaryOfficeSpaceCheckBox','NewUserPermanentOfficeSpaceCheckBox','NewUserDesktopCheckBox','NewUserLaptopCheckBox','NewUserDockingStationCheckBox','NewUserMouseKeyboardCheckBox','NewUserMonitorCheckBox','NewUserDualMonitorCheckBox','NewUserDeskPhoneCheckBox','NewUserCellPhoneCheckBox','NewUserSpeakersCheckBox','NewUserJamisClaimSetupCheckBox')) {
-        if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].IsChecked = $false }
+
+    try { if ($controls.NewUserManagerComboBox) { $controls.NewUserManagerComboBox.SelectedIndex = -1; $controls.NewUserManagerComboBox.Text = '' } } catch { }
+    try { if ($controls.NewUserTemporaryPasswordBox) { $controls.NewUserTemporaryPasswordBox.Password = '' } } catch { }
+    try { if ($controls.NewUserNotificationRecipientTextBox) { $controls.NewUserNotificationRecipientTextBox.Text = [string]$notificationDefaults.Recipient } } catch { }
+    try { if ($controls.NewUserNotificationSenderTextBox) { $controls.NewUserNotificationSenderTextBox.Text = [string]$notificationDefaults.Sender } } catch { }
+
+    foreach ($pair in @(
+        @('NewUserIncludeMiddleInitialCheckBox', $false),
+        @('NewUserCacCheckBox', $false),
+        @('NewUserCreateMailboxCheckBox', $true),
+        @('NewUserSendNoticeCheckBox', $true),
+        @('NewUserNothingRequestedCheckBox', $false),
+        @('NewUserTemporaryOfficeSpaceCheckBox', $false),
+        @('NewUserPermanentOfficeSpaceCheckBox', $false),
+        @('NewUserDesktopCheckBox', $false),
+        @('NewUserLaptopCheckBox', $false),
+        @('NewUserDockingStationCheckBox', $false),
+        @('NewUserMouseKeyboardCheckBox', $false),
+        @('NewUserMonitorCheckBox', $false),
+        @('NewUserDualMonitorCheckBox', $false),
+        @('NewUserDeskPhoneCheckBox', $false),
+        @('NewUserCellPhoneCheckBox', $false),
+        @('NewUserSpeakersCheckBox', $false),
+        @('NewUserJamisClaimSetupCheckBox', $false)
+    )) {
+        try {
+            $name = [string]$pair[0]
+            if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].IsChecked = [bool]$pair[1] }
+        } catch { }
     }
-    $controls.NewUserStartDatePicker.SelectedDate = [DateTime]::Today
-    $controls.NewUserPreviewDisplayNameText.Text = '-'
-    $controls.NewUserPreviewSamText.Text = '-'
-    $controls.NewUserPreviewUpnText.Text = '-'
-    $controls.NewUserPreviewOuText.Text = '-'
-    $controls.NewUserValidationText.Text = 'Enter new-user information, then validate and preview the action plan.'
-    if ($controls.NewUserReviewSummaryTextBox) { $controls.NewUserReviewSummaryTextBox.Text = 'Validate / Preview to echo selected values and derived address, routing, and mailbox values.' }
-    if ($controls.NewUserReviewGroupsTextBox) { $controls.NewUserReviewGroupsTextBox.Text = '-' }
-    if ($controls.NewUserExecutionLogList) { $controls.NewUserExecutionLogList.Items.Clear() }
+
+    foreach ($name in @('NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserPortfolioComboBox')) {
+        try { if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].SelectedIndex = -1; $controls[$name].Text = '' } } catch { }
+    }
+
+    try { if ($controls.NewUserStartDatePicker) { $controls.NewUserStartDatePicker.SelectedDate = [Nullable[DateTime]]([DateTime]::Today) } } catch { }
+    try { if ($controls.NewUserPreviewDisplayNameText) { $controls.NewUserPreviewDisplayNameText.Text = '-' } } catch { }
+    try { if ($controls.NewUserPreviewSamText) { $controls.NewUserPreviewSamText.Text = '-' } } catch { }
+    try { if ($controls.NewUserPreviewUpnText) { $controls.NewUserPreviewUpnText.Text = '-' } } catch { }
+    try { if ($controls.NewUserPreviewOuText) { $controls.NewUserPreviewOuText.Text = '-' } } catch { }
+    try { if ($controls.NewUserValidationText) { $controls.NewUserValidationText.Text = 'Enter new-user information, then validate and preview the action plan.' } } catch { }
+    try { if ($controls.NewUserReviewSummaryTextBox) { $controls.NewUserReviewSummaryTextBox.Text = 'Validate / Preview to echo selected values and derived address, routing, and mailbox values.' } } catch { }
+    try { if ($controls.NewUserReviewGroupsTextBox) { $controls.NewUserReviewGroupsTextBox.Text = '-' } } catch { }
+    try { if ($controls.NewUserExecutionLogList) { $controls.NewUserExecutionLogList.Items.Clear() } } catch { }
 }
 
 function Show-HybridConsoleView {

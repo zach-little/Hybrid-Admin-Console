@@ -26,7 +26,23 @@ function Invoke-HybridNewUserProviderOperation {
         if ($providerPropertyNames -contains $operationName) {
             $operation = $Provider.$operationName
             if ($operation -is [scriptblock]) { return & $operation @Arguments }
-            if ($null -ne $operation -and $operation.PSObject.Methods.Name -contains 'Invoke') { return $operation.Invoke($Arguments) }
+            if ($null -ne $operation -and $operation.PSObject.Methods.Name -contains 'DynamicInvoke') {
+                return $operation.DynamicInvoke([object[]]$Arguments)
+            }
+            if ($null -ne $operation -and $operation.PSObject.Methods.Name -contains 'Invoke') {
+                # Do not pass the argument array as a single argument. Several provider
+                # operations are delegates/PSMethods with zero or multiple positional
+                # parameters; calling Invoke($Arguments) causes WPF/PowerShell to throw
+                # "Argument types do not match" when the expected signature differs.
+                switch (@($Arguments).Count) {
+                    0 { return $operation.Invoke() }
+                    1 { return $operation.Invoke($Arguments[0]) }
+                    2 { return $operation.Invoke($Arguments[0], $Arguments[1]) }
+                    3 { return $operation.Invoke($Arguments[0], $Arguments[1], $Arguments[2]) }
+                    4 { return $operation.Invoke($Arguments[0], $Arguments[1], $Arguments[2], $Arguments[3]) }
+                    default { return $operation.DynamicInvoke([object[]]$Arguments) }
+                }
+            }
         }
     }
     return $null
