@@ -39,7 +39,7 @@ function Get-HybridRuntimeProfileManagerFolder {
     param([string]$RepositoryRoot)
 
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
-    return (Join-Path $root 'profiles\Runtime')
+    return (Join-Path $root 'profiles')
 }
 
 function Get-HybridRuntimeProfileManagerStatePath {
@@ -47,7 +47,24 @@ function Get-HybridRuntimeProfileManagerStatePath {
     param([string]$RepositoryRoot)
 
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
-    return (Join-Path $root 'profiles\Runtime\.profile-manager-state')
+    return (Join-Path (Join-Path $root 'profiles') 'active.json')
+}
+
+
+function Get-HybridRuntimeProfileCandidateFiles {
+    [CmdletBinding()]
+    param([string]$RepositoryRoot)
+
+    $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
+    $files = New-Object System.Collections.Generic.List[object]
+    $profilesRoot = Join-Path $root 'profiles'
+    if (Test-Path -LiteralPath $profilesRoot -PathType Container) {
+        foreach ($orgFolder in @(Get-ChildItem -LiteralPath $profilesRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin @('Runtime','Mock','Runtime-Deprecated','Mock-Deprecated') })) {
+            $runtimePath = Join-Path $orgFolder.FullName 'runtime.json'
+            if (Test-Path -LiteralPath $runtimePath -PathType Leaf) { [void]$files.Add((Get-Item -LiteralPath $runtimePath)) }
+        }
+    }
+    return @($files.ToArray() | Sort-Object FullName -Unique)
 }
 
 function Read-HybridRuntimeProfileManagerState {
@@ -56,27 +73,22 @@ function Read-HybridRuntimeProfileManagerState {
 
     $statePath = Get-HybridRuntimeProfileManagerStatePath -RepositoryRoot $RepositoryRoot
     if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) {
-        return [pscustomobject]@{
-            LastUsedProfile = ''
-            LastUsedPath    = ''
-            UpdatedAtUtc    = $null
-        }
+        return [pscustomobject]@{ LastUsedProfile = ''; LastUsedPath = ''; UpdatedAtUtc = $null }
     }
 
     try {
         $state = Get-Content -LiteralPath $statePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $activeProfile = ''
+        if ($state.PSObject.Properties.Name -contains 'ActiveProfile') { $activeProfile = [string]$state.ActiveProfile }
+        elseif ($state.PSObject.Properties.Name -contains 'LastUsedProfile') { $activeProfile = [string]$state.LastUsedProfile }
         return [pscustomobject]@{
-            LastUsedProfile = [string]($state.LastUsedProfile)
-            LastUsedPath    = [string]($state.LastUsedPath)
-            UpdatedAtUtc    = $state.UpdatedAtUtc
+            LastUsedProfile = $activeProfile
+            LastUsedPath    = ''
+            UpdatedAtUtc    = if ($state.PSObject.Properties.Name -contains 'UpdatedAtUtc') { $state.UpdatedAtUtc } else { $null }
         }
     }
     catch {
-        return [pscustomobject]@{
-            LastUsedProfile = ''
-            LastUsedPath    = ''
-            UpdatedAtUtc    = $null
-        }
+        return [pscustomobject]@{ LastUsedProfile = ''; LastUsedPath = ''; UpdatedAtUtc = $null }
     }
 }
 
@@ -104,14 +116,10 @@ function Get-HybridRuntimeProfileSummary {
     param([string]$RepositoryRoot)
 
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
-    $folder = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
+    $profilesRoot = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
     $state = Read-HybridRuntimeProfileManagerState -RepositoryRoot $root
 
-    if (-not (Test-Path -LiteralPath $folder -PathType Container)) {
-        return @()
-    }
-
-    $files = Get-ChildItem -LiteralPath $folder -Filter '*.json' -File -ErrorAction SilentlyContinue | Sort-Object Name
+    $files = @(Get-HybridRuntimeProfileCandidateFiles -RepositoryRoot $root | Sort-Object FullName)
     $summaries = foreach ($file in $files) {
         $content = $null
         $status = 'Valid'
@@ -172,6 +180,8 @@ function Get-HybridRuntimeProfileSummary {
             ProfileName           = $name
             FileName              = $file.Name
             Path                  = $file.FullName
+            ProfileRoot           = $file.Directory.FullName
+            ProfileLayout         = 'OrganizationFolder'
             RuntimeMode           = $mode
             Mode                  = $mode
             CloudEnvironment      = $cloud
@@ -250,10 +260,11 @@ function Set-HybridRuntimeProfileSelection {
         New-Item -Path $stateDirectory -ItemType Directory -Force | Out-Null
     }
 
+    $activeName = if (-not [string]::IsNullOrWhiteSpace([string]$selected.Organization)) { [string]$selected.Organization } else { [string]$selected.ProfileName }
     $state = [ordered]@{
-        LastUsedProfile = $selected.ProfileName
-        LastUsedPath    = $selected.Path
-        UpdatedAtUtc    = [DateTimeOffset]::UtcNow.ToString('o')
+        ActiveProfile = $activeName
+        ActiveRuntimePath = $selected.Path
+        UpdatedAtUtc = [DateTimeOffset]::UtcNow.ToString('o')
     }
 
     if ($PSCmdlet.ShouldProcess($selected.ProfileName, 'Set selected runtime profile')) {
@@ -292,18 +303,21 @@ function Copy-HybridRuntimeProfile {
         [string]$NewProfileName
     )
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
-    $folder = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
+    $profilesRoot = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
     if (-not (Test-Path -LiteralPath $ProfilePath -PathType Leaf)) { throw "Runtime profile not found: $ProfilePath" }
     if ([string]::IsNullOrWhiteSpace($NewProfileName)) { $NewProfileName = ([IO.Path]::GetFileNameWithoutExtension($ProfilePath) + '-Copy') }
     $safeName = ($NewProfileName -replace '[^a-zA-Z0-9._-]', '-')
-    $target = Join-Path $folder ("$safeName.json")
+    $targetFolder = Join-Path $profilesRoot $safeName
+    if (-not (Test-Path -LiteralPath $targetFolder -PathType Container)) { New-Item -Path $targetFolder -ItemType Directory -Force | Out-Null }
+    $target = Join-Path $targetFolder 'runtime.json'
     $i = 2
-    while (Test-Path -LiteralPath $target) { $target = Join-Path $folder ("{0}-{1}.json" -f $safeName,$i); $i++ }
+    while (Test-Path -LiteralPath $target) { $targetFolder = Join-Path $profilesRoot ("{0}-{1}" -f $safeName,$i); if (-not (Test-Path -LiteralPath $targetFolder -PathType Container)) { New-Item -Path $targetFolder -ItemType Directory -Force | Out-Null }; $target = Join-Path $targetFolder 'runtime.json'; $i++ }
     Copy-Item -LiteralPath $ProfilePath -Destination $target -Force
     try {
         $json = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
-        if ($json.PSObject.Properties.Name -contains 'ProfileName') { $json.ProfileName = [IO.Path]::GetFileNameWithoutExtension($target) }
-        elseif ($json.PSObject.Properties.Name -contains 'Name') { $json.Name = [IO.Path]::GetFileNameWithoutExtension($target) }
+        if ($json.PSObject.Properties.Name -contains 'ProfileName') { $json.ProfileName = $NewProfileName }
+        elseif ($json.PSObject.Properties.Name -contains 'Name') { $json.Name = $NewProfileName }
+        if ($json.PSObject.Properties.Name -contains 'Organization') { $json.Organization = (Split-Path -Path (Split-Path -Path $target -Parent) -Leaf) }
         $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $target -Encoding UTF8
     } catch { }
     return Get-HybridRuntimeProfileSummary -RepositoryRoot $root | Where-Object { [string]::Equals($_.Path,$target,[System.StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
@@ -321,13 +335,12 @@ function Set-HybridRuntimeProfileDefault {
     [CmdletBinding()]
     param([string]$RepositoryRoot,[Parameter(Mandatory)][string]$ProfilePath)
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
-    $folder = Get-HybridRuntimeProfileManagerFolder -RepositoryRoot $root
-    Get-ChildItem -LiteralPath $folder -Filter '*.json' -File -ErrorAction SilentlyContinue | ForEach-Object {
+    foreach ($summary in @(Get-HybridRuntimeProfileSummary -RepositoryRoot $root)) {
         try {
-            $json = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            $json = Get-Content -LiteralPath $summary.Path -Raw | ConvertFrom-Json
             if ($json.PSObject.Properties.Name -contains 'IsDefault') { $json.IsDefault = $false } else { $json | Add-Member -NotePropertyName IsDefault -NotePropertyValue $false -Force }
-            if ([string]::Equals($_.FullName,$ProfilePath,[System.StringComparison]::OrdinalIgnoreCase)) { $json.IsDefault = $true }
-            $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $_.FullName -Encoding UTF8
+            if ([string]::Equals($summary.Path,$ProfilePath,[System.StringComparison]::OrdinalIgnoreCase)) { $json.IsDefault = $true }
+            $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $summary.Path -Encoding UTF8
         } catch { }
     }
     return Get-HybridRuntimeProfileSelection -RepositoryRoot $root
@@ -339,8 +352,9 @@ function Export-HybridRuntimeProfile {
     $root = Resolve-HybridRuntimeProfileManagerRoot -RepositoryRoot $RepositoryRoot
     if ([string]::IsNullOrWhiteSpace($DestinationFolder)) { $DestinationFolder = Join-Path $root 'build\RuntimeProfiles' }
     if (-not (Test-Path -LiteralPath $DestinationFolder -PathType Container)) { New-Item -Path $DestinationFolder -ItemType Directory -Force | Out-Null }
-    $target = Join-Path $DestinationFolder ([IO.Path]::GetFileName($ProfilePath))
-    Copy-Item -LiteralPath $ProfilePath -Destination $target -Force
+    $profileFolder = Split-Path -Path $ProfilePath -Parent
+    $target = Join-Path $DestinationFolder (Split-Path -Path $profileFolder -Leaf)
+    Copy-Item -LiteralPath $profileFolder -Destination $target -Recurse -Force
     return $target
 }
 

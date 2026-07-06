@@ -1,0 +1,59 @@
+﻿{
+    "ProfileName":  "Atlas GCC High Live",
+    "Mode":  "Live",
+    "Cloud":  "GCCHigh",
+    "Environment":  "Development",
+    "Organization":  "Atlas",
+    "TenantId":  "ea26f921-331e-4244-948d-d4d13598bbf5",
+    "Authentication":  {
+                           "Cloud":  "GCCHigh",
+                           "AppOnly":  {
+                                           "Enabled":  true,
+                                           "TenantId":  "ea26f921-331e-4244-948d-d4d13598bbf5",
+                                           "TenantDomain":  "atlastechcloud.onmicrosoft.com",
+                                           "ClientId":  "94e76399-fbd5-4aa3-9efd-b658efe42baf",
+                                           "CredentialMode":  "Certificate",
+                                           "CertificateThumbprint":  "97C28F9D94EE9013286A5723B9C21901FA1FC862",
+                                           "CertificatePath":  "",
+                                           "SecretReference":  ""
+                                       },
+                           "Delegated":  {
+                                             "Enabled":  false,
+                                             "PromptWhenRequired":  true
+                                         }
+                       },
+    "Providers":  {
+                      "DirectorySimulator":  {
+                                                 "Enabled":  true,
+                                                 "Mode":  "Simulation",
+                                                 "Required":  true,
+                                                 "Authentication":  "None"
+                                             },
+                      "ActiveDirectory":  {
+                                              "Enabled":  true,
+                                              "Mode":  "Simulation",
+                                              "Required":  true,
+                                              "Authentication":  "Integrated"
+                                          },
+                      "MicrosoftGraph":  {
+                                             "Enabled":  true,
+                                             "Mode":  "Simulation",
+                                             "Required":  true,
+                                             "Authentication":  "Interactive"
+                                         },
+                      "ExchangeOnline":  {
+                                             "Enabled":  true,
+                                             "Mode":  "Simulation",
+                                             "Required":  true,
+                                             "Authentication":  "Interactive"
+                                         },
+                      "ExchangeOnPremises":  {
+                                                 "Enabled":  true,
+                                                 "Mode":  "Simulation",
+                                                 "Required":  true,
+                                                 "Authentication":  "Kerberos",
+                                                 "Server":  "congo",
+                                                 "ConnectionUri":  ""
+                                             }
+                  }
+}

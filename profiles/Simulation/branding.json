@@ -1,0 +1,13 @@
+{
+  "Organization": "Simulation",
+  "DisplayName": "HAP Simulation Profile",
+  "ThemeName": "HAP Simulation Dark",
+  "PrimaryColor": "#0F6CBD",
+  "AccentColor": "#20D5FF",
+  "BackgroundColor": "#0B1220",
+  "ForegroundColor": "#F4F7FB",
+  "LogoPath": null,
+  "Logo": "logo.png",
+  "Icon": "icon.ico",
+  "Theme": "Dark"
+}

@@ -1,0 +1,64 @@
+{
+  "ProfileName": "Simulation",
+  "DisplayName": "HAP Simulation Profile",
+  "Organization": "Simulation",
+  "ProfileRoot": "profiles\\Simulation",
+  "ProfileLayout": "OrganizationFolder",
+  "Mode": "Simulation",
+  "Cloud": "Commercial",
+  "Environment": "Development",
+  "TenantId": "",
+  "SimulationMode": true,
+  "IsDefault": true,
+  "Authentication": {
+    "Cloud": "Commercial",
+    "AppOnly": {
+      "Enabled": false,
+      "TenantId": "",
+      "TenantDomain": "",
+      "ClientId": "",
+      "CredentialMode": "Certificate",
+      "CertificateThumbprint": "",
+      "CertificatePath": "",
+      "SecretReference": ""
+    },
+    "Delegated": {
+      "Enabled": false,
+      "PromptWhenRequired": false
+    }
+  },
+  "Providers": {
+    "DirectorySimulator": {
+      "Enabled": true,
+      "Mode": "Simulation",
+      "Required": true,
+      "Authentication": "None"
+    },
+    "ActiveDirectory": {
+      "Enabled": false,
+      "Mode": "Disabled",
+      "Required": false,
+      "Authentication": "Integrated"
+    },
+    "MicrosoftGraph": {
+      "Enabled": false,
+      "Mode": "Disabled",
+      "Required": false,
+      "Authentication": "Interactive"
+    },
+    "ExchangeOnline": {
+      "Enabled": false,
+      "Mode": "Disabled",
+      "Required": false,
+      "Authentication": "Interactive"
+    },
+    "ExchangeOnPremises": {
+      "Enabled": false,
+      "Mode": "Disabled",
+      "Required": false,
+      "Authentication": "Kerberos",
+      "Server": "",
+      "ConnectionUri": ""
+    }
+  }
+}

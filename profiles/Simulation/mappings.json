@@ -1,0 +1,22 @@
+{
+  "Mappings": {
+    "DisplayName": "displayName",
+    "GivenName": "givenName",
+    "Surname": "sn",
+    "Department": "department",
+    "Title": "title",
+    "Office": "physicalDeliveryOfficeName",
+    "Company": "company",
+    "Manager": "manager",
+    "EmployeeId": "employeeID",
+    "BadgeId": "extensionAttribute1",
+    "Phone": "telephoneNumber",
+    "Mobile": "mobile",
+    "UPN": "userPrincipalName",
+    "SAM": "sAMAccountName"
+  },
+  "Departments": [],
+  "Locations": [],
+  "DefaultGroups": [],
+  "SkippedDomainControllers": []
+}

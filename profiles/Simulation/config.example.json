@@ -1,0 +1,25 @@
+{
+  "ProviderMode": "Mock",
+  "TenantId": "CHANGE_ME",
+  "ClientId": "CHANGE_ME",
+  "DelegatedClientId": "CHANGE_ME",
+  "temp_password": "ENCRYPTED_OR_BLANK",
+  "client_secret": "ENCRYPTED_OR_BLANK",
+  "new_user_notification_recipient": "helpdesk@example.com",
+  "new_user_notification_sender": "new-hire@example.com",
+  "NewUserWizard": {
+    "NotificationRecipient": "helpdesk@example.com",
+    "NotificationSender": "new-hire@example.com",
+    "HomeOrganizations": [],
+    "Locations": [],
+    "Departments": [],
+    "Portfolios": [],
+    "JobTitles": [],
+    "EmployeeTypes": [],
+    "CostCenters": [],
+    "Licenses": [],
+    "DefaultLicenseSet": [],
+    "Groups": {},
+    "DefaultTargetOu": ""
+  }
+}

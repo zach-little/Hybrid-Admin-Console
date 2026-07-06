@@ -830,9 +830,18 @@ function Initialize-HybridRuntimeApplicationServices {
     if ($ProviderRegistry.ContainsKey('ExchangeOnline')) { $exchangeProvider = $ProviderRegistry['ExchangeOnline'].Service }
     if ($ProviderRegistry.ContainsKey('ExchangeOnPremises')) { $exchangeOnPremisesProvider = $ProviderRegistry['ExchangeOnPremises'].Service }
     $profile = if ($null -ne $Context -and $Context.PSObject.Properties.Name -contains 'Profile') { $Context.Profile } else { $null }
-    $newUserWizardSettings = Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
-    $newUserNotificationRecipient = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationRecipient','Recipient') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default 'ITSupport@atlas-tech.com'))
-    $newUserNotificationSender = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationSender','Sender') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default 'NEW-HIRE-INFO@atlas-tech.com'))
+    $newUserWizardSettings = $null
+    $profileConfigPath = [string](Get-HybridRuntimeObjectValue -InputObject $profile -Names @('ConfigPath') -Default '')
+    if (-not [string]::IsNullOrWhiteSpace($profileConfigPath) -and (Test-Path -LiteralPath $profileConfigPath -PathType Leaf)) {
+        try {
+            $profileConfig = Get-Content -LiteralPath $profileConfigPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            $newUserWizardSettings = Get-HybridRuntimeObjectValue -InputObject $profileConfig -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
+        }
+        catch { $newUserWizardSettings = $null }
+    }
+    if ($null -eq $newUserWizardSettings) { $newUserWizardSettings = Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null }
+    $newUserNotificationRecipient = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationRecipient','Recipient') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default ''))
+    $newUserNotificationSender = [string](Get-HybridRuntimeObjectValue -InputObject $newUserWizardSettings -Names @('NotificationSender','Sender') -Default (Get-HybridRuntimeObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default ''))
 
     $userService = Initialize-HybridUserService -ActiveDirectoryProvider $adProvider -MicrosoftGraphProvider $graphProvider -ExchangeOnlineProvider $exchangeProvider -ExchangeOnPremisesProvider $exchangeOnPremisesProvider
     Register-HybridService -Name 'HybridUser' -Instance $userService -Description 'Unified hybrid user application service.' -Provider 'Application' -Force | Out-Null
@@ -938,6 +947,15 @@ function Initialize-HybridRuntime {
 
         Add-HybridRuntimeMember -InputObject $context -Name Profile -Value $profile
         Add-HybridRuntimeMember -InputObject $context -Name RuntimeProfile -Value $profile
+        Add-HybridRuntimeMember -InputObject $context -Name ProfileRoot -Value ([string]$profile.ProfileRoot)
+        if ($context.PSObject.Properties.Name -contains 'Paths' -and $null -ne $context.Paths) {
+            $context.Paths['ProfileRoot'] = [string]$profile.ProfileRoot
+            $context.Paths['Config'] = [string]$profile.ConfigPath
+            $context.Paths['Branding'] = [string]$profile.BrandingPath
+            $context.Paths['Defaults'] = [string]$profile.DefaultsPath
+            $context.Paths['Mappings'] = [string]$profile.MappingsPath
+            $context.Paths['Key'] = [string]$profile.KeyPath
+        }
         Add-HybridRuntimeMember -InputObject $context -Name RuntimeMode -Value ([string]$profile.Mode)
         Add-HybridRuntimeMember -InputObject $context -Name Mode -Value ([string]$profile.Mode)
         Add-HybridRuntimeMember -InputObject $context -Name CloudEnvironment -Value ([string]$profile.Cloud)

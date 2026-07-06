@@ -485,7 +485,7 @@ $xaml = @"
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                            <TextBlock Grid.Row="3" Text="Profiles are discovered from profiles\Runtime" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,12,0,0" FontSize="12"/>
+                            <TextBlock Grid.Row="3" Text="Profiles are discovered from profiles\&lt;ProfileName&gt;\runtime.json" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,12,0,0" FontSize="12"/>
                         </Grid>
                     </Border>
 
@@ -517,7 +517,7 @@ $xaml = @"
                                             <TextBlock Text="PROFILE" Foreground="#93C5FD" FontSize="14" FontWeight="SemiBold"/>
                                             <TextBlock x:Name="RuntimeProfileText" Text="-" Foreground="#F8FAFC" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,8,0,0"/>
                                             <TextBlock Text="Runtime profile selected for launch" Foreground="#CBD5E1" FontSize="13" Margin="0,6,0,0"/>
-                                            <TextBlock Text="File: profiles\Runtime" Foreground="#94A3B8" FontSize="12" Margin="0,14,0,0"/>
+                                            <TextBlock Text="File: profiles\&lt;ProfileName&gt;\runtime.json" Foreground="#94A3B8" FontSize="12" Margin="0,14,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                     <StackPanel Grid.Column="1" Margin="18,0,18,0">
@@ -1293,7 +1293,7 @@ $xaml = @"
 
                                 <StackPanel x:Name="WizardStepSummaryPanel" Visibility="Collapsed">
                                     <TextBlock Text="Step 6: Summary" Style="{StaticResource SectionTitle}"/>
-                                    <TextBlock Text="Save the runtime profile after validation. The profile is written under profiles\\Runtime." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                                    <TextBlock Text="Save the runtime profile after validation. The runtime profile is written under profiles\\&lt;Organization&gt; beside org config/branding files." Foreground="#CBD5E1" TextWrapping="Wrap" Margin="0,0,0,18"/>
                                     <Border Background="#111827" CornerRadius="10" Padding="12" Margin="0,0,0,14">
                                         <TextBlock x:Name="WizardSummaryText" Text="Profile has not been validated yet." Foreground="#CBD5E1" TextWrapping="Wrap"/>
                                     </Border>
@@ -1612,6 +1612,80 @@ function Read-HapJsonObject {
     catch { return $null }
 }
 
+
+function ConvertTo-HapPlainHashtable {
+    param([AllowNull()][object]$InputObject)
+
+    if ($null -eq $InputObject) { return [ordered]@{} }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $result = [ordered]@{}
+        foreach ($key in $InputObject.Keys) { $result[[string]$key] = $InputObject[$key] }
+        return $result
+    }
+
+    $result = [ordered]@{}
+    foreach ($property in $InputObject.PSObject.Properties) { $result[$property.Name] = $property.Value }
+    return $result
+}
+
+function Get-HapOrganizationProfileFolder {
+    param(
+        [AllowNull()][string]$Organization,
+        [AllowNull()][object]$Profile = $script:SelectedRuntimeProfileSummary
+    )
+
+    $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $Profile
+    $profileRoot = [string](Get-HapProfileObjectValue -InputObject $Profile -Names @('ProfileRoot') -Default (Get-HapProfileObjectValue -InputObject $rawProfile -Names @('ProfileRoot') -Default ''))
+    if (-not [string]::IsNullOrWhiteSpace($profileRoot)) {
+        if (-not [System.IO.Path]::IsPathRooted($profileRoot)) { $profileRoot = Join-Path $repoRoot $profileRoot }
+        return $profileRoot
+    }
+
+    $orgName = [string]$Organization
+    if ([string]::IsNullOrWhiteSpace($orgName)) {
+        $orgName = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Organization') -Default (Get-HapProfileObjectValue -InputObject $Profile -Names @('Organization') -Default ''))
+    }
+    if ([string]::IsNullOrWhiteSpace($orgName)) { return '' }
+
+    $safeOrgName = ($orgName.Trim() -replace '[\/:*?"<>|]', '-')
+    if ([string]::IsNullOrWhiteSpace($safeOrgName)) { return '' }
+    return (Join-Path (Join-Path $repoRoot 'profiles') $safeOrgName)
+}
+
+function Get-HapOrganizationConfigPath {
+    param(
+        [AllowNull()][string]$Organization,
+        [AllowNull()][object]$Profile = $script:SelectedRuntimeProfileSummary
+    )
+
+    $folder = Get-HapOrganizationProfileFolder -Organization $Organization -Profile $Profile
+    if ([string]::IsNullOrWhiteSpace($folder)) { return '' }
+    return (Join-Path $folder 'config.json')
+}
+
+function Save-HapOrganizationNewUserWizardConfig {
+    param(
+        [Parameter(Mandatory=$true)][string]$Organization,
+        [Parameter(Mandatory=$true)][object]$NewUserWizard
+    )
+
+    $configPath = Get-HapOrganizationConfigPath -Organization $Organization
+    if ([string]::IsNullOrWhiteSpace($configPath)) { throw 'Organization is required to save New User Wizard configuration.' }
+    $folder = Split-Path -Parent $configPath
+    if (-not (Test-Path -LiteralPath $folder -PathType Container)) { New-Item -Path $folder -ItemType Directory -Force | Out-Null }
+
+    $config = Read-HapJsonObject -Path $configPath
+    $configMap = ConvertTo-HapPlainHashtable -InputObject $config
+    $newUserMap = ConvertTo-HapPlainHashtable -InputObject $NewUserWizard
+
+    $configMap['NewUserWizard'] = $newUserMap
+    if ($newUserMap.Contains('NotificationRecipient')) { $configMap['new_user_notification_recipient'] = [string]$newUserMap['NotificationRecipient'] }
+    if ($newUserMap.Contains('NotificationSender')) { $configMap['new_user_notification_sender'] = [string]$newUserMap['NotificationSender'] }
+
+    $configMap | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $configPath -Encoding UTF8
+    return $configPath
+}
+
 function Get-HapNewUserWizardNotificationDefaults {
     $configuration = Get-HapNewUserWizardConfiguration
 
@@ -1623,85 +1697,45 @@ function Get-HapNewUserWizardNotificationDefaults {
 
 function Get-HapNewUserWizardConfiguration {
     $defaults = [ordered]@{
-        NotificationRecipient = 'ITSupport@atlas-tech.com'
-        NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com'
-        HomeOrganizations = @(
-            [pscustomobject]@{ Number = 1; Name = 'Draco'; GroupName = 'Draco.Team'; DisplayGroupName = 'Draco Team' },
-            [pscustomobject]@{ Number = 2; Name = 'Pavo'; GroupName = 'Pavo.Team'; DisplayGroupName = 'Pavo Team' },
-            [pscustomobject]@{ Number = 3; Name = 'Corvus'; GroupName = 'Corvus.Team'; DisplayGroupName = 'Corvus Team' }
-        )
-        Locations = @(
-            [pscustomobject]@{ Number = 1; Name = 'Rivers'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '5416-A Rivers Avenue - Suite 105'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
-            [pscustomobject]@{ Number = 2; Name = 'Remount'; LocationGroup = 'Atlas-Charleston'; City = 'North Charleston'; StreetAddress = '1101 Remount Rd, Suite 800'; State = 'SC'; PostalCode = '29406'; OuKey = 'HQ' },
-            [pscustomobject]@{ Number = 3; Name = 'Virginia Beach'; LocationGroup = 'Atlas-VABeach'; City = 'Virginia Beach'; StreetAddress = '168 Business Park Drive, Suite 103'; State = 'VA'; PostalCode = '23462'; OuKey = '3' },
-            [pscustomobject]@{ Number = 4; Name = 'San Diego'; LocationGroup = 'Atlas-SD'; City = 'San Diego'; StreetAddress = '4250 Pacific Highway, 105'; State = 'CA'; PostalCode = '92110'; OuKey = '4' },
-            [pscustomobject]@{ Number = 5; Name = 'Alexandria'; LocationGroup = 'Atlas-DC'; City = 'Alexandria'; StreetAddress = '5911 Kingstowne Village Parkway Suite 310'; State = 'VA'; PostalCode = '22315'; OuKey = '5' },
-            [pscustomobject]@{ Number = 6; Name = 'Lexington'; LocationGroup = 'Atlas-MD'; City = 'Lexington'; StreetAddress = 'Not Available'; State = 'MD'; PostalCode = 'Not Available'; OuKey = '6' }
-        )
-        Departments = @(
-            [pscustomobject]@{ Number = 1; Name = 'Dept 00 - Accounting'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 2; Name = 'Dept 00 - Information Technology'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 3; Name = 'Dept 00 - Executive'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 4; Name = 'Dept 00 - Human Resources'; DisplayName = '00'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 5; Name = 'Dept 01 - Contracts'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 6; Name = 'Dept 01 - Operations'; DisplayName = '01'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 7; Name = 'Dept 02 - DC/PAX/Charleston Division'; DisplayName = '02'; TargetOuByLocation = @{ HQ = 'OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '5' = 'OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com'; '6' = 'OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 8; Name = 'Dept 03 - VABeach Division'; DisplayName = '03'; TargetOuByLocation = @{ '3' = 'OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 9; Name = 'Dept 04 - San Diego Division'; DisplayName = '04'; TargetOuByLocation = @{ '4' = 'OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com' } },
-            [pscustomobject]@{ Number = 10; Name = 'Service Account'; DisplayName = 'Service Account'; TargetOu = 'OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com'; IsServiceAccount = $true }
-        )
-        Portfolios = @('', 'Corporate', 'Contracts', 'Operations', 'Information Technology', 'Human Resources')
-        Groups = [pscustomobject]@{ CgUsersSc = 'SC_CGUsers'; CgUsersSd = 'SD_CGUsers'; CgUsersVa = 'VABeach_CGUsers'; CacGroup = 'CAC_Holders' }
-        DefaultTargetOu = 'CN=Users,DC=atlas-tech,DC=com'
+        NotificationRecipient = ''
+        NotificationSender = ''
+        HomeOrganizations = @()
+        Locations = @()
+        Departments = @()
+        Portfolios = @()
+        Groups = [pscustomobject]@{}
+        DefaultTargetOu = ''
+        ConfigurationSource = 'No organization config loaded'
+        ConfigurationPath = ''
     }
 
     $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $script:SelectedRuntimeProfileSummary
     $organization = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Organization') -Default (Get-HapProfileObjectValue -InputObject $script:SelectedRuntimeProfileSummary -Names @('Organization') -Default ''))
+    $profileConfigPath = Get-HapOrganizationConfigPath -Organization $organization -Profile $script:SelectedRuntimeProfileSummary
     $profileConfig = $null
-    if (-not [string]::IsNullOrWhiteSpace($organization)) {
-        $profileConfig = Read-HapJsonObject -Path (Join-Path (Join-Path $repoRoot 'profiles') (Join-Path $organization 'config.json'))
-    }
-
-    $legacyConfig = Read-HapJsonObject -Path (Join-Path $repoRoot 'legacy\config.json')
+    if (-not [string]::IsNullOrWhiteSpace($profileConfigPath)) { $profileConfig = Read-HapJsonObject -Path $profileConfigPath }
 
     $configuration = [ordered]@{}
     foreach ($key in $defaults.Keys) { $configuration[$key] = $defaults[$key] }
 
-    foreach ($configObject in @($legacyConfig)) {
-        $settings = Get-HapProfileObjectValue -InputObject $configObject -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
-        if ($null -ne $settings) {
-            foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
-                $value = Get-HapProfileObjectValue -InputObject $settings -Names @($property) -Default $null
-                if ($null -ne $value) { $configuration[$property] = $value }
-            }
-        }
-        $recipient = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationRecipient','notification_recipient','Recipient','recipient') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_recipient','NewUserNotificationRecipient','NotificationRecipient') -Default $null)
-        $sender = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationSender','notification_sender','Sender','sender') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_sender','NewUserNotificationSender','NotificationSender') -Default $null)
-        if (-not [string]::IsNullOrWhiteSpace([string]$recipient)) { $configuration.NotificationRecipient = [string]$recipient }
-        if (-not [string]::IsNullOrWhiteSpace([string]$sender)) { $configuration.NotificationSender = [string]$sender }
+    if ($null -eq $profileConfig) {
+        if (-not [string]::IsNullOrWhiteSpace($profileConfigPath)) { $configuration.ConfigurationPath = $profileConfigPath }
+        return [pscustomobject]$configuration
     }
 
-    $runtimeSettings = Get-HapProfileObjectValue -InputObject $rawProfile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
-    if ($null -ne $runtimeSettings) {
-        foreach ($property in @('NotificationRecipient','NotificationSender','HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
-            $value = Get-HapProfileObjectValue -InputObject $runtimeSettings -Names @($property) -Default $null
+    $settings = Get-HapProfileObjectValue -InputObject $profileConfig -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
+    if ($null -ne $settings) {
+        foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
+            $value = Get-HapProfileObjectValue -InputObject $settings -Names @($property) -Default $null
             if ($null -ne $value) { $configuration[$property] = $value }
         }
     }
-
-    foreach ($configObject in @($profileConfig)) {
-        $settings = Get-HapProfileObjectValue -InputObject $configObject -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
-        if ($null -ne $settings) {
-            foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
-                $value = Get-HapProfileObjectValue -InputObject $settings -Names @($property) -Default $null
-                if ($null -ne $value) { $configuration[$property] = $value }
-            }
-        }
-        $recipient = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationRecipient','notification_recipient','Recipient','recipient') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_recipient','NewUserNotificationRecipient','NotificationRecipient') -Default $null)
-        $sender = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationSender','notification_sender','Sender','sender') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_sender','NewUserNotificationSender','NotificationSender') -Default $null)
-        if (-not [string]::IsNullOrWhiteSpace([string]$recipient)) { $configuration.NotificationRecipient = [string]$recipient }
-        if (-not [string]::IsNullOrWhiteSpace([string]$sender)) { $configuration.NotificationSender = [string]$sender }
-    }
+    $recipient = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationRecipient','notification_recipient','Recipient','recipient') -Default (Get-HapProfileObjectValue -InputObject $profileConfig -Names @('new_user_notification_recipient','NewUserNotificationRecipient','NotificationRecipient') -Default $null)
+    $sender = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationSender','notification_sender','Sender','sender') -Default (Get-HapProfileObjectValue -InputObject $profileConfig -Names @('new_user_notification_sender','NewUserNotificationSender','NotificationSender') -Default $null)
+    if (-not [string]::IsNullOrWhiteSpace([string]$recipient)) { $configuration.NotificationRecipient = [string]$recipient }
+    if (-not [string]::IsNullOrWhiteSpace([string]$sender)) { $configuration.NotificationSender = [string]$sender }
+    $configuration.ConfigurationSource = 'Organization config'
+    $configuration.ConfigurationPath = $profileConfigPath
 
     return [pscustomobject]$configuration
 }
@@ -2445,24 +2479,17 @@ function Invoke-HybridRuntimeProfileLaunch {
 function Copy-HybridSelectedRuntimeProfile {
     if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
     try {
-        $source = $script:SelectedRuntimeProfileSummary.Path
-        $root = Join-Path $repoRoot 'profiles\Runtime'
-        $base = ([IO.Path]::GetFileNameWithoutExtension($source) + '-Copy')
-        $target = Join-Path $root ($base + '.json')
-        $i = 2
-        while (Test-Path -LiteralPath $target) { $target = Join-Path $root ("{0}-{1}.json" -f $base, $i); $i++ }
-        Copy-Item -LiteralPath $source -Destination $target -Force
-        $json = Get-Content -LiteralPath $target -Raw | ConvertFrom-Json
-        if ($json.PSObject.Properties.Name -contains 'ProfileName') { $json.ProfileName = ([IO.Path]::GetFileNameWithoutExtension($target)) }
-        $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $target -Encoding UTF8
+        if (Get-Command Copy-HybridRuntimeProfile -ErrorAction SilentlyContinue) {
+            Copy-HybridRuntimeProfile -RepositoryRoot $repoRoot -ProfilePath $script:SelectedRuntimeProfileSummary.Path | Out-Null
+        }
         Initialize-HybridRuntimeProfileList
-        $controls.StatusText.Text = 'Runtime profile duplicated.'
+        $controls.StatusText.Text = 'Organization profile duplicated.'
     } catch { $controls.StatusText.Text = "Duplicate failed: $($_.Exception.Message)" }
 }
 
 function Remove-HybridSelectedRuntimeProfile {
     if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
-    $answer = [System.Windows.MessageBox]::Show(('Delete runtime profile {0}?' -f $script:SelectedRuntimeProfileSummary.ProfileName), 'Confirm Delete', 'YesNo', 'Warning')
+    $answer = [System.Windows.MessageBox]::Show(('Delete organization profile {0}? This removes runtime.json only; profile assets/config are preserved.' -f $script:SelectedRuntimeProfileSummary.ProfileName), 'Confirm Delete', 'YesNo', 'Warning')
     if ($answer -ne 'Yes') { return }
     try { Remove-Item -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Force; Initialize-HybridRuntimeProfileList; $controls.StatusText.Text = 'Runtime profile deleted.' } catch { $controls.StatusText.Text = "Delete failed: $($_.Exception.Message)" }
 }
@@ -2470,21 +2497,27 @@ function Remove-HybridSelectedRuntimeProfile {
 function Export-HybridSelectedRuntimeProfile {
     if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
     try {
-        $exportRoot = Join-Path $repoRoot 'build\RuntimeProfiles'
-        if (-not (Test-Path $exportRoot)) { New-Item -Path $exportRoot -ItemType Directory -Force | Out-Null }
-        $target = Join-Path $exportRoot $script:SelectedRuntimeProfileSummary.FileName
-        Copy-Item -LiteralPath $script:SelectedRuntimeProfileSummary.Path -Destination $target -Force
-        $controls.StatusText.Text = "Runtime profile exported: $target"
+        if (Get-Command Export-HybridRuntimeProfile -ErrorAction SilentlyContinue) {
+            $target = Export-HybridRuntimeProfile -RepositoryRoot $repoRoot -ProfilePath $script:SelectedRuntimeProfileSummary.Path
+        }
+        else {
+            $exportRoot = Join-Path $repoRoot 'build\RuntimeProfiles'
+            if (-not (Test-Path $exportRoot)) { New-Item -Path $exportRoot -ItemType Directory -Force | Out-Null }
+            $profileFolder = Split-Path -Path $script:SelectedRuntimeProfileSummary.Path -Parent
+            $target = Join-Path $exportRoot (Split-Path -Path $profileFolder -Leaf)
+            Copy-Item -LiteralPath $profileFolder -Destination $target -Recurse -Force
+        }
+        $controls.StatusText.Text = "Organization profile exported: $target"
     } catch { $controls.StatusText.Text = "Export failed: $($_.Exception.Message)" }
 }
 
 function Import-HybridRuntimeProfile {
-    $controls.StatusText.Text = 'Import profile is ready for Phase 9 file-picker integration. Copy JSON into profiles\\Runtime and select Refresh.'
+    $controls.StatusText.Text = 'Import a profile by copying its folder under profiles\&lt;ProfileName&gt; and selecting Refresh.'
 }
 
 function Show-HybridRuntimeProfileImportExportWizard {
     $dialog = [Windows.Window]::new()
-    $dialog.Title = 'Import / Export Runtime Profile'
+    $dialog.Title = 'Import / Export Organization Profile'
     $dialog.Width = 520
     $dialog.Height = 300
     $dialog.ResizeMode = 'NoResize'
@@ -2501,7 +2534,7 @@ function Show-HybridRuntimeProfileImportExportWizard {
     $root.RowDefinitions[2].Height = [Windows.GridLength]::Auto
 
     $header = [Windows.Controls.TextBlock]::new()
-    $header.Text = 'Choose a runtime profile file operation.'
+    $header.Text = 'Choose a profile file operation.'
     $header.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#F8FAFC'))
     $header.FontSize = 18
     $header.FontWeight = 'SemiBold'
@@ -2510,7 +2543,7 @@ function Show-HybridRuntimeProfileImportExportWizard {
     [void]$root.Children.Add($header)
 
     $body = [Windows.Controls.TextBlock]::new()
-    $body.Text = 'Import prepares the runtime profile folder for a JSON profile. Export copies the selected profile to build\RuntimeProfiles.'
+    $body.Text = 'Import expects a self-contained folder under profiles\&lt;ProfileName&gt;. Export copies the selected profile folder to build\RuntimeProfiles.'
     $body.Foreground = [Windows.Media.SolidColorBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#CBD5E1'))
     $body.TextWrapping = 'Wrap'
     $body.Margin = [Windows.Thickness]::new(0,0,0,18)
@@ -2521,51 +2554,22 @@ function Show-HybridRuntimeProfileImportExportWizard {
     $buttonPanel.Orientation = 'Horizontal'
     $buttonPanel.HorizontalAlignment = 'Right'
 
-    $importButton = [Windows.Controls.Button]::new()
-    $importButton.Content = 'Import Profile'
-    $importButton.Width = 120
-    $importButton.Height = 36
-    $importButton.Margin = [Windows.Thickness]::new(0,0,8,0)
-
-    $exportButton = [Windows.Controls.Button]::new()
-    $exportButton.Content = 'Export Selected'
-    $exportButton.Width = 130
-    $exportButton.Height = 36
-    $exportButton.Margin = [Windows.Thickness]::new(0,0,8,0)
-    $exportButton.IsEnabled = ($null -ne $script:SelectedRuntimeProfileSummary)
-
-    $cancelButton = [Windows.Controls.Button]::new()
-    $cancelButton.Content = 'Cancel'
-    $cancelButton.Width = 90
-    $cancelButton.Height = 36
-
-    [void]$buttonPanel.Children.Add($importButton)
-    [void]$buttonPanel.Children.Add($exportButton)
-    [void]$buttonPanel.Children.Add($cancelButton)
-    [Windows.Controls.Grid]::SetRow($buttonPanel,2)
-    [void]$root.Children.Add($buttonPanel)
-
+    $importButton = [Windows.Controls.Button]::new(); $importButton.Content = 'Import Profile'; $importButton.Width = 120; $importButton.Height = 36; $importButton.Margin = [Windows.Thickness]::new(0,0,8,0)
+    $exportButton = [Windows.Controls.Button]::new(); $exportButton.Content = 'Export Selected'; $exportButton.Width = 130; $exportButton.Height = 36; $exportButton.Margin = [Windows.Thickness]::new(0,0,8,0); $exportButton.IsEnabled = ($null -ne $script:SelectedRuntimeProfileSummary)
+    $cancelButton = [Windows.Controls.Button]::new(); $cancelButton.Content = 'Cancel'; $cancelButton.Width = 90; $cancelButton.Height = 36
+    [void]$buttonPanel.Children.Add($importButton); [void]$buttonPanel.Children.Add($exportButton); [void]$buttonPanel.Children.Add($cancelButton)
+    [Windows.Controls.Grid]::SetRow($buttonPanel,2); [void]$root.Children.Add($buttonPanel)
     $importButton.Add_Click({ $dialog.Tag = 'Import'; $dialog.DialogResult = $true; $dialog.Close() })
     $exportButton.Add_Click({ $dialog.Tag = 'Export'; $dialog.DialogResult = $true; $dialog.Close() })
     $cancelButton.Add_Click({ $dialog.DialogResult = $false; $dialog.Close() })
-
-    $dialog.Content = $root
-    [void]$dialog.ShowDialog()
-
-    if ([string]$dialog.Tag -eq 'Import') { Import-HybridRuntimeProfile }
-    elseif ([string]$dialog.Tag -eq 'Export') { Export-HybridSelectedRuntimeProfile }
+    $dialog.Content = $root; [void]$dialog.ShowDialog()
+    if ([string]$dialog.Tag -eq 'Import') { Import-HybridRuntimeProfile } elseif ([string]$dialog.Tag -eq 'Export') { Export-HybridSelectedRuntimeProfile }
 }
 
 function Set-HybridSelectedRuntimeProfileDefault {
     if ($null -eq $script:SelectedRuntimeProfileSummary) { return }
     try {
-        $profilesRoot = Join-Path $repoRoot 'profiles\Runtime'
-        Get-ChildItem -LiteralPath $profilesRoot -Filter '*.json' -File | ForEach-Object {
-            $json = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
-            if ($json.PSObject.Properties.Name -contains 'IsDefault') { $json.IsDefault = $false } else { $json | Add-Member -NotePropertyName IsDefault -NotePropertyValue $false -Force }
-            if ([string]::Equals($_.FullName, $script:SelectedRuntimeProfileSummary.Path, [System.StringComparison]::OrdinalIgnoreCase)) { $json.IsDefault = $true }
-            $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $_.FullName -Encoding UTF8
-        }
+        if (Get-Command Set-HybridRuntimeProfileDefault -ErrorAction SilentlyContinue) { Set-HybridRuntimeProfileDefault -RepositoryRoot $repoRoot -ProfilePath $script:SelectedRuntimeProfileSummary.Path | Out-Null }
         Initialize-HybridRuntimeProfileList
         $controls.StatusText.Text = 'Default runtime profile updated.'
     } catch { $controls.StatusText.Text = "Set default failed: $($_.Exception.Message)" }
@@ -3576,8 +3580,8 @@ function New-HybridRuntimeProfileFromWizard {
         foreach ($property in $newUserConfiguration.PSObject.Properties) { $convertedConfiguration[$property.Name] = $property.Value }
         $newUserConfiguration = $convertedConfiguration
     }
-    $newUserConfiguration['NotificationRecipient'] = if ([string]::IsNullOrWhiteSpace($newUserNotificationRecipient)) { 'ITSupport@atlas-tech.com' } else { $newUserNotificationRecipient }
-    $newUserConfiguration['NotificationSender'] = if ([string]::IsNullOrWhiteSpace($newUserNotificationSender)) { 'NEW-HIRE-INFO@atlas-tech.com' } else { $newUserNotificationSender }
+    $newUserConfiguration['NotificationRecipient'] = $newUserNotificationRecipient
+    $newUserConfiguration['NotificationSender'] = $newUserNotificationSender
 
     return [ordered]@{
         ProfileName = $profileName
@@ -3586,7 +3590,6 @@ function New-HybridRuntimeProfileFromWizard {
         Environment = 'Development'
         Organization = $organization
         TenantId = $tenantId
-        NewUserWizard = $newUserConfiguration
         Authentication = $authentication
         Providers = $providers
     }
@@ -3633,13 +3636,24 @@ function Save-HybridRuntimeProfileFromWizard {
     if (-not (Test-HybridRuntimeProfileWizardInput)) { return }
     try {
         $profile = New-HybridRuntimeProfileFromWizard
-        $runtimeProfileRoot = Join-Path $repoRoot 'profiles\Runtime'
-        if (-not (Test-Path $runtimeProfileRoot)) { New-Item -Path $runtimeProfileRoot -ItemType Directory -Force | Out-Null }
-        $safeName = ($profile.ProfileName -replace '[^a-zA-Z0-9._-]', '-')
-        $targetPath = if ($script:HybridRuntimeProfileWizardMode -eq 'Edit' -and -not [string]::IsNullOrWhiteSpace($script:HybridRuntimeProfileWizardSourcePath)) { $script:HybridRuntimeProfileWizardSourcePath } else { Join-Path $runtimeProfileRoot ("$safeName.json") }
-        $profile | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $targetPath -Encoding UTF8
-        $controls.WizardValidationText.Text = "Profile saved: $targetPath"
-        $controls.StatusText.Text = "Runtime profile saved: $safeName.json"
+        $organization = [string]$profile.Organization
+        if ([string]::IsNullOrWhiteSpace($organization)) { throw 'Organization is required. Runtime profiles are saved under profiles\&lt;Organization&gt;.' }
+        $organizationFolder = Get-HapOrganizationProfileFolder -Organization $organization
+        if ([string]::IsNullOrWhiteSpace($organizationFolder)) { throw 'Unable to resolve organization profile folder.' }
+        if (-not (Test-Path -LiteralPath $organizationFolder -PathType Container)) { New-Item -Path $organizationFolder -ItemType Directory -Force | Out-Null }
+        $targetPath = Join-Path $organizationFolder 'runtime.json'
+        $newUserConfiguration = if ($null -ne $script:HybridRuntimeProfileWizardNewUserConfiguration) { $script:HybridRuntimeProfileWizardNewUserConfiguration } else { Get-HapNewUserWizardConfiguration }
+        if ($newUserConfiguration -isnot [System.Collections.IDictionary]) {
+            $convertedConfiguration = [ordered]@{}
+            foreach ($property in $newUserConfiguration.PSObject.Properties) { $convertedConfiguration[$property.Name] = $property.Value }
+            $newUserConfiguration = $convertedConfiguration
+        }
+        $newUserConfiguration['NotificationRecipient'] = $controls.WizardNewUserNotificationRecipientTextBox.Text.Trim()
+        $newUserConfiguration['NotificationSender'] = $controls.WizardNewUserNotificationSenderTextBox.Text.Trim()
+        $newUserConfigPath = Save-HapOrganizationNewUserWizardConfig -Organization $organization -NewUserWizard $newUserConfiguration
+        $profile | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $targetPath -Encoding UTF8
+        $controls.WizardValidationText.Text = "Profile saved: $targetPath`nNew User Wizard config saved: $newUserConfigPath"
+        $controls.StatusText.Text = "Organization profile saved: $organization"
         if (Get-Command Set-HybridRuntimeProfileSelection -ErrorAction SilentlyContinue) {
             Set-HybridRuntimeProfileSelection -RepositoryRoot $repoRoot -ProfilePath $targetPath | Out-Null
         }

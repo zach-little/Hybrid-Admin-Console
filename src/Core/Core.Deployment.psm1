@@ -179,7 +179,7 @@ function Get-HybridDeploymentLayout {
         Infrastructure  = Join-Path $root 'src/Infrastructure'
         UI              = Join-Path $root 'src/UI'
         Profiles        = Join-Path $root 'profiles'
-        RuntimeProfiles = Join-Path $root 'profiles/Runtime'
+        RuntimeProfiles = Join-Path $root 'profiles'
         Logs            = Join-Path $root 'logs'
         Build           = Join-Path $root 'build'
         Docs            = Join-Path $root 'docs'
@@ -203,7 +203,7 @@ function Get-HybridDeploymentRuntimeProfile {
         return @()
     }
 
-    $profiles = Get-ChildItem -LiteralPath $layout.RuntimeProfiles -Filter '*.json' -File -ErrorAction SilentlyContinue | Sort-Object Name
+    $profiles = Get-ChildItem -LiteralPath $layout.RuntimeProfiles -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin @('Runtime','Mock','Runtime-Deprecated','Mock-Deprecated') } | ForEach-Object { Join-Path $_.FullName 'runtime.json' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | ForEach-Object { Get-Item -LiteralPath $_ } | Sort-Object FullName
     $results = foreach ($profile in $profiles) {
         $content = $null
         $status = 'Readable'
@@ -326,9 +326,9 @@ function Test-HybridDeploymentLayout {
     $hasReadableProfile = @($profiles | Where-Object { $_.Status -eq 'Readable' }).Count -gt 0
     $checks.Add((New-HybridDeploymentCheck -Name 'At least one runtime profile' -Category 'Profiles' -Severity 'Error' -Passed $hasReadableProfile -Message $(if ($hasReadableProfile) { 'At least one readable runtime profile is available.' } else { 'No readable runtime profile JSON files were found.' }) -Path $layout.RuntimeProfiles)) | Out-Null
 
-    $simulationProfile = Join-Path $layout.RuntimeProfiles 'Simulation.json'
+    $simulationProfile = Join-Path (Join-Path $layout.RuntimeProfiles 'Simulation') 'runtime.json'
     $hasSimulationProfile = Test-Path -LiteralPath $simulationProfile -PathType Leaf
-    $checks.Add((New-HybridDeploymentCheck -Name 'Simulation first-run profile' -Category 'Profiles' -Severity 'Error' -Passed $hasSimulationProfile -Message $(if ($hasSimulationProfile) { 'Simulation profile is available for first-run and offline validation.' } else { 'Simulation.json is missing from profiles/Runtime.' }) -Path $simulationProfile)) | Out-Null
+    $checks.Add((New-HybridDeploymentCheck -Name 'Simulation first-run profile' -Category 'Profiles' -Severity 'Error' -Passed $hasSimulationProfile -Message $(if ($hasSimulationProfile) { 'Simulation profile is available for first-run and offline validation.' } else { 'profiles/Simulation/runtime.json is missing.' }) -Path $simulationProfile)) | Out-Null
 
     $uiText = $null
     if (Test-Path -LiteralPath $layout.EntryPoint -PathType Leaf) {
