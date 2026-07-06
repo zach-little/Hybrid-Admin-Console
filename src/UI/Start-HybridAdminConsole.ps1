@@ -300,6 +300,43 @@ $xaml = @"
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
+        <Style x:Key="NewUserWizardComboBox" TargetType="ComboBox">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#F8FAFC"/>
+                <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#F8FAFC"/>
+                <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#0F172A"/>
+                <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="#0F172A"/>
+            </Style.Resources>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#38BDF8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="TextElement.Foreground" Value="#0F172A"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="#0F172A"/>
+                        <Setter Property="Background" Value="#F8FAFC"/>
+                        <Setter Property="Padding" Value="8,6"/>
+                        <Setter Property="TextElement.Foreground" Value="#0F172A"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="#1E3A5F"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="TextElement.Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#0F766E"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="TextElement.Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="Separator">
             <Setter Property="Background" Value="#26364F"/>
             <Setter Property="Margin" Value="4,4"/>
@@ -919,17 +956,17 @@ $xaml = @"
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="CAC Holder" Style="{StaticResource LabelText}"/><CheckBox x:Name="NewUserCacCheckBox" Style="{StaticResource WizardCheckBox}" IsChecked="False" Margin="0,8,0,0"/></StackPanel>
                                     </UniformGrid>
                                     <TextBlock Text="Organization" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
-                                    <TextBlock Text="Home Organization" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserHomeOrgComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
-                                    <TextBlock Text="Location" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserLocationComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
-                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserDepartmentComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Home Organization" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserHomeOrgComboBox" Style="{StaticResource NewUserWizardComboBox}" Height="34" IsEditable="False" SelectedIndex="-1" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Location" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserLocationComboBox" Style="{StaticResource NewUserWizardComboBox}" Height="34" IsEditable="False" SelectedIndex="-1" Margin="0,4,0,12"/>
+                                    <TextBlock Text="Department" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserDepartmentComboBox" Style="{StaticResource NewUserWizardComboBox}" Height="34" IsEditable="False" SelectedIndex="-1" Margin="0,4,0,12"/>
                                     <TextBlock Text="Job Title" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserJobTitleTextBox" Height="34" Margin="0,4,0,12"/>
                                     <TextBlock Text="Manager" Style="{StaticResource LabelText}"/>
                                     <Grid Margin="0,4,0,12">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <ComboBox x:Name="NewUserManagerComboBox" Grid.Column="0" Height="34" IsEditable="True" IsTextSearchEnabled="True" ToolTip="Managers are loaded from Active Directory users with direct reports. You can type a SamAccountName or select a manager."/>
+                                        <ComboBox x:Name="NewUserManagerComboBox" Grid.Column="0" Style="{StaticResource NewUserWizardComboBox}" Height="34" IsEditable="True" IsTextSearchEnabled="True" ToolTip="Managers are loaded from Active Directory users with direct reports. You can type a SamAccountName or select a manager."/>
                                         <Button x:Name="NewUserRefreshManagersButton" Grid.Column="1" Content="Refresh" Style="{StaticResource GlassCommandButton}" Width="92" Height="34" Padding="12,0" Margin="8,0,0,0"/>
                                     </Grid>
-                                    <TextBlock Text="Portfolio" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserPortfolioComboBox" Height="34" IsEditable="True" SelectedIndex="-1" Margin="0,4,0,12" ToolTip="Optional. Leave blank when no portfolio applies."/>
+                                    <TextBlock Text="Portfolio" Style="{StaticResource LabelText}"/><ComboBox x:Name="NewUserPortfolioComboBox" Style="{StaticResource NewUserWizardComboBox}" Height="34" IsEditable="False" SelectedIndex="-1" Margin="0,4,0,12" ToolTip="Optional. Leave blank when no portfolio applies."/>
                                     <UniformGrid Columns="2" Rows="2">
                                         <StackPanel Margin="0,0,10,12"><TextBlock Text="Office Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserOfficePhoneTextBox" Height="34"/></StackPanel>
                                         <StackPanel Margin="0,0,0,12"><TextBlock Text="Mobile Phone" Style="{StaticResource LabelText}"/><TextBox x:Name="NewUserMobilePhoneTextBox" Height="34"/></StackPanel>
@@ -1362,6 +1399,7 @@ function Get-HybridRuntimeDisplayValue {
 
 $script:RuntimeProfileSummaries = @()
 $script:SelectedRuntimeProfileSummary = $null
+$script:HapNewUserWizardDropdownSummary = ''
 
 function Get-HybridRuntimeProfileListLabel {
     param([Parameter(Mandatory)][object]$Profile)
@@ -1618,20 +1656,18 @@ function Get-HapNewUserWizardConfiguration {
     }
 
     $rawProfile = Get-HapSelectedRuntimeProfileRaw -Profile $script:SelectedRuntimeProfileSummary
-    $profileConfigObjects = New-Object System.Collections.Generic.List[object]
     $organization = [string](Get-HapProfileObjectValue -InputObject $rawProfile -Names @('Organization') -Default (Get-HapProfileObjectValue -InputObject $script:SelectedRuntimeProfileSummary -Names @('Organization') -Default ''))
+    $profileConfig = $null
     if (-not [string]::IsNullOrWhiteSpace($organization)) {
         $profileConfig = Read-HapJsonObject -Path (Join-Path (Join-Path $repoRoot 'profiles') (Join-Path $organization 'config.json'))
-        if ($null -ne $profileConfig) { $profileConfigObjects.Add($profileConfig) | Out-Null }
     }
 
     $legacyConfig = Read-HapJsonObject -Path (Join-Path $repoRoot 'legacy\config.json')
-    if ($null -ne $legacyConfig) { $profileConfigObjects.Add($legacyConfig) | Out-Null }
 
     $configuration = [ordered]@{}
     foreach ($key in $defaults.Keys) { $configuration[$key] = $defaults[$key] }
 
-    foreach ($configObject in @($profileConfigObjects)) {
+    foreach ($configObject in @($legacyConfig)) {
         $settings = Get-HapProfileObjectValue -InputObject $configObject -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
         if ($null -ne $settings) {
             foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
@@ -1653,6 +1689,20 @@ function Get-HapNewUserWizardConfiguration {
         }
     }
 
+    foreach ($configObject in @($profileConfig)) {
+        $settings = Get-HapProfileObjectValue -InputObject $configObject -Names @('NewUserWizard','new_user_wizard','NewUserDefaults','new_user_defaults','NewUser','new_user') -Default $null
+        if ($null -ne $settings) {
+            foreach ($property in @('HomeOrganizations','Locations','Departments','Portfolios','Groups','DefaultTargetOu')) {
+                $value = Get-HapProfileObjectValue -InputObject $settings -Names @($property) -Default $null
+                if ($null -ne $value) { $configuration[$property] = $value }
+            }
+        }
+        $recipient = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationRecipient','notification_recipient','Recipient','recipient') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_recipient','NewUserNotificationRecipient','NotificationRecipient') -Default $null)
+        $sender = Get-HapProfileObjectValue -InputObject $settings -Names @('NotificationSender','notification_sender','Sender','sender') -Default (Get-HapProfileObjectValue -InputObject $configObject -Names @('new_user_notification_sender','NewUserNotificationSender','NotificationSender') -Default $null)
+        if (-not [string]::IsNullOrWhiteSpace([string]$recipient)) { $configuration.NotificationRecipient = [string]$recipient }
+        if (-not [string]::IsNullOrWhiteSpace([string]$sender)) { $configuration.NotificationSender = [string]$sender }
+    }
+
     return [pscustomobject]$configuration
 }
 
@@ -1667,54 +1717,122 @@ function Format-HapNewUserOption {
     return [string]$name
 }
 
+function ConvertTo-HapNewUserOptionArray {
+    param([AllowNull()][object]$Value)
+
+    $items = New-Object System.Collections.Generic.List[object]
+    if ($null -eq $Value) { return @() }
+    if ($Value -is [string] -or $Value -is [System.Collections.IDictionary]) { return @($Value) }
+
+    if ($Value -is [System.Collections.IEnumerable]) {
+        foreach ($entry in $Value) { [void]$items.Add($entry) }
+        return @($items.ToArray())
+    }
+
+    return @($Value)
+}
+
+function New-HapComboBoxBrush {
+    param([Parameter(Mandatory=$true)][string]$Color)
+
+    try { return [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.ColorConverter]::ConvertFromString($Color)) }
+    catch { return $null }
+}
+
+function Set-HapComboBoxVisualDefaults {
+    param([AllowNull()][object]$ComboBox)
+
+    if ($null -eq $ComboBox) { return }
+    $foreground = New-HapComboBoxBrush -Color '#0F172A'
+    $background = New-HapComboBoxBrush -Color '#F8FAFC'
+    $border = New-HapComboBoxBrush -Color '#38BDF8'
+    try { if ($null -ne $foreground) { $ComboBox.Foreground = $foreground } } catch { }
+    try { if ($null -ne $background) { $ComboBox.Background = $background } } catch { }
+    try { if ($null -ne $border) { $ComboBox.BorderBrush = $border } } catch { }
+    try { $ComboBox.IsTextSearchEnabled = $true } catch { }
+}
+
+function Add-HapComboBoxTextItem {
+    param(
+        [AllowNull()][object]$ComboBox,
+        [AllowNull()][string]$Text,
+        [AllowNull()][string]$Value = $Text,
+        [switch]$Placeholder
+    )
+
+    if ($null -eq $ComboBox -or [string]::IsNullOrWhiteSpace([string]$Text)) { return }
+    # Keep dropdown choices as plain strings. Editable WPF ComboBoxes reliably
+    # render and search string items, while both PSCustomObjects and
+    # ComboBoxItem visuals have caused blank display text in this host.
+    try { [void]$ComboBox.Items.Add([string]$Text) } catch { }
+}
+
 function Set-HapComboBoxItems {
     param(
         [AllowNull()][object]$ComboBox,
-        [AllowNull()][object[]]$Items,
-        [int]$SelectedIndex = -1
+        [AllowNull()][object]$Items,
+        [int]$SelectedIndex = -1,
+        [AllowNull()][string]$Placeholder = ''
     )
 
     if ($null -eq $ComboBox) { return }
 
-    # Keep these wizard dropdowns as plain string items.  Recent WPF/PowerShell builds can
-    # throw "Argument types do not match" when editable ComboBoxes are mixed with
-    # ComboBoxItem objects, ItemsSource bindings, and direct Text/SelectedIndex resets.
+    # PowerShell-hosted WPF can render PSCustomObject rows as blank when a
+    # ComboBox relies on ItemsSource + DisplayMemberPath. Use plain string
+    # items with an explicit visible placeholder instead.
+    $values = New-Object System.Collections.Generic.List[string]
+    foreach ($item in (ConvertTo-HapNewUserOptionArray -Value $Items)) {
+        $display = Format-HapNewUserOption -Option $item
+        if (-not [string]::IsNullOrWhiteSpace([string]$display)) { [void]$values.Add([string]$display) }
+    }
+
     try { $ComboBox.ItemsSource = $null } catch { }
     try { $ComboBox.DisplayMemberPath = '' } catch { }
     try { $ComboBox.SelectedValuePath = '' } catch { }
     try { $ComboBox.Items.Clear() } catch { }
+    Set-HapComboBoxVisualDefaults -ComboBox $ComboBox
 
-    foreach ($item in @($Items)) {
-        $display = Format-HapNewUserOption -Option $item
-        if ($null -ne $display) {
-            try { [void]$ComboBox.Items.Add([string]$display) } catch { }
-        }
-    }
+    $hasPlaceholder = -not [string]::IsNullOrWhiteSpace([string]$Placeholder)
+    if ($hasPlaceholder) { Add-HapComboBoxTextItem -ComboBox $ComboBox -Text ([string]$Placeholder) -Value '' -Placeholder }
+
+    foreach ($value in @($values.ToArray())) { Add-HapComboBoxTextItem -ComboBox $ComboBox -Text $value -Value $value }
+
+    if ($ComboBox.Items.Count -eq 0) { Add-HapComboBoxTextItem -ComboBox $ComboBox -Text '-- No values configured --' -Value '' -Placeholder }
 
     try {
-        if ($SelectedIndex -ge 0 -and $ComboBox.Items.Count -gt $SelectedIndex) { $ComboBox.SelectedIndex = $SelectedIndex }
+        if ($hasPlaceholder -and $ComboBox.Items.Count -gt 0) { $ComboBox.SelectedIndex = 0 }
+        elseif ($SelectedIndex -ge 0 -and $ComboBox.Items.Count -gt $SelectedIndex) { $ComboBox.SelectedIndex = $SelectedIndex }
+        elseif ($ComboBox.Items.Count -gt 0) { $ComboBox.SelectedIndex = 0 }
         else { $ComboBox.SelectedIndex = -1 }
     } catch { }
-    try { if ($SelectedIndex -lt 0) { $ComboBox.Text = '' } } catch { }
+    try { if ($ComboBox.SelectedIndex -ge 0 -and $null -ne $ComboBox.SelectedItem) { $ComboBox.Text = [string]$ComboBox.SelectedItem } } catch { }
+    try { $ComboBox.UpdateLayout() } catch { }
 }
 
 function Update-HapNewUserWizardConfigurationFromConfig {
     $configuration = Get-HapNewUserWizardConfiguration
     $warnings = New-Object System.Collections.Generic.List[string]
 
-    try { Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items @($configuration.HomeOrganizations) -SelectedIndex -1 }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserHomeOrgComboBox -Items $configuration.HomeOrganizations -Placeholder '-- Select home organization --' }
     catch { [void]$warnings.Add("Home Organization values: $($_.Exception.Message)") }
-    try { Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items @($configuration.Locations) -SelectedIndex -1 }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserLocationComboBox -Items $configuration.Locations -Placeholder '-- Select location --' }
     catch { [void]$warnings.Add("Location values: $($_.Exception.Message)") }
-    try { Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items @($configuration.Departments) -SelectedIndex -1 }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserDepartmentComboBox -Items $configuration.Departments -Placeholder '-- Select department --' }
     catch { [void]$warnings.Add("Department values: $($_.Exception.Message)") }
-    try { Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items @($configuration.Portfolios) -SelectedIndex -1 }
+    try { Set-HapComboBoxItems -ComboBox $controls.NewUserPortfolioComboBox -Items $configuration.Portfolios -Placeholder '-- Optional portfolio --' }
     catch { [void]$warnings.Add("Portfolio values: $($_.Exception.Message)") }
 
     if (Get-Command Update-HybridNewUserWizardConfiguration -ErrorAction SilentlyContinue) {
         try { Update-HybridNewUserWizardConfiguration -Configuration $configuration | Out-Null }
         catch { [void]$warnings.Add("service sync: $($_.Exception.Message)") }
     }
+
+    $script:HapNewUserWizardDropdownSummary = 'dropdowns: Home Org {0}, Locations {1}, Departments {2}, Portfolios {3}' -f @(
+        $(try { [int]$controls.NewUserHomeOrgComboBox.Items.Count } catch { 0 }),
+        $(try { [int]$controls.NewUserLocationComboBox.Items.Count } catch { 0 }),
+        $(try { [int]$controls.NewUserDepartmentComboBox.Items.Count } catch { 0 }),
+        $(try { [int]$controls.NewUserPortfolioComboBox.Items.Count } catch { 0 })
+    )
 
     if ($warnings.Count -gt 0 -and $controls.StatusText) {
         $controls.StatusText.Text = 'New User Wizard config loaded with warning(s): ' + ($warnings -join '; ')
@@ -2477,11 +2595,11 @@ function Show-HybridNewUserWizardView {
     try { Hide-HybridOverlayWorkflowViews }
     catch { [void]$warnings.Add("hiding other workflow views: $($_.Exception.Message)") }
 
-    try { Update-HapNewUserWizardConfigurationFromConfig }
-    catch { [void]$warnings.Add("loading configuration: $($_.Exception.Message)") }
-
     try { Reset-HybridNewUserWizardFields -PreserveDefaults }
     catch { [void]$warnings.Add("resetting fields: $($_.Exception.Message)") }
+
+    try { Update-HapNewUserWizardConfigurationFromConfig }
+    catch { [void]$warnings.Add("loading configuration: $($_.Exception.Message)") }
 
     try { $controls.OverlayRegion.Visibility = [System.Windows.Visibility]::Visible } catch { [void]$warnings.Add("showing overlay: $($_.Exception.Message)") }
     try { $controls.WorkflowSelectorView.Visibility = [System.Windows.Visibility]::Collapsed } catch { }
@@ -2492,8 +2610,9 @@ function Show-HybridNewUserWizardView {
     catch { [void]$warnings.Add("loading manager options: $($_.Exception.Message)") }
 
     if ($controls.StatusText) {
+        $dropdownSummary = if (-not [string]::IsNullOrWhiteSpace([string]$script:HapNewUserWizardDropdownSummary)) { " ($($script:HapNewUserWizardDropdownSummary))" } else { '' }
         if ($warnings.Count -gt 0) { $controls.StatusText.Text = 'New User Wizard opened with warning(s): ' + ($warnings -join '; ') }
-        else { $controls.StatusText.Text = 'New User Wizard opened.' }
+        else { $controls.StatusText.Text = "New User Wizard opened.$dropdownSummary" }
     }
 }
 
@@ -2595,8 +2714,20 @@ function Invoke-HybridDeviceManagementSearchFromUi {
 
 function Get-HybridNewUserComboText {
     param([Parameter(Mandatory=$true)][object]$ComboBox)
-    if ($null -ne $ComboBox.SelectedItem -and $ComboBox.SelectedItem.PSObject.Properties.Name -contains 'Content') { return [string]$ComboBox.SelectedItem.Content }
-    return [string]$ComboBox.Text
+
+    $value = ''
+    $selected = $ComboBox.SelectedItem
+    if ($null -ne $selected) {
+        if ($selected -is [string]) { $value = [string]$selected }
+        elseif ($selected.PSObject.Properties.Name -contains 'Tag' -and $null -ne $selected.Tag) { $value = [string]$selected.Tag }
+        elseif ($selected.PSObject.Properties.Name -contains 'Value' -and $null -ne $selected.Value) { $value = [string]$selected.Value }
+        elseif ($selected.PSObject.Properties.Name -contains 'Display' -and $null -ne $selected.Display) { $value = [string]$selected.Display }
+        elseif ($selected.PSObject.Properties.Name -contains 'Content' -and $null -ne $selected.Content) { $value = [string]$selected.Content }
+        else { $value = [string]$selected }
+    }
+    if ([string]::IsNullOrWhiteSpace($value)) { $value = [string]$ComboBox.Text }
+    if ($value -match '^\s*--\s*(Select|Optional|No values configured)') { return '' }
+    return $value.Trim()
 }
 
 function Get-HybridNewUserManagerIdentityFromUi {
@@ -2606,7 +2737,11 @@ function Get-HybridNewUserManagerIdentityFromUi {
         return [string]$selected.Identity
     }
     $text = [string]$controls.NewUserManagerComboBox.Text
-    if ([string]::IsNullOrWhiteSpace($text) -and $null -ne $selected) { $text = [string]$selected }
+    if ([string]::IsNullOrWhiteSpace($text) -and $null -ne $selected) {
+        if ($selected.PSObject.Properties.Name -contains 'Content') { $text = [string]$selected.Content }
+        else { $text = [string]$selected }
+    }
+    if ($text -match '^\s*--\s*(Select manager|No managers|Manager lookup failed)') { return '' }
     if ($text -match '<([^<>]+)>\s*$') { return $matches[1] }
     return $text
 }
@@ -2758,17 +2893,20 @@ function Update-HybridNewUserManagerOptions {
         try { $controls.NewUserManagerComboBox.DisplayMemberPath = '' } catch { }
         try { $controls.NewUserManagerComboBox.SelectedValuePath = '' } catch { }
         try { $controls.NewUserManagerComboBox.Items.Clear() } catch { }
+        Set-HapComboBoxVisualDefaults -ComboBox $controls.NewUserManagerComboBox
+        Add-HapComboBoxTextItem -ComboBox $controls.NewUserManagerComboBox -Text '-- Select manager or type SamAccountName --' -Value '' -Placeholder
 
         $managers = @(Get-HybridNewUserManagerOptions)
         foreach ($manager in $managers) {
             $name = [string](Get-HapProfileObjectValue -InputObject $manager -Names @('Name','DisplayName') -Default '')
             $identity = [string](Get-HapProfileObjectValue -InputObject $manager -Names @('Identity','SamAccountName','UserPrincipalName') -Default '')
             $display = if (-not [string]::IsNullOrWhiteSpace($identity) -and $name -ne $identity) { "$name <$identity>" } elseif (-not [string]::IsNullOrWhiteSpace($name)) { $name } else { $identity }
-            if (-not [string]::IsNullOrWhiteSpace($display)) { try { [void]$controls.NewUserManagerComboBox.Items.Add($display) } catch { } }
+            if (-not [string]::IsNullOrWhiteSpace($display)) { Add-HapComboBoxTextItem -ComboBox $controls.NewUserManagerComboBox -Text $display -Value $display }
         }
         try {
             if ($controls.NewUserManagerComboBox.Items.Count -gt 0) { $controls.NewUserManagerComboBox.SelectedIndex = 0 }
             else { $controls.NewUserManagerComboBox.SelectedIndex = -1; $controls.NewUserManagerComboBox.Text = '' }
+            if ($controls.NewUserManagerComboBox.SelectedIndex -ge 0 -and $null -ne $controls.NewUserManagerComboBox.SelectedItem) { $controls.NewUserManagerComboBox.Text = [string]$controls.NewUserManagerComboBox.SelectedItem }
         } catch { }
         if ($controls.StatusText) { $controls.StatusText.Text = "Loaded $($managers.Count) manager option(s)." }
     }
@@ -2776,8 +2914,10 @@ function Update-HybridNewUserManagerOptions {
         try {
             $controls.NewUserManagerComboBox.ItemsSource = $null
             $controls.NewUserManagerComboBox.Items.Clear()
-            [void]$controls.NewUserManagerComboBox.Items.Add('Manager lookup failed')
+            Set-HapComboBoxVisualDefaults -ComboBox $controls.NewUserManagerComboBox
+            Add-HapComboBoxTextItem -ComboBox $controls.NewUserManagerComboBox -Text '-- Manager lookup failed; type SamAccountName --' -Value '' -Placeholder
             $controls.NewUserManagerComboBox.SelectedIndex = 0
+            $controls.NewUserManagerComboBox.Text = [string]$controls.NewUserManagerComboBox.SelectedItem
         } catch { }
         if ($controls.StatusText) { $controls.StatusText.Text = "Manager lookup failed: $($_.Exception.Message)" }
     }
@@ -2860,7 +3000,15 @@ function Reset-HybridNewUserWizardFields {
     }
 
     foreach ($name in @('NewUserHomeOrgComboBox','NewUserLocationComboBox','NewUserDepartmentComboBox','NewUserPortfolioComboBox')) {
-        try { if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) { $controls[$name].SelectedIndex = -1; $controls[$name].Text = '' } } catch { }
+        try {
+            if ($controls.ContainsKey($name) -and $null -ne $controls[$name]) {
+                if ($controls[$name].Items.Count -gt 0) {
+                    $controls[$name].SelectedIndex = 0
+                    if ($null -ne $controls[$name].SelectedItem) { $controls[$name].Text = [string]$controls[$name].SelectedItem }
+                }
+                else { $controls[$name].SelectedIndex = -1; $controls[$name].Text = '' }
+            }
+        } catch { }
     }
 
     try { if ($controls.NewUserStartDatePicker) { $controls.NewUserStartDatePicker.SelectedDate = [Nullable[DateTime]]([DateTime]::Today) } } catch { }

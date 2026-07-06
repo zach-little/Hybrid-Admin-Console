@@ -9,34 +9,229 @@
                           "NotificationRecipient":  "ITSupport@atlas-tech.com",
                           "NotificationSender":  "NEW-HIRE-INFO@atlas-tech.com",
                           "HomeOrganizations":  [
-                                                    { "Number":  1, "Name":  "Draco", "GroupName":  "Draco.Team", "DisplayGroupName":  "Draco Team" },
-                                                    { "Number":  2, "Name":  "Pavo", "GroupName":  "Pavo.Team", "DisplayGroupName":  "Pavo Team" },
-                                                    { "Number":  3, "Name":  "Corvus", "GroupName":  "Corvus.Team", "DisplayGroupName":  "Corvus Team" }
+                                                    {
+                                                        "value":  [
+                                                                      {
+                                                                          "Number":  1,
+                                                                          "Name":  "Draco",
+                                                                          "GroupName":  "Draco.Team",
+                                                                          "DisplayGroupName":  "Draco Team"
+                                                                      },
+                                                                      {
+                                                                          "Number":  2,
+                                                                          "Name":  "Pavo",
+                                                                          "GroupName":  "Pavo.Team",
+                                                                          "DisplayGroupName":  "Pavo Team"
+                                                                      },
+                                                                      {
+                                                                          "Number":  3,
+                                                                          "Name":  "Corvus",
+                                                                          "GroupName":  "Corvus.Team",
+                                                                          "DisplayGroupName":  "Corvus Team"
+                                                                      },
+                                                                      {
+                                                                          "Number":  4,
+                                                                          "Name":  "Prodigy",
+                                                                          "GroupName":  "Prodigy.Team",
+                                                                          "DisplayGroupName":  "Prodigy Team"
+                                                                      }
+                                                                  ],
+                                                        "Count":  4
+                                                    }
                                                 ],
                           "Locations":  [
-                                            { "Number":  1, "Name":  "Rivers", "LocationGroup":  "Atlas-Charleston", "City":  "North Charleston", "StreetAddress":  "5416-A Rivers Avenue - Suite 105", "State":  "SC", "PostalCode":  "29406", "OuKey":  "HQ" },
-                                            { "Number":  2, "Name":  "Remount", "LocationGroup":  "Atlas-Charleston", "City":  "North Charleston", "StreetAddress":  "1101 Remount Rd, Suite 800", "State":  "SC", "PostalCode":  "29406", "OuKey":  "HQ" },
-                                            { "Number":  3, "Name":  "Virginia Beach", "LocationGroup":  "Atlas-VABeach", "City":  "Virginia Beach", "StreetAddress":  "168 Business Park Drive, Suite 103", "State":  "VA", "PostalCode":  "23462", "OuKey":  "3" },
-                                            { "Number":  4, "Name":  "San Diego", "LocationGroup":  "Atlas-SD", "City":  "San Diego", "StreetAddress":  "4250 Pacific Highway, 105", "State":  "CA", "PostalCode":  "92110", "OuKey":  "4" },
-                                            { "Number":  5, "Name":  "Alexandria", "LocationGroup":  "Atlas-DC", "City":  "Alexandria", "StreetAddress":  "5911 Kingstowne Village Parkway Suite 310", "State":  "VA", "PostalCode":  "22315", "OuKey":  "5" },
-                                            { "Number":  6, "Name":  "Lexington", "LocationGroup":  "Atlas-MD", "City":  "Lexington", "StreetAddress":  "Not Available", "State":  "MD", "PostalCode":  "Not Available", "OuKey":  "6" }
+                                            {
+                                                "value":  [
+                                                              {
+                                                                  "Number":  1,
+                                                                  "Name":  "Rivers",
+                                                                  "LocationGroup":  "Atlas-Charleston",
+                                                                  "City":  "North Charleston",
+                                                                  "StreetAddress":  "5416-A Rivers Avenue - Suite 105",
+                                                                  "State":  "SC",
+                                                                  "PostalCode":  "29406",
+                                                                  "OuKey":  "HQ"
+                                                              },
+                                                              {
+                                                                  "Number":  2,
+                                                                  "Name":  "Remount",
+                                                                  "LocationGroup":  "Atlas-Charleston",
+                                                                  "City":  "North Charleston",
+                                                                  "StreetAddress":  "1101 Remount Rd, Suite 800",
+                                                                  "State":  "SC",
+                                                                  "PostalCode":  "29406",
+                                                                  "OuKey":  "HQ"
+                                                              },
+                                                              {
+                                                                  "Number":  3,
+                                                                  "Name":  "Virginia Beach",
+                                                                  "LocationGroup":  "Atlas-VABeach",
+                                                                  "City":  "Virginia Beach",
+                                                                  "StreetAddress":  "168 Business Park Drive, Suite 103",
+                                                                  "State":  "VA",
+                                                                  "PostalCode":  "23462",
+                                                                  "OuKey":  "3"
+                                                              },
+                                                              {
+                                                                  "Number":  4,
+                                                                  "Name":  "San Diego",
+                                                                  "LocationGroup":  "Atlas-SD",
+                                                                  "City":  "San Diego",
+                                                                  "StreetAddress":  "4250 Pacific Highway, 105",
+                                                                  "State":  "CA",
+                                                                  "PostalCode":  "92110",
+                                                                  "OuKey":  "4"
+                                                              },
+                                                              {
+                                                                  "Number":  5,
+                                                                  "Name":  "Alexandria",
+                                                                  "LocationGroup":  "Atlas-DC",
+                                                                  "City":  "Alexandria",
+                                                                  "StreetAddress":  "5911 Kingstowne Village Parkway Suite 310",
+                                                                  "State":  "VA",
+                                                                  "PostalCode":  "22315",
+                                                                  "OuKey":  "5"
+                                                              },
+                                                              {
+                                                                  "Number":  6,
+                                                                  "Name":  "Lexington",
+                                                                  "LocationGroup":  "Atlas-MD",
+                                                                  "City":  "Lexington",
+                                                                  "StreetAddress":  "Not Available",
+                                                                  "State":  "MD",
+                                                                  "PostalCode":  "Not Available",
+                                                                  "OuKey":  "6"
+                                                              }
+                                                          ],
+                                                "Count":  6
+                                            }
                                         ],
                           "Departments":  [
-                                              { "Number":  1, "Name":  "Dept 00 - Accounting", "DisplayName":  "00", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  2, "Name":  "Dept 00 - Information Technology", "DisplayName":  "00", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  3, "Name":  "Dept 00 - Executive", "DisplayName":  "00", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  4, "Name":  "Dept 00 - Human Resources", "DisplayName":  "00", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  5, "Name":  "Dept 01 - Contracts", "DisplayName":  "01", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  6, "Name":  "Dept 01 - Operations", "DisplayName":  "01", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  7, "Name":  "Dept 02 - DC/PAX/Charleston Division", "DisplayName":  "02", "TargetOuByLocation":  { "HQ":  "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com", "5":  "OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com", "6":  "OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  8, "Name":  "Dept 03 - VABeach Division", "DisplayName":  "03", "TargetOuByLocation":  { "3":  "OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  9, "Name":  "Dept 04 - San Diego Division", "DisplayName":  "04", "TargetOuByLocation":  { "4":  "OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com" } },
-                                              { "Number":  10, "Name":  "Service Account", "DisplayName":  "Service Account", "TargetOu":  "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com", "IsServiceAccount":  true }
+                                              {
+                                                  "value":  [
+                                                                {
+                                                                    "Number":  1,
+                                                                    "Name":  "Dept 00 - Accounting",
+                                                                    "DisplayName":  "00",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  2,
+                                                                    "Name":  "Dept 00 - Information Technology",
+                                                                    "DisplayName":  "00",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  3,
+                                                                    "Name":  "Dept 00 - Executive",
+                                                                    "DisplayName":  "00",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  4,
+                                                                    "Name":  "Dept 00 - Human Resources",
+                                                                    "DisplayName":  "00",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  5,
+                                                                    "Name":  "Dept 01 - Contracts",
+                                                                    "DisplayName":  "01",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  6,
+                                                                    "Name":  "Dept 01 - Operations",
+                                                                    "DisplayName":  "01",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  7,
+                                                                    "Name":  "Dept 02 - DC/PAX/Charleston Division",
+                                                                    "DisplayName":  "02",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "HQ":  "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com",
+                                                                                               "5":  "OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com",
+                                                                                               "6":  "OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  8,
+                                                                    "Name":  "Dept 03 - VABeach Division",
+                                                                    "DisplayName":  "03",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "3":  "OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  9,
+                                                                    "Name":  "Dept 04 - San Diego Division",
+                                                                    "DisplayName":  "04",
+                                                                    "TargetOuByLocation":  {
+                                                                                               "4":  "OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com"
+                                                                                           }
+                                                                },
+                                                                {
+                                                                    "Number":  10,
+                                                                    "Name":  "Service Account",
+                                                                    "DisplayName":  "Service Account",
+                                                                    "TargetOu":  "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+                                                                    "IsServiceAccount":  true
+                                                                }
+                                                            ],
+                                                  "Count":  10
+                                              }
                                           ],
-                          "Portfolios":  [ "", "Corporate", "Contracts", "Operations", "Information Technology", "Human Resources" ],
-                          "Groups":  { "CgUsersSc":  "SC_CGUsers", "CgUsersSd":  "SD_CGUsers", "CgUsersVa":  "VABeach_CGUsers", "CacGroup":  "CAC_Holders" },
+                          "Portfolios":  [
+                                             {
+                                                 "value":  [
+                                                               "",
+                                                               "Corporate",
+                                                               "Contracts",
+                                                               "Operations",
+                                                               "Information Technology",
+                                                               "Human Resources"
+                                                           ],
+                                                 "Count":  6
+                                             }
+                                         ],
+                          "Groups":  {
+                                         "CgUsersSc":  "SC_CGUsers",
+                                         "CgUsersSd":  "SD_CGUsers",
+                                         "CgUsersVa":  "VABeach_CGUsers",
+                                         "CacGroup":  "CAC_Holders"
+                                     },
                           "DefaultTargetOu":  "CN=Users,DC=atlas-tech,DC=com"
                       },
+    "Authentication":  {
+                           "Cloud":  "Commercial",
+                           "AppOnly":  {
+                                           "Enabled":  false,
+                                           "TenantId":  "",
+                                           "TenantDomain":  "",
+                                           "ClientId":  "",
+                                           "CredentialMode":  "Certificate",
+                                           "CertificateThumbprint":  "",
+                                           "CertificatePath":  "",
+                                           "SecretReference":  ""
+                                       },
+                           "Delegated":  {
+                                             "Enabled":  false,
+                                             "PromptWhenRequired":  true
+                                         }
+                       },
     "Providers":  {
                       "DirectorySimulator":  {
                                                  "Enabled":  true,
@@ -61,7 +256,14 @@
                                              "Mode":  "Disabled",
                                              "Required":  false,
                                              "Authentication":  "Interactive"
-                                         }
-                  },
-    "IsDefault":  false
+                                         },
+                      "ExchangeOnPremises":  {
+                                                 "Enabled":  false,
+                                                 "Mode":  "Disabled",
+                                                 "Required":  false,
+                                                 "Authentication":  "Kerberos",
+                                                 "Server":  "",
+                                                 "ConnectionUri":  ""
+                                             }
+                  }
 }

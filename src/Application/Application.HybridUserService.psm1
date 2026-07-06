@@ -163,6 +163,85 @@ function Get-HybridActiveDirectoryStableIdentity {
     return ''
 }
 
+function Add-HybridUniqueIdentityCandidate {
+    param(
+        [System.Collections.Generic.List[string]]$Candidates,
+        [AllowNull()][object]$Value
+    )
+
+    if ($null -eq $Value) { return }
+    $candidate = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($candidate)) { return }
+    $candidate = $candidate.Trim()
+    if ($candidate -match '^CN=|^OU=|^DC=') { return }
+    foreach ($existing in @($Candidates)) {
+        if ([string]::Equals($existing, $candidate, [System.StringComparison]::OrdinalIgnoreCase)) { return }
+    }
+    [void]$Candidates.Add($candidate)
+}
+
+function Get-HybridGraphIdentityCandidates {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [AllowNull()][object]$ActiveDirectoryUser = $null,
+        [AllowNull()][object]$GraphUser = $null
+    )
+
+    $candidates = [System.Collections.Generic.List[string]]::new()
+    Add-HybridUniqueIdentityCandidate -Candidates $candidates -Value $Identity
+
+    foreach ($source in @($ActiveDirectoryUser, $GraphUser)) {
+        foreach ($propertyName in @(
+            'UserPrincipalName','UPN','Mail','EmailAddress',
+            'AzureAdObjectId','AzureADObjectId','ExternalDirectoryObjectId','GraphObjectId','ObjectId',
+            'SamAccountName','SAMAccountName','sAMAccountName','OnPremisesSamAccountName','MailNickname','Alias'
+        )) {
+            Add-HybridUniqueIdentityCandidate -Candidates $candidates -Value (Get-HybridObjectValue -InputObject $source -Names @($propertyName) -Default $null)
+        }
+
+        $attributes = Get-HybridObjectValue -InputObject $source -Names @('Attributes') -Default $null
+        foreach ($propertyName in @(
+            'UserPrincipalName','UPN','Mail','EmailAddress',
+            'AzureAdObjectId','AzureADObjectId','ExternalDirectoryObjectId','GraphObjectId','ObjectId',
+            'SamAccountName','SAMAccountName','sAMAccountName','OnPremisesSamAccountName','MailNickname','Alias'
+        )) {
+            Add-HybridUniqueIdentityCandidate -Candidates $candidates -Value (Get-HybridObjectValue -InputObject $attributes -Names @($propertyName) -Default $null)
+        }
+    }
+
+    return @($candidates.ToArray())
+}
+
+function Invoke-HybridGraphUserProviderLookup {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][string[]]$OperationNames,
+        [AllowNull()][object]$ActiveDirectoryUser = $null
+    )
+
+    if ($null -eq $script:HybridUserServiceState.MicrosoftGraph) { return @() }
+
+    $adUser = $ActiveDirectoryUser
+    if ($null -eq $adUser -and $null -ne $script:HybridUserServiceState.ActiveDirectory) {
+        $adUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) -ProviderName 'ActiveDirectory' | Select-Object -First 1)
+        if ((Get-HybridCollectionCount $adUser) -gt 0) { $adUser = $adUser[0] } else { $adUser = $null }
+    }
+
+    foreach ($candidate in (Get-HybridGraphIdentityCandidates -Identity $Identity -ActiveDirectoryUser $adUser)) {
+        $result = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames $OperationNames -Arguments @($candidate) -ProviderName 'MicrosoftGraph' | Select-Object -First 1)
+        if ((Get-HybridCollectionCount $result) -gt 0 -and $null -ne $result[0]) {
+            if (-not [string]::Equals($candidate, $Identity, [System.StringComparison]::OrdinalIgnoreCase)) {
+                Write-HybridUserHydrationDiagnostic -Stage 'MicrosoftGraph' -Message "Resolved Graph identity '$Identity' using AD-derived candidate '$candidate'." -Level SUCCESS
+            }
+            return @($result[0])
+        }
+    }
+
+    return @()
+}
+
 function Add-HybridUserActiveDirectoryIdentityMetadata {
     [CmdletBinding()]
     param(
@@ -897,11 +976,12 @@ function Get-HybridUser {
     }
 
     $adUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.ActiveDirectory -OperationNames @('GetUser','GetADUser','Get') -Arguments @($Identity) -ProviderName 'ActiveDirectory' | Select-Object -First 1)
-    $graphUser = @(Invoke-HybridServiceOperationSafe -Service $script:HybridUserServiceState.MicrosoftGraph -OperationNames @('GetUser','GetGraphUser','Get') -Arguments @($Identity) -ProviderName 'MicrosoftGraph' | Select-Object -First 1)
+    $adResolvedUser = if ((Get-HybridCollectionCount $adUser) -gt 0) { $adUser[0] } else { $null }
+    $graphUser = @(Invoke-HybridGraphUserProviderLookup -Identity $Identity -ActiveDirectoryUser $adResolvedUser -OperationNames @('GetUser','GetGraphUser','Get') | Select-Object -First 1)
     $mailbox = @()
     $adMailSignal = $false
-    if (@($adUser).Count -gt 0) {
-        $adMailSignal = Test-HybridAdMailAttributeSnapshotHasMailSignal -Snapshot (New-HybridAdMailAttributeSnapshot -User ($adUser | Select-Object -First 1))
+    if ($null -ne $adResolvedUser) {
+        $adMailSignal = Test-HybridAdMailAttributeSnapshotHasMailSignal -Snapshot (New-HybridAdMailAttributeSnapshot -User $adResolvedUser)
     }
     if ($null -ne $script:HybridUserServiceState.ExchangeOnline -and $adMailSignal) {
         try {
@@ -929,7 +1009,7 @@ function Get-HybridUser {
 
     $user = New-HybridCompositeUser `
         -Identity $Identity `
-        -ActiveDirectoryUser ($adUser | Select-Object -First 1) `
+        -ActiveDirectoryUser $adResolvedUser `
         -GraphUser ($graphUser | Select-Object -First 1) `
         -Mailbox ($mailbox | Select-Object -First 1) `
         -ActiveDirectoryHealth $adHealth `
@@ -1031,8 +1111,7 @@ function Get-HybridUserGraphProfile {
     if (-not $script:HybridUserServiceState.Initialized) { throw 'Hybrid user service has not been initialized.' }
     if ([string]::IsNullOrWhiteSpace($Identity)) { throw 'User identity cannot be empty.' }
 
-    $provider = $script:HybridUserServiceState.MicrosoftGraph
-    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetGraphProfile','GetUserGraphProfile','GetAuthenticationProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
+    $profile = @(Invoke-HybridGraphUserProviderLookup -Identity $Identity -OperationNames @('GetGraphProfile','GetUserGraphProfile','GetAuthenticationProfile','GetUser','GetGraphUser','Get') | Select-Object -First 1)
     if ((Get-HybridCollectionCount $profile) -eq 0 -or $null -eq $profile[0]) { return $null }
 
     $raw = $profile[0]
@@ -1099,8 +1178,7 @@ function Get-HybridUserAuthenticationProfile {
     if (-not $script:HybridUserServiceState.Initialized) { throw 'Hybrid user service has not been initialized.' }
     if ([string]::IsNullOrWhiteSpace($Identity)) { throw 'User identity cannot be empty.' }
 
-    $provider = $script:HybridUserServiceState.MicrosoftGraph
-    $profile = @(Invoke-HybridServiceOperation -Service $provider -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','GetUser','GetGraphUser','Get') -Arguments @($Identity) | Select-Object -First 1)
+    $profile = @(Invoke-HybridGraphUserProviderLookup -Identity $Identity -OperationNames @('GetAuthenticationProfile','GetUserAuthenticationProfile','GetGraphAuthenticationProfile','GetGraphProfile','GetUserGraphProfile','GetUser','GetGraphUser','Get') | Select-Object -First 1)
     if ((Get-HybridCollectionCount $profile) -eq 0 -or $null -eq $profile[0]) { return $null }
 
     $raw = $profile[0]

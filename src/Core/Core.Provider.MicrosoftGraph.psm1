@@ -301,12 +301,8 @@ function Invoke-HybridMicrosoftGraphUserRequest {
 
     $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
     $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
-    $escapedIdentity = [System.Uri]::EscapeDataString($Identity)
-    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
-    $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
-    $headers = @{ Authorization = ('Bearer {0}' -f $token) }
 
-    $user = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec ([int]$script:HybridMicrosoftGraphState.RequestTimeoutSeconds) -ErrorAction Stop
+    $user = Resolve-HybridMicrosoftGraphUserRequestIdentity -Identity $Identity -Session $Session
     $profileSelects = @(
         'companyName,officeLocation,employeeId,mobilePhone,businessPhones',
         'assignedLicenses,licenseAssignmentStates',
@@ -314,6 +310,8 @@ function Invoke-HybridMicrosoftGraphUserRequest {
         'lastPasswordChangeDateTime',
         'signInActivity'
     )
+    $resolvedIdentity = [string](Get-HybridMicrosoftGraphObjectValue -InputObject $user -Names @('id','Id','userPrincipalName','UserPrincipalName') -Default $Identity)
+    $escapedIdentity = [System.Uri]::EscapeDataString($resolvedIdentity)
     foreach ($profileSelect in $profileSelects) {
         $profileUri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $profileSelect)
         $profileResponse = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $profileUri -Session $Session
@@ -339,6 +337,76 @@ function Invoke-HybridMicrosoftGraphOptionalRequest {
     catch {
         return $null
     }
+}
+
+function ConvertTo-HybridMicrosoftGraphFilterLiteral {
+    [CmdletBinding()]
+    param([AllowNull()][string]$Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+    return $Value.Replace("'", "''")
+}
+
+function Invoke-HybridMicrosoftGraphUserFilterRequest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Filter,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+    $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation,onPremisesSamAccountName,onPremisesUserPrincipalName,mailNickname'
+    $encodedFilter = [System.Uri]::EscapeDataString($Filter)
+    $uri = ('{0}/v1.0/users?$top=1&$select={1}&$filter={2}' -f $graphEndpoint, $select, $encodedFilter)
+    $response = Invoke-HybridMicrosoftGraphOptionalRequest -Uri $uri -Session $Session
+    $values = @(Get-HybridMicrosoftGraphObjectValue -InputObject $response -Names @('value','Value') -Default @())
+    if ((Get-HybridMicrosoftGraphCollectionCount $values) -gt 0) { return $values[0] }
+    return $null
+}
+
+function Resolve-HybridMicrosoftGraphUserRequestIdentity {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)][string]$Identity,
+        [Parameter(Mandatory=$true)][object]$Session
+    )
+
+    $tenantContext = $script:HybridMicrosoftGraphState.TenantContext
+    $graphEndpoint = Get-HybridMicrosoftGraphEndpoint -TenantContext $tenantContext
+    $escapedIdentity = [System.Uri]::EscapeDataString($Identity)
+    $select = 'id,displayName,userPrincipalName,mail,userType,preferredLanguage,usageLocation'
+    $uri = ('{0}/v1.0/users/{1}?$select={2}' -f $graphEndpoint, $escapedIdentity, $select)
+    $headers = @{ Authorization = ('Bearer {0}' -f ([string](Get-HybridMicrosoftGraphObjectValue -InputObject $Session -Names @('AccessToken') -Default ''))) }
+    $directError = $null
+
+    try {
+        return Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec ([int]$script:HybridMicrosoftGraphState.RequestTimeoutSeconds) -ErrorAction Stop
+    }
+    catch {
+        $directError = $_
+    }
+
+    $literal = ConvertTo-HybridMicrosoftGraphFilterLiteral -Value $Identity
+    if (-not [string]::IsNullOrWhiteSpace($literal)) {
+        $filters = @(
+            "userPrincipalName eq '$literal'",
+            "mail eq '$literal'",
+            "onPremisesUserPrincipalName eq '$literal'",
+            "onPremisesSamAccountName eq '$literal'",
+            "mailNickname eq '$literal'",
+            "startswith(userPrincipalName,'$literal')",
+            "startswith(mailNickname,'$literal')"
+        )
+
+        foreach ($filter in $filters) {
+            $candidate = Invoke-HybridMicrosoftGraphUserFilterRequest -Filter $filter -Session $Session
+            if ($null -ne $candidate) { return $candidate }
+        }
+    }
+
+    if ($null -ne $directError) { throw $directError }
+    throw "Microsoft Graph user '$Identity' was not found."
 }
 
 
