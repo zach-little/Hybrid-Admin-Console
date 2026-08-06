@@ -119,7 +119,7 @@ public sealed class DirectorySimulatorProviderTests
         var provider = new DirectorySimulatorProvider(new DirectorySimulatorOptions
         {
             TimeoutMilliseconds = 1,
-            SimulatedDelayMilliseconds = 50
+            SimulatedDelayMilliseconds = 500
         });
 
         var result = await provider.SearchUsersAsync("amorgan", CorrelationId.From("sim-timeout"));
@@ -183,6 +183,22 @@ public sealed class DirectorySimulatorProviderTests
         Assert.Contains("microsoftAuthenticatorPush", auth.Value!.AuthenticationMethods);
         Assert.Equal("amorgan@atlas-tech.com", mailbox.Value!.PrimarySmtpAddress);
         Assert.Contains(distributionGroups.Value!, group => group.DisplayName == "DL-InformationTechnology-Announcements");
+    }
+
+    [Fact]
+    public async Task DirectoryAttributes_IncludeBadgeEmployeeAndExchangeSchemaAttributes()
+    {
+        var provider = new DirectorySimulatorProvider();
+
+        var result = await provider.GetDirectoryAttributesAsync("amorgan", CorrelationId.From("sim-attrs"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("DirectorySimulator.LatestAdExchangeBaseline", result.Value!.SchemaSource);
+        Assert.Contains(result.Value.Attributes, attribute => attribute.Name == "BadgeID" && attribute.Values.Contains("SIM-AMORGAN"));
+        Assert.Contains(result.Value.Attributes, attribute => attribute.Name == "EmployeeNumber" && attribute.Values.Contains("SIM-AMORGAN"));
+        Assert.Contains(result.Value.Attributes, attribute => attribute.Name == "employeeNumber" && attribute.Values.Contains("SIM-AMORGAN"));
+        Assert.Contains(result.Value.Attributes, attribute => attribute.Name == "proxyAddresses" && !attribute.IsSingleValued);
+        Assert.Contains(result.Value.Attributes, attribute => attribute.Name == "msExchHideFromAddressLists");
     }
 
     [Fact]

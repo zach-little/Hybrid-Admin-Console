@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -152,18 +153,29 @@ public partial class NativeSimulationView : UserControl
         NewUserFirstNameTextBox.Focus();
     }
 
+    private void OnOpenUtilitiesClicked(object sender, RoutedEventArgs e)
+    {
+        WorkflowTabs.SelectedIndex = 4;
+    }
+
     private async void OnSyncHybridConnectionClicked(object sender, RoutedEventArgs e)
     {
         SetBusy(true, "Syncing hybrid connection...");
         try
         {
+            UtilityStatusTextBox.Text = $"[{DateTimeOffset.Now:g}] Hybrid connection sync requested...\n";
             await Task.Delay(350).ConfigureAwait(true);
+            var status = new[]
+            {
+                $"[{DateTimeOffset.Now:g}] Status: Completed",
+                "Provider: DirectorySimulator.HybridConnection",
+                "Remote request: Simulated",
+                "Remote server: Runtime profile Hybrid Wizard Remote Server",
+                "Result: Hybrid connection sync completed for simulation runtime.",
+                "Live mode will replace this with the remote invocation response, exit code, and returned output."
+            };
+            UtilityStatusTextBox.Text = string.Join(Environment.NewLine, status);
             StatusText.Text = "Hybrid connection sync completed for simulation runtime.";
-            MessageBox.Show(
-                "Hybrid connection sync completed for the simulation runtime.\n\nLive remote execution will use the Hybrid Wizard Remote Server configured on the selected runtime profile.",
-                "Sync Hybrid Connection",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
         }
         finally
         {
@@ -179,7 +191,7 @@ public partial class NativeSimulationView : UserControl
         }
 
         var user = _selectedUser!;
-        var values = ShowEditUserDialog(user);
+        var values = await ShowEditUserDialogAsync(user).ConfigureAwait(true);
         if (values.Count == 0)
         {
             return;
@@ -635,10 +647,15 @@ public partial class NativeSimulationView : UserControl
         return inputs.ToDictionary(pair => pair.Key, pair => pair.Value.Text.Trim(), StringComparer.OrdinalIgnoreCase);
     }
 
-    private static Dictionary<string, string> ShowEditUserDialog(SimulatorUserSummary user)
+    private async Task<Dictionary<string, string>> ShowEditUserDialogAsync(SimulatorUserSummary user)
     {
-        var rows = BuildAttributeRows(user);
-        var rowMap = rows.ToDictionary(row => row.Attribute, StringComparer.OrdinalIgnoreCase);
+        var attributeResult = await _simulator.GetDirectoryAttributesAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var rows = attributeResult.Value is null
+            ? BuildAttributeRows(user)
+            : BuildAttributeRows(user, attributeResult.Value);
+        var rowMap = BuildAttributeRowLookup(rows);
+        var currentReports = new ObservableCollection<string>(user.DirectReportSamAccountNames);
+        var currentGroups = new ObservableCollection<string>(user.Groups);
 
         var window = new Window
         {
@@ -661,7 +678,7 @@ public partial class NativeSimulationView : UserControl
 
         var header = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
         header.Children.Add(new TextBlock { Text = user.DisplayName, FontSize = 24, FontWeight = FontWeights.SemiBold, Foreground = BrushResource("HapInkBrush") });
-        header.Children.Add(new TextBlock { Text = $"{user.SamAccountName} | {user.UserPrincipalName}", Foreground = BrushResource("HapMutedBrush") });
+        header.Children.Add(new TextBlock { Text = $"{user.SamAccountName} | {user.UserPrincipalName} | {attributeResult.Value?.SchemaSource ?? "Summary attributes"}", Foreground = BrushResource("HapMutedBrush") });
         Grid.SetRow(header, 0);
         root.Children.Add(header);
 
@@ -701,11 +718,11 @@ public partial class NativeSimulationView : UserControl
             {
                 ("Enabled", "Enabled"),
                 ("LockedOut", "Locked out"),
-                ("DistinguishedName", "Distinguished name"),
-                ("DirectReportSamAccountNames", "Direct reports"),
-                ("Groups", "Groups")
+                ("DistinguishedName", "Distinguished name")
             },
             rowMap));
+
+        tabs.Items.Add(CreateRelationshipsTab(currentReports, currentGroups));
 
         var attributeGrid = new DataGrid
         {
@@ -727,7 +744,7 @@ public partial class NativeSimulationView : UserControl
                 {
                     new TextBlock
                     {
-                        Text = "Edit supported directory attributes directly. Lists accept comma or semicolon separated values.",
+                        Text = "Simulation shows the attributes currently exposed by the native provider model. Live AD schema-backed reads will expand this into the full directory attribute set.",
                         Foreground = BrushResource("HapMutedBrush"),
                         Margin = new Thickness(0, 0, 0, 8)
                     },
@@ -744,6 +761,16 @@ public partial class NativeSimulationView : UserControl
         {
             attributeGrid.CommitEdit(DataGridEditingUnit.Cell, true);
             attributeGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            if (rowMap.TryGetValue("DirectReportSamAccountNames", out var reportsRow))
+            {
+                reportsRow.Value = string.Join("; ", currentReports);
+            }
+
+            if (rowMap.TryGetValue("Groups", out var groupsRow))
+            {
+                groupsRow.Value = string.Join("; ", currentGroups);
+            }
+
             window.DialogResult = true;
             window.Close();
         };
@@ -753,9 +780,156 @@ public partial class NativeSimulationView : UserControl
         root.Children.Add(buttons);
 
         window.Content = root;
+        await Task.CompletedTask.ConfigureAwait(true);
         return window.ShowDialog() == true
-            ? rows.ToDictionary(row => row.Attribute, row => row.Value.Trim(), StringComparer.OrdinalIgnoreCase)
+            ? BuildAttributeValueMap(rows)
             : new Dictionary<string, string>();
+    }
+
+    private static IReadOnlyDictionary<string, AttributeEditorRow> BuildAttributeRowLookup(IEnumerable<AttributeEditorRow> rows)
+    {
+        var lookup = new Dictionary<string, AttributeEditorRow>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows)
+        {
+            lookup.TryAdd(row.Attribute, row);
+        }
+
+        return lookup;
+    }
+
+    private static Dictionary<string, string> BuildAttributeValueMap(IEnumerable<AttributeEditorRow> rows)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in rows)
+        {
+            values[row.Attribute] = row.Value.Trim();
+        }
+
+        return values;
+    }
+
+    private TabItem CreateRelationshipsTab(ObservableCollection<string> currentReports, ObservableCollection<string> currentGroups)
+    {
+        var root = new Grid { Margin = new Thickness(12) };
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        root.Children.Add(CreatePickerPanel(
+            "Direct Reports",
+            "Search users",
+            currentReports,
+            async query =>
+            {
+                var result = await _simulator.SearchUsersAsync(query, CorrelationId.New()).ConfigureAwait(true);
+                return result.Value?.Select(user => $"{user.SamAccountName} | {user.DisplayName}").ToArray() ?? Array.Empty<string>();
+            },
+            value => value.Split('|')[0].Trim()));
+
+        var groupsPanel = CreatePickerPanel(
+            "Groups",
+            "Search groups",
+            currentGroups,
+            async query =>
+            {
+                var result = await _simulator.SearchGroupsAsync(query, CorrelationId.New()).ConfigureAwait(true);
+                return result.Value?.Select(group => $"{group.DisplayName} | {group.Source}").ToArray() ?? Array.Empty<string>();
+            },
+            value => value.Split('|')[0].Trim());
+        Grid.SetColumn(groupsPanel, 2);
+        root.Children.Add(groupsPanel);
+
+        return new TabItem { Header = "Relationships", Content = root };
+    }
+
+    private static Grid CreatePickerPanel(
+        string title,
+        string searchWatermark,
+        ObservableCollection<string> selectedItems,
+        Func<string, Task<IReadOnlyList<string>>> lookup,
+        Func<string, string> normalizeSelection)
+    {
+        var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(150) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        root.Children.Add(new TextBlock { Text = title, FontSize = 17, FontWeight = FontWeights.SemiBold, Foreground = BrushResource("HapInkBrush"), Margin = new Thickness(0, 0, 0, 8) });
+
+        var searchRow = new Grid { Margin = new Thickness(0, 0, 0, 8) };
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var searchBox = new TextBox { Height = 32, ToolTip = searchWatermark };
+        var searchButton = new Button { Content = "Lookup", Width = 92, Margin = new Thickness(8, 0, 0, 0) };
+        Grid.SetColumn(searchButton, 1);
+        searchRow.Children.Add(searchBox);
+        searchRow.Children.Add(searchButton);
+        Grid.SetRow(searchRow, 1);
+        root.Children.Add(searchRow);
+
+        var results = new ListBox { MinHeight = 120 };
+        Grid.SetRow(results, 2);
+        root.Children.Add(results);
+
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 8) };
+        var add = new Button { Content = "Add", Width = 84, Margin = new Thickness(0, 0, 8, 0) };
+        var remove = new Button { Content = "Remove", Width = 94 };
+        actions.Children.Add(add);
+        actions.Children.Add(remove);
+        Grid.SetRow(actions, 3);
+        root.Children.Add(actions);
+
+        var selected = new ListBox { ItemsSource = selectedItems, MinHeight = 140 };
+        Grid.SetRow(selected, 4);
+        root.Children.Add(selected);
+
+        async Task RunLookupAsync()
+        {
+            var query = searchBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                results.ItemsSource = Array.Empty<string>();
+                return;
+            }
+
+            results.ItemsSource = await lookup(query).ConfigureAwait(true);
+        }
+
+        searchButton.Click += async (_, _) => await RunLookupAsync().ConfigureAwait(true);
+        searchBox.KeyDown += async (_, args) =>
+        {
+            if (args.Key == Key.Return)
+            {
+                args.Handled = true;
+                await RunLookupAsync().ConfigureAwait(true);
+            }
+        };
+
+        add.Click += (_, _) =>
+        {
+            if (results.SelectedItem is not string value)
+            {
+                return;
+            }
+
+            var normalized = normalizeSelection(value);
+            if (!selectedItems.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+            {
+                selectedItems.Add(normalized);
+            }
+        };
+
+        remove.Click += (_, _) =>
+        {
+            if (selected.SelectedItem is string value)
+            {
+                selectedItems.Remove(value);
+            }
+        };
+
+        return root;
     }
 
     private static TabItem CreateEditTab(
@@ -828,6 +1002,45 @@ public partial class NativeSimulationView : UserControl
             new("LockedOut", user.LockedOut.ToString()),
             new("Source", user.Source)
         };
+    }
+
+    private static List<AttributeEditorRow> BuildAttributeRows(SimulatorUserSummary user, DirectoryObjectAttributeSet attributeSet)
+    {
+        var rows = attributeSet.Attributes
+            .OrderBy(attribute => attribute.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(attribute => new AttributeEditorRow(
+                attribute.Name,
+                string.Join("; ", attribute.Values),
+                attribute.IsReadOnly,
+                attribute.IsSingleValued,
+                attribute.Syntax))
+            .ToList();
+
+        void Ensure(string name, string value)
+        {
+            if (!rows.Any(row => string.Equals(row.Attribute, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                rows.Add(new AttributeEditorRow(name, value));
+            }
+        }
+
+        Ensure("DisplayName", user.DisplayName);
+        Ensure("GivenName", user.GivenName);
+        Ensure("Surname", user.Surname);
+        Ensure("SamAccountName", user.SamAccountName);
+        Ensure("UserPrincipalName", user.UserPrincipalName);
+        Ensure("Mail", user.Mail);
+        Ensure("Department", user.Department);
+        Ensure("Title", user.Title);
+        Ensure("Company", user.Company);
+        Ensure("Office", user.Office);
+        Ensure("EmployeeId", user.EmployeeId);
+        Ensure("DirectReportSamAccountNames", string.Join("; ", user.DirectReportSamAccountNames));
+        Ensure("Groups", string.Join("; ", user.Groups));
+        Ensure("Enabled", user.Enabled.ToString());
+        Ensure("LockedOut", user.LockedOut.ToString());
+
+        return rows.OrderBy(row => row.Attribute, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private static System.Windows.Media.Brush BrushResource(string key)
@@ -903,14 +1116,23 @@ public partial class NativeSimulationView : UserControl
 
     private sealed class AttributeEditorRow
     {
-        public AttributeEditorRow(string attribute, string value)
+        public AttributeEditorRow(string attribute, string value, bool isReadOnly = false, bool isSingleValued = true, string syntax = "String")
         {
             Attribute = attribute;
             Value = value;
+            IsReadOnly = isReadOnly;
+            IsSingleValued = isSingleValued;
+            Syntax = syntax;
         }
 
         public string Attribute { get; set; }
 
         public string Value { get; set; }
+
+        public bool IsReadOnly { get; set; }
+
+        public bool IsSingleValued { get; set; }
+
+        public string Syntax { get; set; }
     }
 }

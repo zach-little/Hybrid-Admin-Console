@@ -9,6 +9,7 @@ public sealed class DirectorySimulatorProvider :
     IProviderHealthCapability,
     IUserLookupCapability,
     IDirectoryReadCapability,
+    IDirectoryAttributeReadCapability,
     IDeviceReadCapability,
     IGraphReadCapability,
     IExchangeReadCapability,
@@ -215,6 +216,42 @@ public sealed class DirectorySimulatorProvider :
         return OperationResult<IReadOnlyList<DirectoryGroupSummary>>.Success(groups, correlationId);
     }
 
+    public async Task<OperationResult<IReadOnlyList<DirectoryGroupSummary>>> SearchGroupsAsync(
+        string query,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = await ValidateReadyAsync(correlationId, cancellationToken).ConfigureAwait(false);
+        if (validation is not null)
+        {
+            return OperationResult<IReadOnlyList<DirectoryGroupSummary>>.Failure(correlationId, validation);
+        }
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return OperationResult<IReadOnlyList<DirectoryGroupSummary>>.Failure(
+                correlationId,
+                new[] { OperationError.Create("Simulator.GroupLookup.QueryRequired", "Group lookup query is required.") });
+        }
+
+        var groups = _users
+            .SelectMany(user => user.Groups)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(group => group, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new DirectoryGroupSummary
+            {
+                Id = StableId(group),
+                DisplayName = group,
+                Mail = group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase) ? $"{group.ToLowerInvariant()}@atlas-tech.com" : string.Empty,
+                SecurityIdentifier = $"S-1-5-21-SIM-{StableNumber(group):000000}",
+                Source = "DirectorySimulator.ActiveDirectory"
+            })
+            .ToArray();
+
+        return OperationResult<IReadOnlyList<DirectoryGroupSummary>>.Success(groups, correlationId, status: groups.Length == 0 ? "NoMatches" : "Found");
+    }
+
     public async Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> GetDirectReportsAsync(
         string identity,
         CorrelationId correlationId,
@@ -233,6 +270,39 @@ public sealed class DirectorySimulatorProvider :
             .ToArray();
 
         return OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(reports, correlationId);
+    }
+
+    public async Task<OperationResult<DirectoryObjectAttributeSet>> GetDirectoryAttributesAsync(
+        string identity,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var userResult = await GetUserAsync(identity, correlationId, cancellationToken).ConfigureAwait(false);
+        if (!userResult.Succeeded)
+        {
+            return OperationResult<DirectoryObjectAttributeSet>.Failure(correlationId, userResult.Errors, userResult.Warnings, userResult.Status);
+        }
+
+        if (userResult.Value is null)
+        {
+            return OperationResult<DirectoryObjectAttributeSet>.Failure(
+                correlationId,
+                new[] { OperationError.Create("Simulator.DirectoryAttributes.NotFound", "User was not found.") },
+                status: "NotFound");
+        }
+
+        var user = userResult.Value;
+        return OperationResult<DirectoryObjectAttributeSet>.Success(
+            new DirectoryObjectAttributeSet
+            {
+                Identity = user.SamAccountName,
+                DistinguishedName = user.DistinguishedName,
+                ObjectClass = "user",
+                SchemaSource = "DirectorySimulator.LatestAdExchangeBaseline",
+                Attributes = BuildDirectoryAttributes(user)
+            },
+            correlationId,
+            status: "Loaded");
     }
 
     public async Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> GetManagedDevicesAsync(
@@ -924,6 +994,79 @@ public sealed class DirectorySimulatorProvider :
     {
         return new[] { user.SamAccountName, user.UserPrincipalName, user.DisplayName, user.Mail }
             .Any(value => string.Equals(value, identity, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IReadOnlyList<DirectoryAttributeValue> BuildDirectoryAttributes(SimulatorUserSummary user)
+    {
+        var proxyAddresses = string.IsNullOrWhiteSpace(user.Mail)
+            ? Array.Empty<string>()
+            : new[] { $"SMTP:{user.Mail}", $"smtp:{user.SamAccountName}@example.com" };
+
+        return new[]
+        {
+            Attribute("cn", user.DisplayName),
+            Attribute("name", user.DisplayName),
+            Attribute("displayName", user.DisplayName),
+            Attribute("givenName", user.GivenName),
+            Attribute("sn", user.Surname),
+            Attribute("sAMAccountName", user.SamAccountName),
+            Attribute("userPrincipalName", user.UserPrincipalName),
+            Attribute("mail", user.Mail),
+            Attribute("mailNickname", user.SamAccountName),
+            Attribute("proxyAddresses", proxyAddresses, isSingleValued: false),
+            Attribute("department", user.Department),
+            Attribute("title", user.Title),
+            Attribute("company", user.Company),
+            Attribute("physicalDeliveryOfficeName", user.Office),
+            Attribute("employeeID", user.EmployeeId),
+            Attribute("BadgeID", user.EmployeeId),
+            Attribute("EmployeeNumber", user.EmployeeId),
+            Attribute("employeeNumber", user.EmployeeId),
+            Attribute("manager", user.ManagerSamAccountName),
+            Attribute("directReports", user.DirectReportSamAccountNames, isSingleValued: false, isReadOnly: true),
+            Attribute("memberOf", user.Groups, isSingleValued: false, isReadOnly: true),
+            Attribute("distinguishedName", user.DistinguishedName, isReadOnly: true),
+            Attribute("objectClass", new[] { "top", "person", "organizationalPerson", "user" }, isSingleValued: false, isReadOnly: true),
+            Attribute("objectGUID", StableId(user.SamAccountName), isReadOnly: true),
+            Attribute("objectSid", $"S-1-5-21-SIM-{StableNumber(user.SamAccountName):000000}", isReadOnly: true),
+            Attribute("userAccountControl", user.Enabled ? "512" : "514"),
+            Attribute("lockoutTime", user.LockedOut ? "1" : "0"),
+            Attribute("msExchHideFromAddressLists", "False"),
+            Attribute("targetAddress", string.Empty),
+            Attribute("legacyExchangeDN", $"/o=HAP/ou=Exchange Administrative Group/cn=Recipients/cn={user.SamAccountName}"),
+            Attribute("msExchRecipientDisplayType", "1073741824"),
+            Attribute("msExchRecipientTypeDetails", "1"),
+            Attribute("msExchRemoteRecipientType", string.Empty)
+        };
+    }
+
+    private static DirectoryAttributeValue Attribute(
+        string name,
+        string value,
+        bool isSingleValued = true,
+        bool isReadOnly = false,
+        string syntax = "String")
+    {
+        return Attribute(name, string.IsNullOrWhiteSpace(value) ? Array.Empty<string>() : new[] { value }, isSingleValued, isReadOnly, syntax);
+    }
+
+    private static DirectoryAttributeValue Attribute(
+        string name,
+        IReadOnlyList<string> values,
+        bool isSingleValued = true,
+        bool isReadOnly = false,
+        string syntax = "String")
+    {
+        return new DirectoryAttributeValue
+        {
+            Name = name,
+            DisplayName = name,
+            Values = values,
+            IsSingleValued = isSingleValued,
+            IsReadOnly = isReadOnly,
+            Syntax = syntax,
+            Source = "DirectorySimulator"
+        };
     }
 
     private static string ValueOrExisting(IReadOnlyDictionary<string, string> values, string key, string existing)

@@ -37,6 +37,7 @@ public sealed class NativeProviderFoundationTests
         var groups = await provider.GetGroupsAsync("amorgan", CorrelationId.From("ad-groups"));
         var missing = await provider.GetUserAsync("missing", CorrelationId.From("ad-missing"));
         var failed = await unavailable.GetHealthAsync(CorrelationId.From("ad-failed"));
+        var attributes = await provider.GetDirectoryAttributesAsync("amorgan", CorrelationId.From("ad-attrs"));
 
         Assert.True(groups.Succeeded);
         Assert.Contains(groups.Value!, group => group.DisplayName == "GG-IT-Administrators");
@@ -44,6 +45,11 @@ public sealed class NativeProviderFoundationTests
         Assert.Null(missing.Value);
         Assert.False(failed.Succeeded);
         Assert.Contains(failed.Errors, error => error.Code == "AD.ConnectionFailed");
+        Assert.True(attributes.Succeeded);
+        Assert.Equal("FixtureBacked", attributes.Status);
+        Assert.Contains(attributes.Value!.Attributes, attribute => attribute.Name == "BadgeID");
+        Assert.Contains(attributes.Value.Attributes, attribute => attribute.Name == "EmployeeNumber");
+        Assert.Contains(attributes.Value.Attributes, attribute => attribute.Name == "msExchHideFromAddressLists");
     }
 
     [Fact]

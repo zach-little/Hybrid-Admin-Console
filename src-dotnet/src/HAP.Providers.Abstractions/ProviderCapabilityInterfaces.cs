@@ -13,6 +13,11 @@ public interface IDirectoryReadCapability
     Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> GetDirectReportsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);
 }
 
+public interface IDirectoryAttributeReadCapability
+{
+    Task<OperationResult<DirectoryObjectAttributeSet>> GetDirectoryAttributesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);
+}
+
 public interface IDeviceReadCapability
 {
     Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> GetManagedDevicesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);

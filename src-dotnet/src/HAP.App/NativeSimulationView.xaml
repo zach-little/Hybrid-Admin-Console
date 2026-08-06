@@ -137,7 +137,7 @@
                 <MenuItem Header="New User Wizard" Click="OnOpenNewUserWizardClicked" />
                 <MenuItem Header="User Lookup" Click="OnOpenUserLookupClicked" />
                 <Separator />
-                <MenuItem Header="Sync Hybrid Connection" Click="OnSyncHybridConnectionClicked" />
+                <MenuItem Header="Utilities" Click="OnOpenUtilitiesClicked" />
             </MenuItem>
         </Menu>
 
@@ -318,26 +318,40 @@
                                         </Border>
                                     </UniformGrid>
 
-                                    <UniformGrid Columns="3">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="180" />
+                                            <RowDefinition Height="180" />
+                                        </Grid.RowDefinitions>
                                         <Border Style="{StaticResource Card}">
                                             <StackPanel>
                                                 <TextBlock Text="AD Groups" Style="{StaticResource SectionTitle}" />
-                                                <ItemsControl x:Name="GroupsList" />
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl x:Name="GroupsList" />
+                                                </ScrollViewer>
                                             </StackPanel>
                                         </Border>
-                                        <Border Style="{StaticResource Card}">
-                                            <StackPanel>
-                                                <TextBlock Text="Mailbox Delegation" Style="{StaticResource SectionTitle}" />
-                                                <ItemsControl x:Name="MailboxDelegationList" />
-                                            </StackPanel>
-                                        </Border>
-                                        <Border Style="{StaticResource Card}">
+                                        <Border Grid.Row="1" Style="{StaticResource Card}">
                                             <StackPanel>
                                                 <TextBlock Text="Distribution Groups" Style="{StaticResource SectionTitle}" />
-                                                <ItemsControl x:Name="DistributionGroupsList" />
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl x:Name="DistributionGroupsList" />
+                                                </ScrollViewer>
                                             </StackPanel>
                                         </Border>
-                                    </UniformGrid>
+                                        <Border Grid.Column="1" Grid.RowSpan="2" Style="{StaticResource Card}">
+                                            <StackPanel>
+                                                <TextBlock Text="Mailbox Delegation" Style="{StaticResource SectionTitle}" />
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl x:Name="MailboxDelegationList" />
+                                                </ScrollViewer>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
                                 </StackPanel>
                             </ScrollViewer>
                         </Grid>
@@ -426,6 +440,47 @@
                             </Border>
                         </Grid>
                     </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="Utilities">
+                    <Grid Margin="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="430" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Utilities" FontSize="26" FontWeight="SemiBold" />
+                                <TextBlock Text="Reusable operational tools for hybrid administration tasks."
+                                           Style="{StaticResource MutedText}"
+                                           Margin="0,4,0,18" />
+                                <Button Content="Sync Hybrid Connection"
+                                        Style="{StaticResource CommandButton}"
+                                        Height="38"
+                                        HorizontalAlignment="Left"
+                                        Click="OnSyncHybridConnectionClicked" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Utility Status" Style="{StaticResource SectionTitle}" />
+                                <TextBox x:Name="UtilityStatusTextBox"
+                                         Grid.Row="1"
+                                         Text="No utility has been run."
+                                         AcceptsReturn="True"
+                                         IsReadOnly="True"
+                                         VerticalContentAlignment="Top"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         Margin="0,4,0,0" />
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </TabItem>
             </TabControl>
         </Grid>

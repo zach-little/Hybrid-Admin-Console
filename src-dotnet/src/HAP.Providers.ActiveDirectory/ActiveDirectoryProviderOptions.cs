@@ -9,4 +9,8 @@ public sealed record ActiveDirectoryProviderOptions
     public bool ConnectionAvailable { get; init; } = true;
 
     public bool AuthenticationSucceeded { get; init; } = true;
+
+    public bool UseLiveDirectory { get; init; }
+
+    public bool AllowWrites { get; init; }
 }
