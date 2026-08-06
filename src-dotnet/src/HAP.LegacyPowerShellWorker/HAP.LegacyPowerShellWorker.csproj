@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HAP.LegacyWorker.Protocol\HAP.LegacyWorker.Protocol.csproj" />
+  </ItemGroup>
+</Project>

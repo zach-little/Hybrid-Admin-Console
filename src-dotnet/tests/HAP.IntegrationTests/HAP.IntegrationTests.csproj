@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <ProjectReference Include="..\..\src\HAP.Application\HAP.Application.csproj" />
+    <ProjectReference Include="..\..\src\HAP.Extensions.Abstractions\HAP.Extensions.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\HAP.Providers.ActiveDirectory\HAP.Providers.ActiveDirectory.csproj" />
+    <ProjectReference Include="..\..\src\HAP.Providers.ExchangeOnline\HAP.Providers.ExchangeOnline.csproj" />
+    <ProjectReference Include="..\..\src\HAP.Providers.Graph\HAP.Providers.Graph.csproj" />
+  </ItemGroup>
+</Project>

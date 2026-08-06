@@ -71,50 +71,43 @@ function Resolve-HybridRuntimeProfilePath {
         [string]$Path = ''
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($Path)) {
-        if (-not (Test-Path -LiteralPath $Path)) { throw "Runtime profile path '$Path' was not found." }
-        return (Resolve-Path -LiteralPath $Path).Path
-    }
+    if ([string]::IsNullOrWhiteSpace($RootPath)) { $RootPath = (Get-Location).Path }
 
-    if ([string]::IsNullOrWhiteSpace($RootPath)) {
-        $RootPath = (Get-Location).Path
+    if (-not [string]::IsNullOrWhiteSpace($Path)) {
+        $candidatePath = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path $RootPath $Path }
+        if (-not (Test-Path -LiteralPath $candidatePath -PathType Leaf)) { throw "Runtime profile path '$Path' was not found." }
+        return (Resolve-Path -LiteralPath $candidatePath).Path
     }
-    $RootPath = (Resolve-Path -LiteralPath $RootPath).Path
 
     $profilesRoot = Join-Path $RootPath 'profiles'
-    $activeProfileName = ''
     $activePath = Join-Path $profilesRoot 'active.json'
-    if (Test-Path -LiteralPath $activePath -PathType Leaf) {
+    if ([string]::IsNullOrWhiteSpace($Name) -and (Test-Path -LiteralPath $activePath -PathType Leaf)) {
         try {
             $active = Get-Content -LiteralPath $activePath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-            if ($active.PSObject.Properties.Name -contains 'ActiveProfile') { $activeProfileName = [string]$active.ActiveProfile }
-        }
-        catch { }
+            if ($active.PSObject.Properties.Name -contains 'ActiveProfile') { $Name = [string]$active.ActiveProfile }
+        } catch { }
     }
+    if ([string]::IsNullOrWhiteSpace($Name)) { $Name = 'Simulation' }
 
-    $candidateFolders = New-Object System.Collections.Generic.List[string]
-    foreach ($candidateName in @($Name, $activeProfileName, ($Name -replace '\s+', '-'))) {
-        if ([string]::IsNullOrWhiteSpace([string]$candidateName)) { continue }
-        $safeName = ([string]$candidateName).Trim() -replace '[\\/:*?"<>|]', '-'
-        if (-not [string]::IsNullOrWhiteSpace($safeName)) { [void]$candidateFolders.Add($safeName) }
-    }
-
-    foreach ($folderName in @($candidateFolders.ToArray() | Select-Object -Unique)) {
-        $candidate = Join-Path (Join-Path $profilesRoot $folderName) 'runtime.json'
+    $candidateFolderNames = @($Name, ($Name -replace '[\\/:*?"<>|]', '-')) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    foreach ($candidateName in $candidateFolderNames) {
+        $candidate = Join-Path (Join-Path $profilesRoot $candidateName) 'runtime.json'
         if (Test-Path -LiteralPath $candidate -PathType Leaf) { return (Resolve-Path -LiteralPath $candidate).Path }
     }
 
-    # Last-resort deterministic fallback: first valid organization-folder runtime.json.
-    if (Test-Path -LiteralPath $profilesRoot -PathType Container) {
-        $matches = @(Get-ChildItem -LiteralPath $profilesRoot -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notin @('Runtime','Mock','Runtime-Deprecated','Mock-Deprecated') } |
-            ForEach-Object { Join-Path $_.FullName 'runtime.json' } |
-            Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
-            Sort-Object)
-        if ($matches.Count -gt 0) { return (Resolve-Path -LiteralPath $matches[0]).Path }
+    foreach ($folder in @(Get-ChildItem -LiteralPath $profilesRoot -Directory -ErrorAction SilentlyContinue)) {
+        if ($folder.Name -in @('Runtime','Runtime-Deprecated','Mock','Mock-Deprecated')) { continue }
+        $candidate = Join-Path $folder.FullName 'runtime.json'
+        if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+        try {
+            $json = Get-Content -LiteralPath $candidate -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            $profileName = if ($json.PSObject.Properties.Name -contains 'ProfileName') { [string]$json.ProfileName } else { '' }
+            $org = if ($json.PSObject.Properties.Name -contains 'Organization') { [string]$json.Organization } else { '' }
+            if ([string]::Equals($profileName,$Name,[System.StringComparison]::OrdinalIgnoreCase) -or [string]::Equals($org,$Name,[System.StringComparison]::OrdinalIgnoreCase)) { return (Resolve-Path -LiteralPath $candidate).Path }
+        } catch { }
     }
 
-    throw "Runtime profile '$Name' was not found under organization folders in '$profilesRoot'. Expected profiles\<ProfileName>\runtime.json."
+    throw "Runtime profile '$Name' was not found. Expected profiles\$Name\runtime.json."
 }
 
 function Read-HybridRuntimeProfileJson {
@@ -213,7 +206,9 @@ function ConvertTo-HybridRuntimeProfile {
         [Parameter(Mandatory=$true)][string]$Path
     )
 
-    $profileName = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'ProfileName' -Default ([IO.Path]::GetFileNameWithoutExtension($Path)))
+    $profileFile = Get-Item -LiteralPath $Path -ErrorAction Stop
+    $profileRoot = $profileFile.Directory.FullName
+    $profileName = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'ProfileName' -Default $profileFile.Directory.Name)
     $mode = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Mode' -Default 'Simulation')
     $cloud = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Cloud' -Default 'Commercial')
     $environment = [string](Get-HybridObjectPropertyValue -InputObject $RawProfile -Name 'Environment' -Default 'Development')
@@ -230,16 +225,14 @@ function ConvertTo-HybridRuntimeProfile {
         ConvertTo-HybridProviderRuntimeSettings -Name 'ExchangeOnPremises' -Settings (Get-HybridObjectPropertyValue -InputObject $providers -Name 'ExchangeOnPremises' -Default $null) -DefaultMode 'Live'
     )
 
-    $profileRoot = Split-Path -Path $Path -Parent
     $profile = New-HybridRuntimeTypedObject -TypeName 'Hybrid.RuntimeProfile' -Properties @{
         ProfileName = $profileName
         ProfilePath = $Path
         ProfileRoot = $profileRoot
-        ProfileLayout = 'OrganizationFolder'
         ConfigPath = (Join-Path $profileRoot 'config.json')
+        BrandingPath = (Join-Path $profileRoot 'branding.json')
         DefaultsPath = (Join-Path $profileRoot 'defaults.json')
         MappingsPath = (Join-Path $profileRoot 'mappings.json')
-        BrandingPath = (Join-Path $profileRoot 'branding.json')
         KeyPath = (Join-Path $profileRoot 'aes.key')
         Mode = $mode
         Cloud = $cloud

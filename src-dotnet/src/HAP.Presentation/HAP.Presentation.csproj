@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HAP.Application\HAP.Application.csproj" />
+    <ProjectReference Include="..\HAP.Contracts\HAP.Contracts.csproj" />
+  </ItemGroup>
+</Project>

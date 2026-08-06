@@ -203,7 +203,7 @@ function Get-HybridDeploymentRuntimeProfile {
         return @()
     }
 
-    $profiles = Get-ChildItem -LiteralPath $layout.RuntimeProfiles -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin @('Runtime','Mock','Runtime-Deprecated','Mock-Deprecated') } | ForEach-Object { Join-Path $_.FullName 'runtime.json' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | ForEach-Object { Get-Item -LiteralPath $_ } | Sort-Object FullName
+    $profiles = Get-ChildItem -LiteralPath $layout.RuntimeProfiles -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin @('Runtime','Runtime-Deprecated','Mock','Mock-Deprecated') } | ForEach-Object { Join-Path $_.FullName 'runtime.json' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | ForEach-Object { Get-Item -LiteralPath $_ } | Sort-Object FullName
     $results = foreach ($profile in $profiles) {
         $content = $null
         $status = 'Readable'
@@ -328,7 +328,7 @@ function Test-HybridDeploymentLayout {
 
     $simulationProfile = Join-Path (Join-Path $layout.RuntimeProfiles 'Simulation') 'runtime.json'
     $hasSimulationProfile = Test-Path -LiteralPath $simulationProfile -PathType Leaf
-    $checks.Add((New-HybridDeploymentCheck -Name 'Simulation first-run profile' -Category 'Profiles' -Severity 'Error' -Passed $hasSimulationProfile -Message $(if ($hasSimulationProfile) { 'Simulation profile is available for first-run and offline validation.' } else { 'profiles/Simulation/runtime.json is missing.' }) -Path $simulationProfile)) | Out-Null
+    $checks.Add((New-HybridDeploymentCheck -Name 'Simulation first-run profile' -Category 'Profiles' -Severity 'Error' -Passed $hasSimulationProfile -Message $(if ($hasSimulationProfile) { 'Simulation profile is available for first-run and offline validation.' } else { 'Simulation runtime.json is missing from profiles/Simulation.' }) -Path $simulationProfile)) | Out-Null
 
     $uiText = $null
     if (Test-Path -LiteralPath $layout.EntryPoint -PathType Leaf) {

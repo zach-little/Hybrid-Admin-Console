@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HAP.Presentation\HAP.Presentation.csproj" />
+    <ProjectReference Include="..\HAP.Application\HAP.Application.csproj" />
+    <ProjectReference Include="..\HAP.Configuration\HAP.Configuration.csproj" />
+  </ItemGroup>
+</Project>

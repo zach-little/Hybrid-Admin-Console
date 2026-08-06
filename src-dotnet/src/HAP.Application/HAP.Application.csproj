@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\HAP.Contracts\HAP.Contracts.csproj" />
+    <ProjectReference Include="..\HAP.Domain\HAP.Domain.csproj" />
+    <ProjectReference Include="..\HAP.Providers.Abstractions\HAP.Providers.Abstractions.csproj" />
+    <ProjectReference Include="..\HAP.Extensions.Abstractions\HAP.Extensions.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

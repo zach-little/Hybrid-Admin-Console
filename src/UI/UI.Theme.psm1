@@ -169,7 +169,8 @@ function Resolve-HybridUiTheme {
         $runtimeProfile = Import-HybridUiThemeJson -Path $ProfilePath
     }
     elseif (-not [string]::IsNullOrWhiteSpace($ProfileName)) {
-        $candidate = Join-Path (Join-Path $root ('profiles\{0}' -f (($ProfileName -replace '[\\/:*?"<>|]', '-')))) 'runtime.json'
+        $safeProfileName = ($ProfileName -replace '[\\/:*?"<>|]', '-')
+        $candidate = Join-Path $root (Join-Path (Join-Path 'profiles' $safeProfileName) 'runtime.json')
         if (Test-Path -LiteralPath $candidate -PathType Leaf) { $runtimeProfilePath = $candidate; $runtimeProfile = Import-HybridUiThemeJson -Path $candidate }
     }
 

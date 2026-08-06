@@ -1,0 +1,250 @@
+{
+  "schemaVersion": "1.0",
+  "providerId": "DirectorySimulator",
+  "capabilities": [
+    "ProviderHealth",
+    "UserLookup"
+  ],
+  "normalization": {
+    "sortUsersBy": "samAccountName",
+    "ignoreFields": [
+      "psTypeName",
+      "createdUtc",
+      "retrievedOn",
+      "runtimeGeneratedGuid"
+    ],
+    "fixedClockUtc": "2026-01-01T00:00:00Z",
+    "pathRootToken": "{RepositoryRoot}",
+    "caseInsensitiveQueryMatching": true
+  },
+  "fixtures": {
+    "health.success": {
+      "request": {
+        "providerId": "DirectorySimulator"
+      },
+      "expected": {
+        "succeeded": true,
+        "value": {
+          "name": "DirectorySimulator",
+          "mode": "Simulation",
+          "enabled": true,
+          "required": true,
+          "status": "Connected",
+          "message": "Directory Simulator initialized.",
+          "available": true,
+          "connected": true,
+          "lastError": ""
+        },
+        "warnings": [],
+        "errors": []
+      }
+    },
+    "userLookup.success.seededExact": {
+      "request": {
+        "query": "amorgan"
+      },
+      "expected": {
+        "succeeded": true,
+        "users": [
+          {
+            "displayName": "Alex Morgan",
+            "givenName": "Alex",
+            "surname": "Morgan",
+            "samAccountName": "amorgan",
+            "userPrincipalName": "amorgan@atlas-tech.com",
+            "mail": "amorgan@atlas-tech.com",
+            "department": "Information Technology",
+            "title": "Systems Administrator",
+            "company": "Atlas",
+            "office": "Charleston",
+            "employeeId": "SIM-AMORGAN",
+            "distinguishedName": "CN=Alex Morgan,OU=Users,OU=Information Technology,OU=Atlas,DC=atlas-tech,DC=com",
+            "managerSamAccountName": "treed",
+            "directReportSamAccountNames": [],
+            "groups": [
+              "Domain Users",
+              "GG-IT-Administrators",
+              "GG-RemoteDesktopUsers",
+              "GG-LAPS",
+              "GG-VPN"
+            ],
+            "enabled": true,
+            "lockedOut": false,
+            "source": "DirectorySimulator"
+          }
+        ],
+        "warnings": [],
+        "errors": []
+      }
+    },
+    "userLookup.success.seededUpn": {
+      "request": {
+        "query": "jlee@atlas-tech.com"
+      },
+      "expected": {
+        "succeeded": true,
+        "users": [
+          {
+            "displayName": "Jordan Lee",
+            "samAccountName": "jlee",
+            "userPrincipalName": "jlee@atlas-tech.com",
+            "department": "Operations",
+            "managerSamAccountName": "treed",
+            "source": "DirectorySimulator"
+          }
+        ],
+        "warnings": [],
+        "errors": []
+      }
+    },
+    "userLookup.warning.generatedFallback": {
+      "request": {
+        "query": "sample.user"
+      },
+      "expected": {
+        "succeeded": true,
+        "users": [
+          {
+            "displayName": "Sample User",
+            "samAccountName": "suser",
+            "userPrincipalName": "suser@atlas-tech.com",
+            "source": "DirectorySimulator"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "Simulator.UserGenerated",
+            "message": "No seeded simulator user matched the query; a deterministic fallback user was generated."
+          }
+        ],
+        "errors": []
+      }
+    },
+    "userLookup.failure.invalidRequest": {
+      "request": {
+        "query": ""
+      },
+      "expected": {
+        "succeeded": false,
+        "users": [],
+        "warnings": [],
+        "errors": [
+          {
+            "code": "Simulator.UserLookup.QueryRequired",
+            "message": "User lookup query is required."
+          }
+        ]
+      }
+    },
+    "userLookup.failure.unavailableProvider": {
+      "request": {
+        "query": "amorgan",
+        "providerAvailable": false
+      },
+      "expected": {
+        "succeeded": false,
+        "users": [],
+        "errors": [
+          {
+            "code": "Simulator.ProviderUnavailable",
+            "message": "Directory Simulator provider is unavailable."
+          }
+        ]
+      }
+    },
+    "userLookup.failure.invalidConfiguration": {
+      "request": {
+        "query": "amorgan",
+        "configurationValid": false
+      },
+      "expected": {
+        "succeeded": false,
+        "users": [],
+        "errors": [
+          {
+            "code": "Simulator.ConfigurationInvalid",
+            "message": "Directory Simulator configuration is invalid."
+          }
+        ]
+      }
+    },
+    "userLookup.failure.cancelled": {
+      "request": {
+        "query": "amorgan",
+        "cancelBeforeLookup": true
+      },
+      "expected": {
+        "succeeded": false,
+        "users": [],
+        "errors": [
+          {
+            "code": "Simulator.OperationCancelled",
+            "message": "Directory Simulator operation was cancelled."
+          }
+        ],
+        "status": "Cancelled"
+      }
+    },
+    "userLookup.failure.timeout": {
+      "request": {
+        "query": "amorgan",
+        "timeoutMilliseconds": 1,
+        "simulateDelayMilliseconds": 50
+      },
+      "expected": {
+        "succeeded": false,
+        "users": [],
+        "errors": [
+          {
+            "code": "Simulator.OperationTimeout",
+            "message": "Directory Simulator operation timed out."
+          }
+        ],
+        "status": "TimedOut"
+      }
+    },
+    "userLookup.warning.multipleMatches": {
+      "request": {
+        "query": "lee",
+        "allowMultipleMatches": true
+      },
+      "expected": {
+        "succeeded": true,
+        "users": [
+          {
+            "samAccountName": "jlee",
+            "displayName": "Jordan Lee"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "Simulator.UserLookup.MultipleMatches",
+            "message": "Multiple simulator users matched the query; results were returned in deterministic order."
+          }
+        ]
+      }
+    },
+    "userLookup.warning.partialUserData": {
+      "request": {
+        "query": "partial.user",
+        "includePartialFixture": true
+      },
+      "expected": {
+        "succeeded": true,
+        "users": [
+          {
+            "displayName": "Partial User",
+            "samAccountName": "partialuser",
+            "source": "DirectorySimulator"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "Simulator.UserLookup.PartialUserData",
+            "message": "Simulator user record is missing optional fields."
+          }
+        ]
+      }
+    }
+  }
+}

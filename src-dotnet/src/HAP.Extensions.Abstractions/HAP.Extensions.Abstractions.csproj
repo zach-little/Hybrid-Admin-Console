@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\HAP.Contracts\HAP.Contracts.csproj" />
+  </ItemGroup>
+</Project>
