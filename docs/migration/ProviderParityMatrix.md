@@ -23,6 +23,8 @@
 | Application | UserAdministration | selected user actions | PowerShell application service/provider operations | `NativeUserAdministrationService` | Foundation implemented | Invokable only when capability catalog allows native built-in execution. |
 | Application | WorkflowExport | reports/exports | script-shaped exports | `NativeWorkflowExportService` | Foundation implemented | Deterministic JSON export schema. |
 | Configuration | Migration/Rollback | legacy runtime profiles/config | PowerShell/config scripts | `NativeConfigurationMigrationService` | Foundation implemented | Dry-run and legacy-value detection implemented; file rollback integration remains gated. |
+| Runtime | Legacy migration infrastructure | temporary worker/bridge/protocol/adapter | `HAP.Providers.LegacyPowerShell`, `HAP.LegacyWorker.Protocol`, `HAP.LegacyPowerShellWorker`, `HAP.LegacyBridge.psm1` | Removed | Complete | Removed from solution/source after full build and test validation. |
+| Release | Packaging/Diagnostics | script packaging/manual support bundles | `NativeFrameworkDependent` publish profile, `SupportBundleService` | Foundation implemented | Publish output generated; installer/live validation remains pending. |
 
 ## Legacy Behavior Inventory
 

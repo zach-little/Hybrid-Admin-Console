@@ -2,7 +2,7 @@
 
 ## Current Slice
 
-Tasks 41-55: Exchange disposition/cutover records, native workflow service boundaries, and configuration migration tooling.
+Tasks 56-60: Legacy removal, no-PowerShell evidence, packaging, and release-candidate documentation.
 
 Status: Implemented as provider-level native foundations with explicit live/destructive gates. Production WPF routing is not fully cut over yet.
 
@@ -170,8 +170,60 @@ Gated:
 
 - File backup/rollback integration is modeled but not wired to installer/runtime packaging yet.
 
+## Task 56 Implementation State
+
+Implemented:
+
+- Removed `LegacyPowerShell` from `ProviderImplementationKind`.
+- Built-in app composition now uses native runtime profile/session services for the migration shell.
+- Legacy simulator configuration still produces a migration/retired error instead of launching PowerShell.
+- Permanent third-party PowerShell extension host remains separate and launch-on-demand.
+
+## Task 57 Implementation State
+
+Implemented:
+
+- Removed temporary legacy projects from `HAP.sln`.
+- Deleted:
+  - `src-dotnet/src/HAP.Providers.LegacyPowerShell`
+  - `src-dotnet/src/HAP.LegacyWorker.Protocol`
+  - `src-dotnet/src/HAP.LegacyPowerShellWorker`
+  - `src-dotnet/tests/HAP.Providers.LegacyPowerShell.Tests`
+  - `src/Compatibility/HAP.LegacyBridge.psm1`
+- Full solution restore, build, and tests pass after deletion.
+
+## Task 58 Implementation State
+
+Implemented:
+
+- Added static built-in source scan proving the temporary legacy worker, bridge, protocol, adapter, `System.Management.Automation`, `powershell.exe`, and `pwsh.exe` are absent from production built-in source outside the permanent plugin host boundary.
+- Full test suite passes with no-PowerShell evidence tests.
+
+## Task 59 Implementation State
+
+Implemented:
+
+- Added `NativeFrameworkDependent` publish profile for `HAP.App`.
+- Added native provider project references so publish output includes Graph, AD, Exchange Online, Exchange on-premises, and simulator provider assemblies.
+- Added `SupportBundleService` with redaction for secrets, passwords, tokens, certificates, thumbprints, and client secrets.
+- Added packaging and diagnostics documentation.
+- Generated publish output at `src-dotnet/src/HAP.App/bin/Release/net10.0-windows/publish/native-framework-dependent`.
+
+## Task 60 Implementation State
+
+Implemented:
+
+- Added final migration acceptance evidence document in `docs/migration/FinalMigrationAcceptance.md`.
+- Recorded automated evidence and deferred/manual validation items.
+
+Pending formal acceptance:
+
+- Non-production live provider validation.
+- Installer clean install, upgrade, rollback, repair, uninstall validation.
+- Final UI accessibility, high-DPI, performance, and parity validation.
+
 ## Next Task
 
-Task 56 should remove legacy implementation selection only after full-solution WPF-capable validation is available.
+Next work should focus on manual/live validation and installer hardening rather than deleting more migration history.
 
-Tasks 41-55 do not authorize hidden first-party PowerShell fallback.
+Tasks 56-60 preserve the permanent third-party PowerShell plugin host but remove the temporary first-party legacy worker/bridge path.
