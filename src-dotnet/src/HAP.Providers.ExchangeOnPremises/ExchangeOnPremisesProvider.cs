@@ -75,6 +75,12 @@ public sealed class ExchangeOnPremisesProvider : IProviderHealthCapability, IExc
     public Task<OperationResult<ProviderChangeResult>> SetMailboxForwardingAsync(MailboxForwardingRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         UnsupportedChange(correlationId, "SetMailboxForwarding", request.Identity, "ExchangeOnPremises.MailboxForwarding.UnsupportedWithoutApprovedApi", "Mailbox forwarding requires an approved non-PowerShell Exchange on-premises management API or customer extension.");
 
+    public Task<OperationResult<ProviderChangeResult>> SetGalVisibilityAsync(GalVisibilityRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        UnsupportedChange(correlationId, "SetGalVisibility", request.Identity, "ExchangeOnPremises.GalVisibility.UnsupportedWithoutApprovedApi", "GAL visibility requires an approved non-PowerShell Exchange on-premises management API or customer extension.");
+
+    public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        UnsupportedChange(correlationId, "AddMailboxDelegation", request.Identity, "ExchangeOnPremises.MailboxDelegation.UnsupportedWithoutApprovedApi", "Mailbox delegation requires an approved non-PowerShell Exchange on-premises management API or customer extension.");
+
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<ProviderChangeResult>.Success(
             new ProviderChangeResult

@@ -10,10 +10,13 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
 {
     private readonly IRuntimeProfileCatalogService _catalogService;
     private readonly IRuntimeSessionService? _runtimeSessionService;
+    private readonly IRuntimeProfileManagementService? _profileManagementService;
     private CancellationTokenSource? _loadCancellation;
     private RuntimeProfileItemViewModel? _selectedProfile;
+    private RuntimeProfileConfigurationDraft _profileConfiguration = new();
     private bool _isLoading;
     private bool _isRuntimeStarted;
+    private string _repositoryRoot = string.Empty;
     private string _progressMessage = "Ready";
     private string _errorMessage = string.Empty;
     private string _runtimeStatus = "Not started";
@@ -25,10 +28,12 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
 
     public RuntimeProfileSelectorViewModel(
         IRuntimeProfileCatalogService catalogService,
-        IRuntimeSessionService? runtimeSessionService)
+        IRuntimeSessionService? runtimeSessionService,
+        IRuntimeProfileManagementService? profileManagementService = null)
     {
         _catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
         _runtimeSessionService = runtimeSessionService;
+        _profileManagementService = profileManagementService;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -52,7 +57,14 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(HasSelection));
             OnPropertyChanged(nameof(IsSelectionValid));
             OnPropertyChanged(nameof(ValidationMessage));
+            _ = LoadSelectedProfileConfigurationAsync();
         }
+    }
+
+    public RuntimeProfileConfigurationDraft ProfileConfiguration
+    {
+        get => _profileConfiguration;
+        private set => SetField(ref _profileConfiguration, value ?? new RuntimeProfileConfigurationDraft());
     }
 
     public bool IsLoading
@@ -60,18 +72,17 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
         get => _isLoading;
         private set
         {
-            if (_isLoading == value)
+            if (SetField(ref _isLoading, value))
             {
-                return;
+                OnPropertyChanged(nameof(CanCancel));
+                OnPropertyChanged(nameof(CanManageProfiles));
             }
-
-            _isLoading = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(CanCancel));
         }
     }
 
     public bool CanCancel => IsLoading;
+
+    public bool CanManageProfiles => _profileManagementService is not null && !IsLoading;
 
     public bool HasSelection => SelectedProfile is not null;
 
@@ -113,6 +124,7 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
 
     public async Task LoadAsync(string repositoryRoot, CancellationToken cancellationToken = default)
     {
+        _repositoryRoot = repositoryRoot;
         CancelLoad();
         _loadCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         IsLoading = true;
@@ -248,6 +260,114 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
         IsRuntimeStarted = false;
         RuntimeStatus = "Stopped";
         ProgressMessage = "Runtime session stopped.";
+    }
+
+    public async Task LoadSelectedProfileConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null || SelectedProfile is null || string.IsNullOrWhiteSpace(_repositoryRoot))
+        {
+            ProfileConfiguration = new RuntimeProfileConfigurationDraft();
+            return;
+        }
+
+        var result = await _profileManagementService.GetProfileConfigurationAsync(_repositoryRoot, SelectedProfile.Name, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        if (result.Succeeded && result.Value is not null)
+        {
+            ProfileConfiguration = result.Value;
+            ErrorMessage = string.Empty;
+        }
+        else
+        {
+            ErrorMessage = string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        }
+    }
+
+    public async Task SaveProfileConfigurationAsync(RuntimeProfileConfigurationDraft draft, CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null)
+        {
+            ErrorMessage = "Profile management service is not configured.";
+            return;
+        }
+
+        var result = await _profileManagementService.SaveProfileConfigurationAsync(_repositoryRoot, draft, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        ProgressMessage = result.Succeeded ? result.Value ?? "Profile saved." : "Profile save failed.";
+        ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        if (result.Succeeded)
+        {
+            await LoadAsync(_repositoryRoot, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    public async Task CreateProfileAsync(string profileName, CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null)
+        {
+            ErrorMessage = "Profile management service is not configured.";
+            return;
+        }
+
+        var result = await _profileManagementService.CreateProfileAsync(_repositoryRoot, profileName, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        ProgressMessage = result.Succeeded ? result.Value ?? "Profile created." : "Profile create failed.";
+        ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        if (result.Succeeded)
+        {
+            await LoadAsync(_repositoryRoot, cancellationToken).ConfigureAwait(true);
+            SelectedProfile = Profiles.FirstOrDefault(profile => string.Equals(profile.Name, profileName, StringComparison.OrdinalIgnoreCase)) ?? SelectedProfile;
+        }
+    }
+
+    public async Task DeleteSelectedProfileAsync(CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null || SelectedProfile is null)
+        {
+            ErrorMessage = "Select a profile first.";
+            return;
+        }
+
+        var result = await _profileManagementService.DeleteProfileAsync(_repositoryRoot, SelectedProfile.Name, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        ProgressMessage = result.Succeeded ? result.Value ?? "Profile deleted." : "Profile delete failed.";
+        ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        if (result.Succeeded)
+        {
+            await LoadAsync(_repositoryRoot, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    public async Task SetSelectedProfileDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null || SelectedProfile is null)
+        {
+            ErrorMessage = "Select a profile first.";
+            return;
+        }
+
+        var result = await _profileManagementService.SetDefaultProfileAsync(_repositoryRoot, SelectedProfile.Name, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        ProgressMessage = result.Succeeded ? result.Value ?? "Default profile updated." : "Set default failed.";
+        ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        if (result.Succeeded)
+        {
+            await LoadAsync(_repositoryRoot, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    public async Task ExportSelectedProfileAsync(CancellationToken cancellationToken = default)
+    {
+        if (_profileManagementService is null || SelectedProfile is null)
+        {
+            ErrorMessage = "Select a profile first.";
+            return;
+        }
+
+        var result = await _profileManagementService.ExportProfileAsync(_repositoryRoot, SelectedProfile.Name, CorrelationId.New(), cancellationToken)
+            .ConfigureAwait(true);
+        ProgressMessage = result.Succeeded ? result.Value ?? "Profile exported." : "Profile export failed.";
+        ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = "")

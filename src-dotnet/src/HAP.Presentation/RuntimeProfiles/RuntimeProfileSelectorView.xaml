@@ -1,140 +1,327 @@
 <UserControl x:Class="HAP.Presentation.RuntimeProfiles.RuntimeProfileSelectorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             MinWidth="720"
-             MinHeight="420">
-    <Grid Margin="24">
+             MinWidth="920"
+             MinHeight="560">
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="InkBrush" Color="#F8FAFC" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#94A3B8" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#111827" />
+        <SolidColorBrush x:Key="CardBrush" Color="#1E293B" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#334155" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#38BDF8" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+        </Style>
+        <Style x:Key="MutedText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="LabelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="CommandButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="MinWidth" Value="104" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="BorderBrush" Value="#475569" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="#0B1220" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style TargetType="ProgressBar">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Background" Value="#1E293B" />
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Background" Value="#0B1220" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="BorderBrush" Value="#475569" />
+            <Setter Property="CaretBrush" Value="{StaticResource InkBrush}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="Height" Value="32" />
+        </Style>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Background" Value="#0B1220" />
+            <Setter Property="Foreground" Value="#111827" />
+            <Setter Property="BorderBrush" Value="#475569" />
+            <Setter Property="Height" Value="32" />
+        </Style>
+        <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="Margin" Value="0,0,16,8" />
+        </Style>
+        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Padding" Value="10,5" />
+        </Style>
+        <Style TargetType="TabItem" BasedOn="{StaticResource {x:Type TabItem}}">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="Padding" Value="9,4" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#0B1220" Margin="18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,16">
+        <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,14">
             <ProgressBar DockPanel.Dock="Right"
                          Width="160"
                          Height="8"
                          Margin="16,12,0,0"
                          IsIndeterminate="{Binding IsLoading}" />
             <StackPanel>
-                <TextBlock Text="Runtime Profile"
-                           FontSize="24"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding ProgressMessage}"
-                           Margin="0,4,0,0"
-                           Opacity="0.75" />
+                <TextBlock Text="Runtime Profile" FontSize="26" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ProgressMessage}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
 
-        <Grid Grid.Row="1">
+        <Menu Grid.Row="1" Background="#0F172A" Foreground="{StaticResource InkBrush}" Padding="6,0" Margin="0,0,0,10">
+            <MenuItem Header="_File">
+                <MenuItem Header="New Profile" Click="OnAddProfileClicked" />
+                <MenuItem Header="Import Profile" Click="OnImportExportClicked" />
+                <MenuItem Header="Export Selected Profile" Click="OnImportExportClicked" />
+            </MenuItem>
+            <MenuItem Header="_Profile">
+                <MenuItem Header="Edit Selected Profile" Click="OnEditProfileClicked" />
+                <MenuItem Header="Delete Selected Profile" Click="OnDeleteProfileClicked" />
+                <Separator />
+                <MenuItem Header="Set Selected as Default" Click="OnSetDefaultClicked" />
+            </MenuItem>
+            <MenuItem Header="_Configuration">
+                <MenuItem Header="Runtime Profile Wizard" Click="OnEditProfileClicked" />
+                <MenuItem Header="Provider Setup" Click="OnProviderSetupClicked" />
+                <MenuItem Header="New User Wizard Defaults" Click="OnNewUserWizardConfigClicked" />
+                <MenuItem Header="Branding and Theme" Click="OnBrandingClicked" />
+            </MenuItem>
+        </Menu>
+
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" />
-                <ColumnDefinition Width="24" />
-                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="460" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <ListBox Grid.Column="0"
                      ItemsSource="{Binding Profiles}"
                      SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                     BorderThickness="1"
-                     HorizontalContentAlignment="Stretch"
                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid Margin="10">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Text="{Binding DisplayName}"
-                                       FontWeight="SemiBold" />
-                            <TextBlock Grid.Row="1"
-                                       Text="{Binding ProviderSummary}"
-                                       Margin="0,4,0,0"
-                                       TextTrimming="CharacterEllipsis"
-                                       Opacity="0.72" />
-                        </Grid>
+                        <Border Background="#111827"
+                                BorderBrush="#334155"
+                                BorderThickness="0,0,0,1"
+                                Padding="14,12">
+                            <StackPanel>
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="#F8FAFC" />
+                                <TextBlock Text="{Binding ProviderSummary}"
+                                           Margin="0,5,0,0"
+                                           Foreground="#94A3B8"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding BadgeText}"
+                                           Margin="0,7,0,0"
+                                           Foreground="#38BDF8"
+                                           FontSize="12"
+                                           FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
 
             <Border Grid.Column="2"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="1"
+                    CornerRadius="6"
                     Padding="18">
-                <StackPanel>
-                    <TextBlock Text="{Binding SelectedProfile.DisplayName}"
-                               FontSize="20"
-                               FontWeight="SemiBold" />
-                    <UniformGrid Columns="2" Margin="0,18,0,0">
-                        <StackPanel Margin="0,0,18,14">
-                            <TextBlock Text="Mode" Opacity="0.65" />
-                            <TextBlock Text="{Binding SelectedProfile.RuntimeMode}" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <StackPanel Margin="0,0,0,14">
-                            <TextBlock Text="Environment" Opacity="0.65" />
-                            <TextBlock Text="{Binding SelectedProfile.Environment}" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <StackPanel Margin="0,0,18,14">
-                            <TextBlock Text="Cloud" Opacity="0.65" />
-                            <TextBlock Text="{Binding SelectedProfile.CloudEnvironment}" FontWeight="SemiBold" />
-                        </StackPanel>
-                        <StackPanel Margin="0,0,0,14">
-                            <TextBlock Text="Organization" Opacity="0.65" />
-                            <TextBlock Text="{Binding SelectedProfile.Organization}" FontWeight="SemiBold" />
-                        </StackPanel>
-                    </UniformGrid>
-                    <TextBlock Text="Providers"
-                               Margin="0,12,0,4"
-                               Opacity="0.65" />
-                    <TextBlock Text="{Binding SelectedProfile.ProviderSummary}"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding ValidationMessage}"
-                               Margin="0,18,0,0"
-                               FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding RuntimeStatus}"
-                               Margin="0,18,0,6"
-                               Opacity="0.75" />
-                    <ItemsControl ItemsSource="{Binding ProviderHealth}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderThickness="0,1,0,0"
-                                        Padding="0,8,0,8">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="100" />
-                                            <ColumnDefinition Width="120" />
-                                        </Grid.ColumnDefinitions>
+                <TabControl x:Name="ProfileConfigurationTabs" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}">
+                    <TabItem Header="Overview">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
+                            <StackPanel Margin="14">
+                                <TextBlock Text="{Binding SelectedProfile.DisplayName}" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding ValidationMessage}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,6,0,18" />
+
+                                <UniformGrid Columns="2">
+                                    <StackPanel Margin="0,0,18,14"><TextBlock Text="Mode" Style="{StaticResource LabelText}" /><TextBlock Text="{Binding SelectedProfile.RuntimeMode}" Style="{StaticResource ValueText}" /></StackPanel>
+                                    <StackPanel Margin="0,0,0,14"><TextBlock Text="Environment" Style="{StaticResource LabelText}" /><TextBlock Text="{Binding SelectedProfile.Environment}" Style="{StaticResource ValueText}" /></StackPanel>
+                                    <StackPanel Margin="0,0,18,14"><TextBlock Text="Cloud" Style="{StaticResource LabelText}" /><TextBlock Text="{Binding SelectedProfile.CloudEnvironment}" Style="{StaticResource ValueText}" /></StackPanel>
+                                    <StackPanel Margin="0,0,0,14"><TextBlock Text="Organization" Style="{StaticResource LabelText}" /><TextBlock Text="{Binding SelectedProfile.Organization}" Style="{StaticResource ValueText}" /></StackPanel>
+                                </UniformGrid>
+
+                                <TextBlock Text="Providers" Style="{StaticResource LabelText}" Margin="0,12,0,4" />
+                                <TextBlock Text="{Binding SelectedProfile.ProviderSummary}" Style="{StaticResource ValueText}" />
+                                <TextBlock Text="Runtime Status" Style="{StaticResource LabelText}" Margin="0,18,0,4" />
+                                <TextBlock Text="{Binding RuntimeStatus}" Style="{StaticResource ValueText}" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="General">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
+                            <Grid Margin="14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Profile Name" Style="{StaticResource LabelText}" /><TextBox x:Name="ProfileNameTextBox" Text="{Binding ProfileConfiguration.ProfileName, Mode=OneWay}" IsReadOnly="True" Margin="0,0,0,12" />
+                                    <TextBlock Text="Display Name" Style="{StaticResource LabelText}" /><TextBox x:Name="DisplayNameTextBox" Text="{Binding ProfileConfiguration.DisplayName, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Organization" Style="{StaticResource LabelText}" /><TextBox x:Name="OrganizationTextBox" Text="{Binding ProfileConfiguration.Organization, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Environment" Style="{StaticResource LabelText}" /><TextBox x:Name="EnvironmentTextBox" Text="{Binding ProfileConfiguration.Environment, Mode=OneWay}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Tenant ID" Style="{StaticResource LabelText}" /><TextBox x:Name="TenantIdTextBox" Text="{Binding ProfileConfiguration.TenantId, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Cloud Environment" Style="{StaticResource LabelText}" /><ComboBox x:Name="CloudComboBox" Text="{Binding ProfileConfiguration.CloudEnvironment, Mode=OneWay}" IsEditable="True" Margin="0,0,0,12"><ComboBoxItem Content="Commercial" /><ComboBoxItem Content="GCC" /><ComboBoxItem Content="GCC High" /><ComboBoxItem Content="DoD" /></ComboBox>
+                                    <TextBlock Text="Runtime Mode" Style="{StaticResource LabelText}" /><ComboBox x:Name="RuntimeModeComboBox" Text="{Binding ProfileConfiguration.RuntimeMode, Mode=OneWay}" IsEditable="True"><ComboBoxItem Content="Simulation" /><ComboBoxItem Content="Live" /><ComboBoxItem Content="Hybrid" /></ComboBox>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Providers">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
+                            <StackPanel Margin="14">
+                                <TextBlock Text="Provider Setup" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock Text="Provider enablement, authentication, certificate/secret references, and Exchange on-prem connection settings." Style="{StaticResource MutedText}" Margin="0,5,0,14" />
+                                <UniformGrid Columns="2">
+                                    <CheckBox x:Name="DirectorySimulatorCheckBox" Content="Directory Simulator" IsChecked="{Binding ProfileConfiguration.DirectorySimulatorEnabled, Mode=OneWay}" />
+                                    <CheckBox x:Name="ActiveDirectoryCheckBox" Content="Active Directory" IsChecked="{Binding ProfileConfiguration.ActiveDirectoryEnabled, Mode=OneWay}" />
+                                    <CheckBox x:Name="MicrosoftGraphCheckBox" Content="Microsoft Graph" IsChecked="{Binding ProfileConfiguration.MicrosoftGraphEnabled, Mode=OneWay}" />
+                                    <CheckBox x:Name="ExchangeOnlineCheckBox" Content="Exchange Online" IsChecked="{Binding ProfileConfiguration.ExchangeOnlineEnabled, Mode=OneWay}" />
+                                    <CheckBox x:Name="ExchangeOnPremisesCheckBox" Content="Exchange On-Premises" IsChecked="{Binding ProfileConfiguration.ExchangeOnPremisesEnabled, Mode=OneWay}" />
+                                </UniformGrid>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Authentication" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                        <CheckBox x:Name="AppOnlyEnabledCheckBox" Content="Enable app-only authentication" IsChecked="{Binding ProfileConfiguration.AppOnlyEnabled, Mode=OneWay}" />
+                                        <TextBlock Text="Client ID" Style="{StaticResource LabelText}" /><TextBox x:Name="AppOnlyClientIdTextBox" Text="{Binding ProfileConfiguration.AppOnlyClientId, Mode=OneWay}" Margin="0,0,0,10" />
+                                        <TextBlock Text="Tenant Domain" Style="{StaticResource LabelText}" /><TextBox x:Name="AppOnlyTenantDomainTextBox" Text="{Binding ProfileConfiguration.AppOnlyTenantDomain, Mode=OneWay}" Margin="0,0,0,10" />
+                                        <TextBlock Text="Credential Mode" Style="{StaticResource LabelText}" /><ComboBox x:Name="AppOnlyCredentialModeComboBox" Text="{Binding ProfileConfiguration.AppOnlyCredentialMode, Mode=OneWay}" IsEditable="True" Margin="0,0,0,10"><ComboBoxItem Content="Certificate" /><ComboBoxItem Content="SecretReference" /></ComboBox>
+                                        <TextBlock Text="Certificate Thumbprint" Style="{StaticResource LabelText}" /><TextBox x:Name="CertificateThumbprintTextBox" Text="{Binding ProfileConfiguration.CertificateThumbprint, Mode=OneWay}" Margin="0,0,0,10" ToolTip="Expected: certificate thumbprint without spaces or delimiters. The app normalizes common separators on save." />
+                                        <TextBlock Text="Certificate Path" Style="{StaticResource LabelText}" /><TextBox x:Name="CertificatePathTextBox" Text="{Binding ProfileConfiguration.CertificatePath, Mode=OneWay}" Margin="0,0,0,10" ToolTip="Expected: local path to a certificate file, usually .pfx, when using certificate file auth." />
+                                        <TextBlock Text="Secret Reference" Style="{StaticResource LabelText}" /><TextBox x:Name="SecretReferenceTextBox" Text="{Binding ProfileConfiguration.SecretReference, Mode=OneWay}" ToolTip="Expected: reference name/key for an external secret, not the raw secret value when possible." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Delegated Access" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                        <CheckBox x:Name="DelegatedEnabledCheckBox" Content="Enable delegated authentication" IsChecked="{Binding ProfileConfiguration.DelegatedEnabled, Mode=OneWay}" />
+                                        <CheckBox x:Name="DelegatedPromptWhenRequiredCheckBox" Content="Prompt when required" IsChecked="{Binding ProfileConfiguration.DelegatedPromptWhenRequired, Mode=OneWay}" />
+                                        <TextBlock Text="Exchange On-Premises" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,8" />
+                                        <TextBlock Text="Server Name" Style="{StaticResource LabelText}" /><TextBox x:Name="ExchangeOnPremisesServerTextBox" Text="{Binding ProfileConfiguration.ExchangeOnPremisesServer, Mode=OneWay}" Margin="0,0,0,10" />
+                                        <TextBlock Text="Connection URI" Style="{StaticResource LabelText}" /><TextBox x:Name="ExchangeOnPremisesConnectionUriTextBox" Text="{Binding ProfileConfiguration.ExchangeOnPremisesConnectionUri, Mode=OneWay}" Margin="0,0,0,10" />
+                                        <TextBlock Text="Authentication" Style="{StaticResource LabelText}" /><ComboBox x:Name="ExchangeOnPremisesAuthenticationComboBox" Text="{Binding ProfileConfiguration.ExchangeOnPremisesAuthentication, Mode=OneWay}" IsEditable="True"><ComboBoxItem Content="Kerberos" /><ComboBoxItem Content="Negotiate" /><ComboBoxItem Content="Default" /></ComboBox>
+                                        <TextBlock Text="Hybrid Wizard Remote Server" Style="{StaticResource LabelText}" Margin="0,12,0,3" /><TextBox x:Name="HybridConnectionServerTextBox" Text="{Binding ProfileConfiguration.HybridConnectionServer, Mode=OneWay}" ToolTip="Server where the hybrid connection wizard can be remotely invoked." />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="New User Wizard">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
+                            <StackPanel>
+                                <Grid Margin="14">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Notification Recipient" Style="{StaticResource LabelText}" /><TextBox x:Name="NotificationRecipientTextBox" Text="{Binding ProfileConfiguration.NotificationRecipient, Mode=OneWay}" Margin="0,0,0,12" />
+                                        <TextBlock Text="Notification Sender" Style="{StaticResource LabelText}" /><TextBox x:Name="NotificationSenderTextBox" Text="{Binding ProfileConfiguration.NotificationSender, Mode=OneWay}" Margin="0,0,0,12" />
+                                        <TextBlock Text="Departments" Style="{StaticResource LabelText}" /><TextBox x:Name="DepartmentsTextBox" Text="{Binding ProfileConfiguration.Departments, Mode=OneWay}" AcceptsReturn="True" Height="72" VerticalContentAlignment="Top" Margin="0,0,0,12" />
+                                        <TextBlock Text="Locations" Style="{StaticResource LabelText}" /><TextBox x:Name="LocationsTextBox" Text="{Binding ProfileConfiguration.Locations, Mode=OneWay}" AcceptsReturn="True" Height="72" VerticalContentAlignment="Top" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Department/Location Rules" FontSize="18" FontWeight="SemiBold" />
+                                        <TextBlock Text="The native editor will expose configurable mappings for OU placement, portfolio, equipment defaults, groups, and mailbox request behavior." Style="{StaticResource MutedText}" Margin="0,5,0,14" />
+                                        <TextBlock Text="Job Titles" Style="{StaticResource LabelText}" /><TextBox x:Name="JobTitlesTextBox" Text="{Binding ProfileConfiguration.JobTitles, Mode=OneWay}" AcceptsReturn="True" Height="60" VerticalContentAlignment="Top" Margin="0,0,0,12" />
+                                        <TextBlock Text="Portfolios" Style="{StaticResource LabelText}" /><TextBox x:Name="PortfoliosTextBox" Text="{Binding ProfileConfiguration.Portfolios, Mode=OneWay}" AcceptsReturn="True" Height="60" VerticalContentAlignment="Top" Margin="0,0,0,12" />
+                                        <TextBlock Text="Default Licenses" Style="{StaticResource LabelText}" /><TextBox x:Name="DefaultLicenseSetTextBox" Text="{Binding ProfileConfiguration.DefaultLicenseSet, Mode=OneWay}" Margin="0,0,0,12" />
+                                        <CheckBox x:Name="CreateMailboxCheckBox" Content="Create mailbox by default" IsChecked="{Binding ProfileConfiguration.CreateMailboxByDefault, Mode=OneWay}" />
+                                        <CheckBox x:Name="SendNoticeCheckBox" Content="Send onboarding notification" IsChecked="{Binding ProfileConfiguration.SendOnboardingNotification, Mode=OneWay}" />
+                                        <CheckBox x:Name="RequireManagerCheckBox" Content="Require manager validation" IsChecked="{Binding ProfileConfiguration.RequireManagerValidation, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Margin="14,0,14,14">
+                                    <TextBlock Text="Raw New User Wizard JSON" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Text="Advanced editor for the entire NewUserWizard object. Structured fields above are also saved into this JSON before writing config.json." Style="{StaticResource MutedText}" Margin="0,5,0,8" />
+                                    <TextBox x:Name="NewUserWizardJsonTextBox" Text="{Binding ProfileConfiguration.NewUserWizardJson, Mode=OneWay}" AcceptsReturn="True" AcceptsTab="True" Height="260" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Branding">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
+                            <Grid Margin="14">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Window Title" Style="{StaticResource LabelText}" /><TextBox x:Name="WindowTitleTextBox" Text="{Binding ProfileConfiguration.WindowTitle, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Theme Name" Style="{StaticResource LabelText}" /><TextBox x:Name="ThemeNameTextBox" Text="{Binding ProfileConfiguration.ThemeName, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Theme Mode" Style="{StaticResource LabelText}" /><ComboBox x:Name="ThemeModeComboBox" Text="{Binding ProfileConfiguration.ThemeMode, Mode=OneWay}" IsEditable="True" Margin="0,0,0,12"><ComboBoxItem Content="Dark" /><ComboBoxItem Content="Light" /></ComboBox>
+                                    <TextBlock Text="Primary Color" Style="{StaticResource LabelText}" /><TextBox x:Name="PrimaryColorTextBox" Text="{Binding ProfileConfiguration.PrimaryColor, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Accent Color" Style="{StaticResource LabelText}" /><TextBox x:Name="AccentColorTextBox" Text="{Binding ProfileConfiguration.AccentColor, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Background Color" Style="{StaticResource LabelText}" /><TextBox x:Name="BackgroundColorTextBox" Text="{Binding ProfileConfiguration.BackgroundColor, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Surface Color" Style="{StaticResource LabelText}" /><TextBox x:Name="SurfaceColorTextBox" Text="{Binding ProfileConfiguration.SurfaceColor, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Foreground Color" Style="{StaticResource LabelText}" /><TextBox x:Name="ForegroundColorTextBox" Text="{Binding ProfileConfiguration.ForegroundColor, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Muted Text Color" Style="{StaticResource LabelText}" /><TextBox x:Name="MutedTextColorTextBox" Text="{Binding ProfileConfiguration.MutedTextColor, Mode=OneWay}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Theme Preview" FontSize="18" FontWeight="SemiBold" />
+                                    <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,10,0,0">
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Message}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Opacity="0.7" />
+                                            <TextBlock Text="Dashboard Card" FontWeight="SemiBold" />
+                                            <TextBlock Text="Profile theme values will save under the selected organization branding settings." Style="{StaticResource MutedText}" Margin="0,6,0,0" />
                                         </StackPanel>
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding Mode}"
-                                                   VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="2"
-                                                   Text="{Binding Status}"
-                                                   VerticalAlignment="Center"
-                                                   FontWeight="SemiBold" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="Logo Path" Style="{StaticResource LabelText}" Margin="0,16,0,3" /><TextBox x:Name="LogoPathTextBox" Text="{Binding ProfileConfiguration.LogoPath, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Icon Path" Style="{StaticResource LabelText}" /><TextBox x:Name="IconPathTextBox" Text="{Binding ProfileConfiguration.IconPath, Mode=OneWay}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Splash Path" Style="{StaticResource LabelText}" /><TextBox x:Name="SplashPathTextBox" Text="{Binding ProfileConfiguration.SplashPath, Mode=OneWay}" />
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
             </Border>
         </Grid>
 
-        <DockPanel Grid.Row="2" Margin="0,16,0,0">
+        <DockPanel Grid.Row="3" Margin="0,14,0,0">
             <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="#B42318"
-                       VerticalAlignment="Center" />
+                       Foreground="#FCA5A5"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Reload" Style="{StaticResource CommandButton}" Click="OnReloadProfileConfigurationClicked" />
+                <Button Content="Save Profile" Style="{StaticResource CommandButton}" MinWidth="130" Margin="10,0,0,0" Click="OnSaveProfileConfigurationClicked" />
+            </StackPanel>
             <Button DockPanel.Dock="Right"
-                    Width="96"
-                    Height="32"
                     Content="Cancel"
+                    Style="{StaticResource CommandButton}"
+                    Margin="0,0,10,0"
                     IsEnabled="{Binding CanCancel}" />
         </DockPanel>
     </Grid>

@@ -64,6 +64,14 @@ public sealed class NativeUserAdministrationService
                 new MailboxForwardingRequest { Identity = request.Identity, ForwardingSmtpAddress = request.Value, DeliverToMailboxAndForward = true },
                 correlationId,
                 cancellationToken).ConfigureAwait(false),
+            UserAdministrationActionIds.SetGalVisibility => await writer.SetGalVisibilityAsync(
+                new GalVisibilityRequest { Identity = request.Identity, HiddenFromAddressListsEnabled = bool.TryParse(request.Value, out var hidden) && hidden },
+                correlationId,
+                cancellationToken).ConfigureAwait(false),
+            UserAdministrationActionIds.AddMailboxDelegation => await writer.AddMailboxDelegationAsync(
+                new MailboxDelegationChangeRequest { Identity = request.Identity, Trustee = request.Value, AccessRights = "FullAccess" },
+                correlationId,
+                cancellationToken).ConfigureAwait(false),
             _ => OperationResult<ProviderChangeResult>.Failure(
                 correlationId,
                 new[] { OperationError.Create("UserAdministration.UnknownAction", $"Unknown user administration action '{request.ActionId}'.") },
@@ -106,6 +114,8 @@ public sealed class NativeUserAdministrationService
             return request.ActionId switch
             {
                 UserAdministrationActionIds.SetMailboxForwarding => "ExchangeOnline.MailboxForwarding",
+                UserAdministrationActionIds.SetGalVisibility => "ExchangeOnline.GalVisibility",
+                UserAdministrationActionIds.AddMailboxDelegation => "ExchangeOnline.MailboxDelegation",
                 UserAdministrationActionIds.AddGroupMembership or UserAdministrationActionIds.RemoveGroupMembership => "ExchangeOnline.DistributionGroups",
                 _ => "ExchangeOnline.Unknown"
             };
@@ -116,6 +126,8 @@ public sealed class NativeUserAdministrationService
             return request.ActionId switch
             {
                 UserAdministrationActionIds.SetMailboxForwarding => "ExchangeOnPremises.MailboxForwarding",
+                UserAdministrationActionIds.SetGalVisibility => "ExchangeOnPremises.GalVisibility",
+                UserAdministrationActionIds.AddMailboxDelegation => "ExchangeOnPremises.MailboxDelegation",
                 UserAdministrationActionIds.AddGroupMembership or UserAdministrationActionIds.RemoveGroupMembership => "ExchangeOnPremises.DistributionGroups",
                 _ => "ExchangeOnPremises.Unknown"
             };

@@ -32,4 +32,6 @@ public static class UserAdministrationActionIds
     public const string AddGroupMembership = "AddGroupMembership";
     public const string RemoveGroupMembership = "RemoveGroupMembership";
     public const string SetMailboxForwarding = "SetMailboxForwarding";
+    public const string SetGalVisibility = "SetGalVisibility";
+    public const string AddMailboxDelegation = "AddMailboxDelegation";
 }

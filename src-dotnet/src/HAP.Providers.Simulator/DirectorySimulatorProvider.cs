@@ -41,6 +41,7 @@ public sealed class DirectorySimulatorProvider :
     private List<SimulatorUserSummary> _users;
     private Dictionary<string, List<ManagedDeviceSummary>> _devices;
     private Dictionary<string, MailboxSummary> _mailboxes;
+    private Dictionary<string, List<MailboxDelegationSummary>> _mailboxDelegations;
 
     public DirectorySimulatorProvider(DirectorySimulatorOptions? options = null)
         : this(options, DirectorySimulatorSeedData.Users)
@@ -55,6 +56,7 @@ public sealed class DirectorySimulatorProvider :
         _users = users.ToList();
         _devices = CreateSeedDevices(_users);
         _mailboxes = CreateSeedMailboxes(_users);
+        _mailboxDelegations = CreateSeedMailboxDelegations(_mailboxes);
     }
 
     public async Task<OperationResult<ProviderHealthResult>> GetHealthAsync(
@@ -433,11 +435,9 @@ public sealed class DirectorySimulatorProvider :
         var mailbox = mailboxResult.Value;
         var delegations = mailbox is null
             ? Array.Empty<MailboxDelegationSummary>()
-            : new[]
-            {
-                new MailboxDelegationSummary { Trustee = "IT Service Desk", AccessRights = "FullAccess", Identity = mailbox.PrimarySmtpAddress },
-                new MailboxDelegationSummary { Trustee = "Taylor Reed", AccessRights = "SendAs", Identity = mailbox.PrimarySmtpAddress }
-            };
+            : _mailboxDelegations.TryGetValue(mailbox.UserPrincipalName, out var existing)
+                ? existing.ToArray()
+                : Array.Empty<MailboxDelegationSummary>();
 
         return OperationResult<IReadOnlyList<MailboxDelegationSummary>>.Success(delegations, correlationId);
     }
@@ -460,7 +460,11 @@ public sealed class DirectorySimulatorProvider :
             {
                 CreateDistributionGroup($"DL-{user.Department.Replace(" ", string.Empty, StringComparison.Ordinal)}-Announcements"),
                 CreateDistributionGroup($"DL-{user.Office}-Staff")
-            };
+            }
+            .Concat(user.Groups.Where(group => group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase)).Select(CreateDistributionGroup))
+            .GroupBy(group => group.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToArray();
 
         return OperationResult<IReadOnlyList<DistributionGroupSummary>>.Success(groups, correlationId);
     }
@@ -530,6 +534,7 @@ public sealed class DirectorySimulatorProvider :
             _users.Add(user);
             _devices[user.SamAccountName] = CreateGeneratedDevices(user).ToList();
             _mailboxes[user.SamAccountName] = CreateMailbox(user);
+            _mailboxDelegations[user.UserPrincipalName] = new List<MailboxDelegationSummary>();
             return OperationResult<ProviderChangeResult>.Success(Change("CreateUser", user.SamAccountName, true, "User created."), correlationId, status: "Created");
         }
         finally
@@ -560,10 +565,23 @@ public sealed class DirectorySimulatorProvider :
             var user = _users[index];
             _users[index] = user with
             {
+                DisplayName = ValueOrExisting(request.Attributes, "DisplayName", user.DisplayName),
+                GivenName = ValueOrExisting(request.Attributes, "GivenName", user.GivenName),
+                Surname = ValueOrExisting(request.Attributes, "Surname", user.Surname),
+                SamAccountName = ValueOrExisting(request.Attributes, "SamAccountName", user.SamAccountName),
+                UserPrincipalName = ValueOrExisting(request.Attributes, "UserPrincipalName", user.UserPrincipalName),
+                Mail = ValueOrExisting(request.Attributes, "Mail", user.Mail),
                 Department = ValueOrExisting(request.Attributes, "Department", user.Department),
                 Title = ValueOrExisting(request.Attributes, "Title", user.Title),
+                Company = ValueOrExisting(request.Attributes, "Company", user.Company),
                 Office = ValueOrExisting(request.Attributes, "Office", user.Office),
-                EmployeeId = ValueOrExisting(request.Attributes, "EmployeeId", user.EmployeeId)
+                EmployeeId = ValueOrExisting(request.Attributes, "EmployeeId", user.EmployeeId),
+                DistinguishedName = ValueOrExisting(request.Attributes, "DistinguishedName", user.DistinguishedName),
+                ManagerSamAccountName = ValueOrExisting(request.Attributes, "ManagerSamAccountName", user.ManagerSamAccountName),
+                DirectReportSamAccountNames = ListOrExisting(request.Attributes, "DirectReportSamAccountNames", user.DirectReportSamAccountNames),
+                Groups = ListOrExisting(request.Attributes, "Groups", user.Groups),
+                Enabled = BoolOrExisting(request.Attributes, "Enabled", user.Enabled),
+                LockedOut = BoolOrExisting(request.Attributes, "LockedOut", user.LockedOut)
             };
 
             return OperationResult<ProviderChangeResult>.Success(Change("UpdateUserAttributes", user.SamAccountName, true, "User attributes updated."), correlationId, status: "Updated");
@@ -649,6 +667,73 @@ public sealed class DirectorySimulatorProvider :
         }
     }
 
+    public async Task<OperationResult<ProviderChangeResult>> SetGalVisibilityAsync(
+        GalVisibilityRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        await _stateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var user = _users.FirstOrDefault(item => Matches(item, request.Identity));
+            if (user is null)
+            {
+                return OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("Simulator.GalVisibility.NotFound", "Mailbox user was not found.") }, status: "NotFound");
+            }
+
+            var mailbox = _mailboxes.TryGetValue(user.SamAccountName, out var existing) ? existing : CreateMailbox(user);
+            _mailboxes[user.SamAccountName] = mailbox with { HiddenFromAddressListsEnabled = request.HiddenFromAddressListsEnabled };
+            return OperationResult<ProviderChangeResult>.Success(Change("SetGalVisibility", user.SamAccountName, true, request.HiddenFromAddressListsEnabled ? "Mailbox hidden from GAL." : "Mailbox shown in GAL."), correlationId, status: "Updated");
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    public async Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(
+        MailboxDelegationChangeRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Identity) || string.IsNullOrWhiteSpace(request.Trustee))
+        {
+            return OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("Simulator.MailboxDelegation.RequiredFieldsMissing", "Identity and trustee are required.") });
+        }
+
+        await _stateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var user = _users.FirstOrDefault(item => Matches(item, request.Identity));
+            if (user is null)
+            {
+                return OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("Simulator.MailboxDelegation.NotFound", "Mailbox user was not found.") }, status: "NotFound");
+            }
+
+            var mailbox = _mailboxes.TryGetValue(user.SamAccountName, out var existing) ? existing : CreateMailbox(user);
+            var key = mailbox.UserPrincipalName;
+            if (!_mailboxDelegations.TryGetValue(key, out var delegations))
+            {
+                delegations = new List<MailboxDelegationSummary>();
+                _mailboxDelegations[key] = delegations;
+            }
+
+            var exists = delegations.Any(item =>
+                string.Equals(item.Trustee, request.Trustee, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(item.AccessRights, request.AccessRights, StringComparison.OrdinalIgnoreCase));
+            if (!exists)
+            {
+                delegations.Add(new MailboxDelegationSummary { Trustee = request.Trustee.Trim(), AccessRights = request.AccessRights, Identity = mailbox.PrimarySmtpAddress });
+            }
+
+            return OperationResult<ProviderChangeResult>.Success(Change("AddMailboxDelegation", user.SamAccountName, !exists, exists ? "Mailbox delegation already exists." : "Mailbox delegation added."), correlationId, status: exists ? "NoChange" : "Updated");
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
     public async Task<OperationResult<ProviderChangeResult>> ResetStateAsync(
         CorrelationId correlationId,
         CancellationToken cancellationToken = default)
@@ -659,6 +744,7 @@ public sealed class DirectorySimulatorProvider :
             _users = DirectorySimulatorSeedData.Users.ToList();
             _devices = CreateSeedDevices(_users);
             _mailboxes = CreateSeedMailboxes(_users);
+            _mailboxDelegations = CreateSeedMailboxDelegations(_mailboxes);
             return OperationResult<ProviderChangeResult>.Success(Change("ResetState", "DirectorySimulator", true, "Simulator state reset."), correlationId, status: "Reset");
         }
         finally
@@ -845,6 +931,18 @@ public sealed class DirectorySimulatorProvider :
         return values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : existing;
     }
 
+    private static bool BoolOrExisting(IReadOnlyDictionary<string, string> values, string key, bool existing)
+    {
+        return values.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) ? parsed : existing;
+    }
+
+    private static IReadOnlyList<string> ListOrExisting(IReadOnlyDictionary<string, string> values, string key, IReadOnlyList<string> existing)
+    {
+        return values.TryGetValue(key, out var value)
+            ? value.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : existing;
+    }
+
     private static Dictionary<string, List<ManagedDeviceSummary>> CreateSeedDevices(IEnumerable<SimulatorUserSummary> users)
     {
         var devices = new Dictionary<string, List<ManagedDeviceSummary>>(StringComparer.OrdinalIgnoreCase);
@@ -906,6 +1004,18 @@ public sealed class DirectorySimulatorProvider :
     private static Dictionary<string, MailboxSummary> CreateSeedMailboxes(IEnumerable<SimulatorUserSummary> users)
     {
         return users.ToDictionary(user => user.SamAccountName, CreateMailbox, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static Dictionary<string, List<MailboxDelegationSummary>> CreateSeedMailboxDelegations(IReadOnlyDictionary<string, MailboxSummary> mailboxes)
+    {
+        return mailboxes.Values.ToDictionary(
+            mailbox => mailbox.UserPrincipalName,
+            mailbox => new List<MailboxDelegationSummary>
+            {
+                new() { Trustee = "IT Service Desk", AccessRights = "FullAccess", Identity = mailbox.PrimarySmtpAddress },
+                new() { Trustee = "Taylor Reed", AccessRights = "SendAs", Identity = mailbox.PrimarySmtpAddress }
+            },
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private static MailboxSummary CreateMailbox(SimulatorUserSummary user)

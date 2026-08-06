@@ -59,3 +59,19 @@ public sealed record MailboxForwardingRequest
 
     public bool DeliverToMailboxAndForward { get; init; }
 }
+
+public sealed record GalVisibilityRequest
+{
+    public string Identity { get; init; } = string.Empty;
+
+    public bool HiddenFromAddressListsEnabled { get; init; }
+}
+
+public sealed record MailboxDelegationChangeRequest
+{
+    public string Identity { get; init; } = string.Empty;
+
+    public string Trustee { get; init; } = string.Empty;
+
+    public string AccessRights { get; init; } = "FullAccess";
+}

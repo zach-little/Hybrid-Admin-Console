@@ -123,6 +123,8 @@ public sealed class NativeNewUserWizardTests
         public Task<OperationResult<ProviderChangeResult>> AddGroupMembershipAsync(MembershipChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("AddGroupMembership", request.Identity, correlationId);
         public Task<OperationResult<ProviderChangeResult>> RemoveGroupMembershipAsync(MembershipChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("RemoveGroupMembership", request.Identity, correlationId);
         public Task<OperationResult<ProviderChangeResult>> SetMailboxForwardingAsync(MailboxForwardingRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("SetMailboxForwarding", request.Identity, correlationId);
+        public Task<OperationResult<ProviderChangeResult>> SetGalVisibilityAsync(GalVisibilityRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("SetGalVisibility", request.Identity, correlationId);
+        public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("AddMailboxDelegation", request.Identity, correlationId);
         public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) => Success("ResetState", "test", correlationId);
 
         private static Task<OperationResult<ProviderChangeResult>> Success(string operation, string target, CorrelationId correlationId)

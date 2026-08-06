@@ -53,6 +53,12 @@ public sealed class ExchangeOnlineProvider : IProviderHealthCapability, IExchang
     public Task<OperationResult<ProviderChangeResult>> SetMailboxForwardingAsync(MailboxForwardingRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         UnsupportedChange(correlationId, "SetMailboxForwarding", request.Identity, "ExchangeOnline.MailboxForwarding.UnsupportedWithoutPowerShell", "Mailbox forwarding is deferred until an approved public API or customer extension is selected.");
 
+    public Task<OperationResult<ProviderChangeResult>> SetGalVisibilityAsync(GalVisibilityRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        UnsupportedChange(correlationId, "SetGalVisibility", request.Identity, "ExchangeOnline.GalVisibility.UnsupportedWithoutPowerShell", "GAL visibility is deferred until an approved public API or customer extension is selected.");
+
+    public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        UnsupportedChange(correlationId, "AddMailboxDelegation", request.Identity, "ExchangeOnline.MailboxDelegation.UnsupportedWithoutPowerShell", "Mailbox delegation is deferred until an approved public API or customer extension is selected.");
+
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<ProviderChangeResult>.Success(
             new ProviderChangeResult

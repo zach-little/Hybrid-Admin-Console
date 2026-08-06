@@ -7,14 +7,16 @@ namespace HAP.App;
 public partial class MainWindow : Window
 {
     private readonly RuntimeProfileSelectorViewModel _viewModel;
+    private readonly NativeRuntimeProfileCatalogService _runtimeProfileService = new();
 
     public MainWindow()
     {
         InitializeComponent();
         _viewModel = new RuntimeProfileSelectorViewModel(
-            new NativeRuntimeProfileCatalogService(),
-            new NativeRuntimeSessionService());
-        ContentHost.Content = new RuntimeProfileSelectorView { DataContext = _viewModel };
+            _runtimeProfileService,
+            new NativeRuntimeSessionService(),
+            _runtimeProfileService);
+        ShowProfileSelector();
         Loaded += OnLoaded;
     }
 
@@ -34,13 +36,30 @@ public partial class MainWindow : Window
         if (_viewModel.IsRuntimeStarted)
         {
             ContentHost.Content = new NativeSimulationView();
-            LaunchButton.Content = "Running";
+            LaunchButton.Visibility = Visibility.Collapsed;
+            RefreshButton.Visibility = Visibility.Collapsed;
+            BackToProfilesButton.Visibility = Visibility.Visible;
         }
+    }
+
+    private async void OnBackToProfilesClicked(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.ShutdownRuntimeAsync(GetRepositoryRoot()).ConfigureAwait(true);
+        ShowProfileSelector();
+        await LoadProfilesAsync().ConfigureAwait(true);
     }
 
     private Task LoadProfilesAsync()
     {
         return _viewModel.LoadAsync(GetRepositoryRoot());
+    }
+
+    private void ShowProfileSelector()
+    {
+        ContentHost.Content = new RuntimeProfileSelectorView { DataContext = _viewModel };
+        LaunchButton.Visibility = Visibility.Visible;
+        RefreshButton.Visibility = Visibility.Visible;
+        BackToProfilesButton.Visibility = Visibility.Collapsed;
     }
 
     private static string GetRepositoryRoot()

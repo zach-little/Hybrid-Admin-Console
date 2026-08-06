@@ -1,0 +1,18 @@
+{
+  "ProductName": "Hybrid Administration Platform",
+  "DeploymentName": "HAP Simulation Console",
+  "ProviderMode": "Mock",
+  "TenantCloud": "Commercial",
+  "GraphBaseUri": "https://graph.microsoft.com",
+  "DefaultDomain": "simulation.local",
+  "DefaultUPNSuffix": "simulation.local",
+  "DefaultOU": "OU=Users,DC=simulation,DC=local",
+  "DefaultGroups": [
+    "Domain Users"
+  ],
+  "DefaultMailboxType": "User",
+  "DefaultCountry": "US",
+  "DefaultState": "SC",
+  "DefaultTimeZone": "Eastern Standard Time",
+  "SafeMode": true
+}
