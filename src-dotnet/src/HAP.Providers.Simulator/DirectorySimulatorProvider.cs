@@ -10,6 +10,7 @@ public sealed class DirectorySimulatorProvider :
     IUserLookupCapability,
     IDirectoryReadCapability,
     IDirectoryAttributeReadCapability,
+    IDirectoryGroupLookupCapability,
     IDeviceReadCapability,
     IGraphReadCapability,
     IExchangeReadCapability,

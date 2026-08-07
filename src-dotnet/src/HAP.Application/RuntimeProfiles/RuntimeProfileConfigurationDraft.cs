@@ -34,6 +34,12 @@ public sealed record RuntimeProfileConfigurationDraft
 
     public bool DelegatedPromptWhenRequired { get; init; }
 
+    public string ActiveDirectoryDomain { get; init; } = string.Empty;
+
+    public string ActiveDirectoryServer { get; init; } = string.Empty;
+
+    public string ActiveDirectoryDefaultUserContainer { get; init; } = string.Empty;
+
     public string ExchangeOnPremisesServer { get; init; } = string.Empty;
 
     public string ExchangeOnPremisesConnectionUri { get; init; } = string.Empty;

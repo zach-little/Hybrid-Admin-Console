@@ -18,6 +18,11 @@ public interface IDirectoryAttributeReadCapability
     Task<OperationResult<DirectoryObjectAttributeSet>> GetDirectoryAttributesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);
 }
 
+public interface IDirectoryGroupLookupCapability
+{
+    Task<OperationResult<IReadOnlyList<DirectoryGroupSummary>>> SearchGroupsAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default);
+}
+
 public interface IDeviceReadCapability
 {
     Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> GetManagedDevicesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);

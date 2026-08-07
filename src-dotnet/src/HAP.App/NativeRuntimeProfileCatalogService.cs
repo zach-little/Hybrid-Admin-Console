@@ -57,6 +57,7 @@ internal sealed class NativeRuntimeProfileCatalogService : IRuntimeProfileCatalo
             var authentication = runtime["Authentication"] as JsonObject ?? new JsonObject();
             var appOnly = authentication["AppOnly"] as JsonObject ?? new JsonObject();
             var delegated = authentication["Delegated"] as JsonObject ?? new JsonObject();
+            var activeDirectory = runtime["Providers"]?["ActiveDirectory"] as JsonObject ?? new JsonObject();
             var exchangeOnPremises = runtime["Providers"]?["ExchangeOnPremises"] as JsonObject ?? new JsonObject();
 
             var draft = new RuntimeProfileConfigurationDraft
@@ -77,6 +78,9 @@ internal sealed class NativeRuntimeProfileCatalogService : IRuntimeProfileCatalo
                 SecretReference = GetString(appOnly, "SecretReference", FirstNonEmpty(GetString(config, "client_secret", string.Empty), GetString(config, "SecretReference", string.Empty))),
                 DelegatedEnabled = GetBool(delegated, "Enabled", false),
                 DelegatedPromptWhenRequired = GetBool(delegated, "PromptWhenRequired", false),
+                ActiveDirectoryDomain = GetString(activeDirectory, "Domain", string.Empty),
+                ActiveDirectoryServer = GetString(activeDirectory, "Server", string.Empty),
+                ActiveDirectoryDefaultUserContainer = GetString(activeDirectory, "DefaultUserContainer", string.Empty),
                 ExchangeOnPremisesServer = GetString(exchangeOnPremises, "Server", string.Empty),
                 ExchangeOnPremisesConnectionUri = GetString(exchangeOnPremises, "ConnectionUri", string.Empty),
                 ExchangeOnPremisesAuthentication = GetString(exchangeOnPremises, "Authentication", "Kerberos"),
@@ -165,6 +169,9 @@ internal sealed class NativeRuntimeProfileCatalogService : IRuntimeProfileCatalo
             SetProvider(runtime, "MicrosoftGraph", draft.MicrosoftGraphEnabled);
             SetProvider(runtime, "ExchangeOnline", draft.ExchangeOnlineEnabled);
             SetProvider(runtime, "ExchangeOnPremises", draft.ExchangeOnPremisesEnabled);
+            SetProviderProperty(runtime, "ActiveDirectory", "Domain", draft.ActiveDirectoryDomain);
+            SetProviderProperty(runtime, "ActiveDirectory", "Server", draft.ActiveDirectoryServer);
+            SetProviderProperty(runtime, "ActiveDirectory", "DefaultUserContainer", draft.ActiveDirectoryDefaultUserContainer);
             SetProviderProperty(runtime, "ExchangeOnPremises", "Server", draft.ExchangeOnPremisesServer);
             SetProviderProperty(runtime, "ExchangeOnPremises", "ConnectionUri", draft.ExchangeOnPremisesConnectionUri);
             SetProviderProperty(runtime, "ExchangeOnPremises", "Authentication", draft.ExchangeOnPremisesAuthentication);

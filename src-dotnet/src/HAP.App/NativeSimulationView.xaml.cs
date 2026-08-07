@@ -5,29 +5,165 @@ using System.Windows.Input;
 using HAP.Application.Capabilities;
 using HAP.Application.Devices;
 using HAP.Application.NewUser;
+using HAP.Application.RuntimeProfiles;
 using HAP.Contracts;
 using HAP.Providers.Abstractions;
+using HAP.Providers.ActiveDirectory;
+using HAP.Providers.ExchangeOnPremises;
+using HAP.Providers.ExchangeOnline;
+using HAP.Providers.Graph;
 using HAP.Providers.Simulator;
 
 namespace HAP.App;
 
 public partial class NativeSimulationView : UserControl
 {
+    private readonly RuntimeProfileConfigurationDraft _profile;
     private readonly DirectorySimulatorProvider _simulator = new();
     private readonly BuiltInCapabilityCatalog _capabilityCatalog = new();
     private readonly NativeNewUserPreflightService _newUserPreflight;
     private readonly NativeNewUserExecutionService _newUserExecution;
     private readonly NativeDeviceManagementService _deviceManagement;
+    private readonly IUserLookupCapability _userLookup;
+    private readonly IDirectoryReadCapability _directoryRead;
+    private readonly IDirectoryAttributeReadCapability _directoryAttributeRead;
+    private readonly IDirectoryGroupLookupCapability _directoryGroupLookup;
+    private readonly IGraphReadCapability? _graphRead;
+    private readonly IExchangeReadCapability? _exchangeRead;
+    private readonly ISimulatorWriteCapability _writer;
+    private readonly IReadOnlyList<IProviderHealthCapability> _healthProviders;
+    private readonly string _bindingSummary;
     private NewUserExecutionPlan? _currentNewUserPlan;
     private SimulatorUserSummary? _selectedUser;
 
-    public NativeSimulationView()
+    public NativeSimulationView(RuntimeProfileConfigurationDraft? profile = null)
     {
+        _profile = profile ?? new RuntimeProfileConfigurationDraft { RuntimeMode = "Simulation", DirectorySimulatorEnabled = true };
+        var providers = CreateRuntimeProviders(_profile, _simulator);
+        _userLookup = providers.UserLookup;
+        _directoryRead = providers.DirectoryRead;
+        _directoryAttributeRead = providers.DirectoryAttributeRead;
+        _directoryGroupLookup = providers.DirectoryGroupLookup;
+        _graphRead = providers.GraphRead;
+        _exchangeRead = providers.ExchangeRead;
+        _writer = providers.Writer;
+        _healthProviders = providers.HealthProviders;
+        _bindingSummary = providers.BindingSummary;
         InitializeComponent();
-        _newUserPreflight = new NativeNewUserPreflightService(_simulator);
-        _newUserExecution = new NativeNewUserExecutionService(_simulator);
-        _deviceManagement = new NativeDeviceManagementService(new[] { ("DirectorySimulator", (IDeviceReadCapability)_simulator) });
+        _newUserPreflight = new NativeNewUserPreflightService(_userLookup);
+        _newUserExecution = new NativeNewUserExecutionService(_writer);
+        _deviceManagement = new NativeDeviceManagementService(providers.DeviceProviders);
         Loaded += OnLoaded;
+    }
+
+    private static RuntimeProviderSet CreateRuntimeProviders(RuntimeProfileConfigurationDraft profile, DirectorySimulatorProvider simulator)
+    {
+        var runtimeMode = profile.RuntimeMode ?? string.Empty;
+        var useSimulator = profile.DirectorySimulatorEnabled || runtimeMode.Equals("Simulation", StringComparison.OrdinalIgnoreCase);
+
+        if (useSimulator)
+        {
+            return new RuntimeProviderSet(
+                simulator,
+                simulator,
+                simulator,
+                simulator,
+                simulator,
+                simulator,
+                simulator,
+                new[] { (ProviderId: "DirectorySimulator", Provider: (IDeviceReadCapability)simulator) },
+                new IProviderHealthCapability[] { simulator },
+                "DirectorySimulator simulation provider");
+        }
+
+        var healthProviders = new List<IProviderHealthCapability>();
+        var deviceProviders = new List<(string ProviderId, IDeviceReadCapability Provider)>();
+
+        var activeDirectory = profile.ActiveDirectoryEnabled
+            ? new ActiveDirectoryProvider(new ActiveDirectoryProviderOptions
+            {
+                UseLiveDirectory = true,
+                Domain = profile.ActiveDirectoryDomain,
+                Server = profile.ActiveDirectoryServer,
+                AllowWrites = true,
+                DefaultUserContainer = profile.ActiveDirectoryDefaultUserContainer,
+                ConnectionAvailable = true,
+                AuthenticationSucceeded = true
+            })
+            : null;
+        if (activeDirectory is not null)
+        {
+            healthProviders.Add(activeDirectory);
+        }
+
+        var graph = profile.MicrosoftGraphEnabled
+            ? new MicrosoftGraphProvider(new GraphProviderOptions
+            {
+                TenantId = profile.TenantId,
+                ClientId = profile.AppOnlyClientId,
+                AuthenticationMode = profile.DelegatedEnabled ? "Delegated" : "AppOnly",
+                Scopes = Array.Empty<string>()
+            })
+            : null;
+        if (graph is not null)
+        {
+            healthProviders.Add(graph);
+            deviceProviders.Add(("MicrosoftGraph", graph));
+        }
+
+        var exchangeOnline = profile.ExchangeOnlineEnabled
+            ? new ExchangeOnlineProvider()
+            : null;
+        if (exchangeOnline is not null)
+        {
+            healthProviders.Add(exchangeOnline);
+        }
+
+        var exchangeOnPremises = profile.ExchangeOnPremisesEnabled
+            ? new ExchangeOnPremisesProvider(new ExchangeOnPremisesProviderOptions
+            {
+                Server = profile.ExchangeOnPremisesServer,
+                ConnectionAvailable = true,
+                AuthenticationSucceeded = true,
+                SupportedManagementApiAvailable = false
+            })
+            : null;
+        if (exchangeOnPremises is not null)
+        {
+            healthProviders.Add(exchangeOnPremises);
+        }
+
+        var directoryRead = activeDirectory is not null ? (IDirectoryReadCapability)activeDirectory : simulator;
+        var directoryAttributes = activeDirectory is not null ? (IDirectoryAttributeReadCapability)activeDirectory : simulator;
+        var groupLookup = activeDirectory is not null ? (IDirectoryGroupLookupCapability)activeDirectory : simulator;
+        var userLookup = activeDirectory is not null
+            ? (IUserLookupCapability)activeDirectory
+            : graph is not null
+                ? graph
+                : simulator;
+        var graphRead = graph is not null ? (IGraphReadCapability)graph : null;
+        var exchangeRead = exchangeOnPremises is not null
+            ? (IExchangeReadCapability)exchangeOnPremises
+            : exchangeOnline is not null
+                ? exchangeOnline
+                : null;
+        var writer = activeDirectory is not null
+            ? (ISimulatorWriteCapability)activeDirectory
+            : graph is not null
+                ? graph
+                : simulator;
+
+        return new RuntimeProviderSet(
+            userLookup,
+            directoryRead,
+            directoryAttributes,
+            groupLookup,
+            graphRead,
+            exchangeRead,
+            writer,
+            deviceProviders,
+            healthProviders.Count > 0 ? healthProviders : new IProviderHealthCapability[] { simulator },
+            $"Mode={profile.RuntimeMode}; Directory={ProviderName(directoryRead)}; Graph={ProviderName(graphRead)}; Exchange={ProviderName(exchangeRead)}");
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -124,7 +260,7 @@ public partial class NativeSimulationView : UserControl
     {
         var selected = _selectedUser is null ? "No selected user" : $"{_selectedUser.DisplayName} ({_selectedUser.SamAccountName})";
         MessageBox.Show(
-            $"Runtime preferences\n\nSelected identity: {selected}\nDefault lookup tab: User Lookup\nTheme: Native dark\nProvider mode: Simulation-backed native services\n\nProfile-level preferences are managed from Back to Profiles > Configuration.",
+            $"Runtime preferences\n\nSelected identity: {selected}\nDefault lookup tab: User Lookup\nTheme: Native dark\nProvider binding: {_bindingSummary}\n\nProfile-level preferences are managed from Back to Profiles > Configuration.",
             "Preferences",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -197,9 +333,16 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _simulator.UpdateUserAttributesAsync(
+        var desiredGroups = values.TryGetValue("Groups", out var groupsValue)
+            ? SplitEditorValues(groupsValue)
+            : user.Groups;
+        values.Remove("Groups");
+        values.Remove("DirectReportSamAccountNames");
+
+        var result = await _writer.UpdateUserAttributesAsync(
             new UserUpdateRequest { Identity = user.SamAccountName, Attributes = values },
             CorrelationId.New()).ConfigureAwait(true);
+        await ApplyGroupRelationshipChangesAsync(user, desiredGroups).ConfigureAwait(true);
         await CompleteUserMutationAsync("Edit Current User", result).ConfigureAwait(true);
     }
 
@@ -216,11 +359,11 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var reports = await _simulator.GetDirectReportsAsync(_selectedUser!.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var reports = await _directoryRead.GetDirectReportsAsync(_selectedUser!.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
         var messages = new List<string>();
         foreach (var report in reports.Value ?? Array.Empty<SimulatorUserSummary>())
         {
-            var result = await _simulator.SetManagerAsync(
+            var result = await _writer.SetManagerAsync(
                 new ManagerChangeRequest { Identity = report.SamAccountName, ManagerIdentity = manager.Trim() },
                 CorrelationId.New()).ConfigureAwait(true);
             messages.Add($"{report.SamAccountName}: {(result.Succeeded ? result.Value?.Message : string.Join(" ", result.Errors.Select(error => error.Message)))}");
@@ -243,7 +386,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _simulator.SetManagerAsync(
+        var result = await _writer.SetManagerAsync(
             new ManagerChangeRequest { Identity = _selectedUser!.SamAccountName, ManagerIdentity = manager.Trim() },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Change Manager", result).ConfigureAwait(true);
@@ -269,8 +412,8 @@ public partial class NativeSimulationView : UserControl
         }
 
         var result = add == MessageBoxResult.Yes
-            ? await _simulator.AddGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true)
-            : await _simulator.RemoveGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true);
+            ? await _writer.AddGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true)
+            : await _writer.RemoveGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Update Distribution Groups", result).ConfigureAwait(true);
     }
 
@@ -287,7 +430,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _simulator.SetGalVisibilityAsync(
+        var result = await _writer.SetGalVisibilityAsync(
             new GalVisibilityRequest { Identity = _selectedUser!.SamAccountName, HiddenFromAddressListsEnabled = answer == MessageBoxResult.Yes },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Show/Hide GAL", result).ConfigureAwait(true);
@@ -306,7 +449,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _simulator.AddMailboxDelegationAsync(
+        var result = await _writer.AddMailboxDelegationAsync(
             new MailboxDelegationChangeRequest { Identity = _selectedUser!.SamAccountName, Trustee = trustee.Trim(), AccessRights = "FullAccess" },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Add Delegates", result).ConfigureAwait(true);
@@ -320,7 +463,7 @@ public partial class NativeSimulationView : UserControl
         }
 
         var forwarding = PromptForText("E-mail Forwarding", "Forwarding SMTP address. Leave blank to clear:");
-        var result = await _simulator.SetMailboxForwardingAsync(
+        var result = await _writer.SetMailboxForwardingAsync(
             new MailboxForwardingRequest { Identity = _selectedUser!.SamAccountName, ForwardingSmtpAddress = forwarding.Trim(), DeliverToMailboxAndForward = !string.IsNullOrWhiteSpace(forwarding) },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("E-mail Forwarding", result).ConfigureAwait(true);
@@ -328,17 +471,16 @@ public partial class NativeSimulationView : UserControl
 
     private async Task RefreshDashboardAsync()
     {
-        var health = await _simulator.GetHealthAsync(CorrelationId.New()).ConfigureAwait(true);
-        ProviderStatusList.ItemsSource = new[]
+        var statuses = new List<string> { $"Runtime binding: {_bindingSummary}" };
+        foreach (var provider in _healthProviders)
         {
-            health.Value is null
-                ? "DirectorySimulator: unavailable"
-                : $"{health.Value.ProviderId}: {health.Value.Status} ({health.Value.Mode}) - {health.Value.Message}",
-            "ActiveDirectory: native provider registered",
-            "MicrosoftGraph: native provider registered",
-            "ExchangeOnline: native provider registered",
-            "ExchangeOnPremises: native provider registered"
-        };
+            var health = await provider.GetHealthAsync(CorrelationId.New()).ConfigureAwait(true);
+            statuses.Add(health.Value is null
+                ? $"{provider.GetType().Name}: {health.Status} - {string.Join(" ", health.Errors.Select(error => error.Message))}"
+                : $"{health.Value.ProviderId}: {health.Value.Status} ({health.Value.Mode}) - {health.Value.Message}");
+        }
+
+        ProviderStatusList.ItemsSource = statuses;
     }
 
     private void LoadCapabilityGrid()
@@ -367,7 +509,7 @@ public partial class NativeSimulationView : UserControl
 
         try
         {
-            var result = await _simulator.SearchUsersAsync(effectiveQuery, CorrelationId.New()).ConfigureAwait(true);
+            var result = await _userLookup.SearchUsersAsync(effectiveQuery, CorrelationId.New()).ConfigureAwait(true);
             if (!result.Succeeded)
             {
                 UsersGrid.ItemsSource = null;
@@ -406,15 +548,15 @@ public partial class NativeSimulationView : UserControl
             DashboardSelectedUserText.Text = user.DisplayName;
             DashboardSelectedUserSubText.Text = $"{user.SamAccountName} | {user.Department} | {user.Title}";
 
-            var manager = await _simulator.GetManagerAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+            var manager = await _directoryRead.GetManagerAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
             ManagerText.Text = Safe(manager.Value?.DisplayName ?? user.ManagerSamAccountName);
 
-            var reports = await _simulator.GetDirectReportsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+            var reports = await _directoryRead.GetDirectReportsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
             DirectReportsText.Text = reports.Value is { Count: > 0 }
                 ? string.Join(", ", reports.Value.Select(report => report.SamAccountName))
                 : "None";
 
-            var groups = await _simulator.GetGroupsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+            var groups = await _directoryRead.GetGroupsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
             GroupsList.ItemsSource = groups.Value?.Select(group => $"{group.DisplayName} ({group.Source})").ToArray() ?? Array.Empty<string>();
 
             await LoadGraphAndAuthenticationAsync(user).ConfigureAwait(true);
@@ -429,7 +571,25 @@ public partial class NativeSimulationView : UserControl
 
     private async Task LoadGraphAndAuthenticationAsync(SimulatorUserSummary user)
     {
-        var graph = await _simulator.GetGraphProfileAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        if (_graphRead is null)
+        {
+            LicensesText.Text = "Not loaded";
+            PimRolesText.Text = "Not loaded";
+            RiskStateText.Text = "Not loaded";
+            LastSignInText.Text = "Not loaded";
+            PasswordChangedText.Text = "Not loaded";
+            GraphMethodsText.Text = "Not loaded";
+            DashboardGraphText.Text = "Microsoft Graph provider disabled in profile.";
+            AuthDefaultText.Text = "Not loaded";
+            AuthStrengthText.Text = "Not loaded";
+            ConditionalAccessText.Text = "Not loaded";
+            SignInRiskText.Text = "Not loaded";
+            MfaRegisteredText.Text = "Not loaded";
+            PasswordlessText.Text = "Not loaded";
+            return;
+        }
+
+        var graph = await _graphRead.GetGraphProfileAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
         if (graph.Value is null)
         {
             LicensesText.Text = "None";
@@ -451,7 +611,7 @@ public partial class NativeSimulationView : UserControl
             DashboardGraphText.Text = $"{graph.Value.Licenses.Count} license(s), {graph.Value.PimRoles.Count} PIM role(s), risk {graph.Value.RiskState}";
         }
 
-        var auth = await _simulator.GetAuthenticationPostureAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var auth = await _graphRead.GetAuthenticationPostureAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
         if (auth.Value is null)
         {
             AuthDefaultText.Text = "Not loaded";
@@ -474,7 +634,21 @@ public partial class NativeSimulationView : UserControl
 
     private async Task LoadExchangeAsync(SimulatorUserSummary user)
     {
-        var mailbox = await _simulator.GetMailboxAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        if (_exchangeRead is null)
+        {
+            MailboxText.Text = "Not loaded";
+            RecipientTypeText.Text = "Not loaded";
+            HiddenGalText.Text = "Not loaded";
+            ForwardingText.Text = "Not loaded";
+            ItemCountText.Text = "Not loaded";
+            LastMailboxLogonText.Text = "Not loaded";
+            MailboxDelegationList.ItemsSource = Array.Empty<string>();
+            DistributionGroupsList.ItemsSource = Array.Empty<string>();
+            DashboardExchangeText.Text = "Exchange provider disabled in profile.";
+            return;
+        }
+
+        var mailbox = await _exchangeRead.GetMailboxAsync(FirstNonEmpty(user.Mail, user.UserPrincipalName, user.SamAccountName), CorrelationId.New()).ConfigureAwait(true);
         if (mailbox.Value is null)
         {
             MailboxText.Text = "Not loaded";
@@ -494,14 +668,14 @@ public partial class NativeSimulationView : UserControl
             DashboardExchangeText.Text = $"{mailbox.Value.RecipientTypeDetails} | {mailbox.Value.PrimarySmtpAddress}";
         }
 
-        var stats = await _simulator.GetMailboxStatisticsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var stats = await _exchangeRead.GetMailboxStatisticsAsync(FirstNonEmpty(user.Mail, user.UserPrincipalName, user.SamAccountName), CorrelationId.New()).ConfigureAwait(true);
         ItemCountText.Text = stats.Value is null ? "Not loaded" : $"{stats.Value.ItemCount:N0} items, {stats.Value.TotalItemSize}";
         LastMailboxLogonText.Text = FormatDate(stats.Value?.LastLogonTime);
 
-        var delegations = await _simulator.GetMailboxDelegationsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var delegations = await _exchangeRead.GetMailboxDelegationsAsync(FirstNonEmpty(user.Mail, user.UserPrincipalName, user.SamAccountName), CorrelationId.New()).ConfigureAwait(true);
         MailboxDelegationList.ItemsSource = delegations.Value?.Select(item => $"{item.Trustee}: {item.AccessRights}").ToArray() ?? Array.Empty<string>();
 
-        var distributionGroups = await _simulator.GetDistributionGroupsAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var distributionGroups = await _exchangeRead.GetDistributionGroupsAsync(FirstNonEmpty(user.Mail, user.UserPrincipalName, user.SamAccountName), CorrelationId.New()).ConfigureAwait(true);
         DistributionGroupsList.ItemsSource = distributionGroups.Value?.Select(item => $"{item.DisplayName} <{item.Mail}>").ToArray() ?? Array.Empty<string>();
     }
 
@@ -568,7 +742,7 @@ public partial class NativeSimulationView : UserControl
 
         if (_selectedUser is not null)
         {
-            var userResult = await _simulator.GetUserAsync(_selectedUser.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+            var userResult = await _directoryRead.GetUserAsync(_selectedUser.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
             if (userResult.Value is not null)
             {
                 await LoadUserDetailsAsync(userResult.Value).ConfigureAwait(true);
@@ -649,7 +823,7 @@ public partial class NativeSimulationView : UserControl
 
     private async Task<Dictionary<string, string>> ShowEditUserDialogAsync(SimulatorUserSummary user)
     {
-        var attributeResult = await _simulator.GetDirectoryAttributesAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
+        var attributeResult = await _directoryAttributeRead.GetDirectoryAttributesAsync(user.SamAccountName, CorrelationId.New()).ConfigureAwait(true);
         var rows = attributeResult.Value is null
             ? BuildAttributeRows(user)
             : BuildAttributeRows(user, attributeResult.Value);
@@ -808,6 +982,34 @@ public partial class NativeSimulationView : UserControl
         return values;
     }
 
+    private async Task ApplyGroupRelationshipChangesAsync(SimulatorUserSummary user, IReadOnlyList<string> desiredGroups)
+    {
+        var current = new HashSet<string>(user.Groups.Where(value => !string.IsNullOrWhiteSpace(value)), StringComparer.OrdinalIgnoreCase);
+        var desired = new HashSet<string>(desiredGroups.Where(value => !string.IsNullOrWhiteSpace(value)), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in desired.Except(current, StringComparer.OrdinalIgnoreCase))
+        {
+            await _writer.AddGroupMembershipAsync(
+                new MembershipChangeRequest { Identity = user.SamAccountName, Group = group },
+                CorrelationId.New()).ConfigureAwait(true);
+        }
+
+        foreach (var group in current.Except(desired, StringComparer.OrdinalIgnoreCase))
+        {
+            await _writer.RemoveGroupMembershipAsync(
+                new MembershipChangeRequest { Identity = user.SamAccountName, Group = group },
+                CorrelationId.New()).ConfigureAwait(true);
+        }
+    }
+
+    private static IReadOnlyList<string> SplitEditorValues(string value)
+    {
+        return (value ?? string.Empty)
+            .Split(new[] { ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToArray();
+    }
+
     private TabItem CreateRelationshipsTab(ObservableCollection<string> currentReports, ObservableCollection<string> currentGroups)
     {
         var root = new Grid { Margin = new Thickness(12) };
@@ -821,7 +1023,7 @@ public partial class NativeSimulationView : UserControl
             currentReports,
             async query =>
             {
-                var result = await _simulator.SearchUsersAsync(query, CorrelationId.New()).ConfigureAwait(true);
+                var result = await _userLookup.SearchUsersAsync(query, CorrelationId.New()).ConfigureAwait(true);
                 return result.Value?.Select(user => $"{user.SamAccountName} | {user.DisplayName}").ToArray() ?? Array.Empty<string>();
             },
             value => value.Split('|')[0].Trim()));
@@ -832,8 +1034,8 @@ public partial class NativeSimulationView : UserControl
             currentGroups,
             async query =>
             {
-                var result = await _simulator.SearchGroupsAsync(query, CorrelationId.New()).ConfigureAwait(true);
-                return result.Value?.Select(group => $"{group.DisplayName} | {group.Source}").ToArray() ?? Array.Empty<string>();
+                var result = await _directoryGroupLookup.SearchGroupsAsync(query, CorrelationId.New()).ConfigureAwait(true);
+                return result.Value?.Select(group => $"{group.Id} | {group.DisplayName}").ToArray() ?? Array.Empty<string>();
             },
             value => value.Split('|')[0].Trim());
         Grid.SetColumn(groupsPanel, 2);
@@ -1102,6 +1304,16 @@ public partial class NativeSimulationView : UserControl
 
     private static string Safe(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
 
+    private static string FirstNonEmpty(params string[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+    }
+
+    private static string ProviderName(object? provider)
+    {
+        return provider?.GetType().Name ?? "Disabled";
+    }
+
     private static string JoinOrNone(IEnumerable<string> values)
     {
         var materialized = values.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
@@ -1113,6 +1325,18 @@ public partial class NativeSimulationView : UserControl
     private sealed record CapabilityRow(string Provider, string Capability, string Disposition, string Reason);
 
     private sealed record DeviceRow(string Name, string OperatingSystem, string ComplianceState, string PrimaryUser, string LastCheckIn, string Source);
+
+    private sealed record RuntimeProviderSet(
+        IUserLookupCapability UserLookup,
+        IDirectoryReadCapability DirectoryRead,
+        IDirectoryAttributeReadCapability DirectoryAttributeRead,
+        IDirectoryGroupLookupCapability DirectoryGroupLookup,
+        IGraphReadCapability? GraphRead,
+        IExchangeReadCapability? ExchangeRead,
+        ISimulatorWriteCapability Writer,
+        IReadOnlyList<(string ProviderId, IDeviceReadCapability Provider)> DeviceProviders,
+        IReadOnlyList<IProviderHealthCapability> HealthProviders,
+        string BindingSummary);
 
     private sealed class AttributeEditorRow
     {

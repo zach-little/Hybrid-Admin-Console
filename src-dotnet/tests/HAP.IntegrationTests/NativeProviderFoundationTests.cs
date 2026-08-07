@@ -2,10 +2,12 @@ using HAP.Contracts;
 using HAP.Providers.ActiveDirectory;
 using HAP.Providers.ExchangeOnline;
 using HAP.Providers.Graph;
+using System.Runtime.Versioning;
 using Xunit;
 
 namespace HAP.IntegrationTests;
 
+[SupportedOSPlatform("windows")]
 public sealed class NativeProviderFoundationTests
 {
     [Fact]

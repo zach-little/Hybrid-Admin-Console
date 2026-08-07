@@ -35,7 +35,7 @@ public partial class MainWindow : Window
         await _viewModel.StartSelectedRuntimeAsync(GetRepositoryRoot()).ConfigureAwait(true);
         if (_viewModel.IsRuntimeStarted)
         {
-            ContentHost.Content = new NativeSimulationView();
+            ContentHost.Content = new NativeSimulationView(_viewModel.ProfileConfiguration);
             LaunchButton.Visibility = Visibility.Collapsed;
             RefreshButton.Visibility = Visibility.Collapsed;
             BackToProfilesButton.Visibility = Visibility.Visible;

@@ -13,4 +13,6 @@ public sealed record ActiveDirectoryProviderOptions
     public bool UseLiveDirectory { get; init; }
 
     public bool AllowWrites { get; init; }
+
+    public string DefaultUserContainer { get; init; } = string.Empty;
 }
