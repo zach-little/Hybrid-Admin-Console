@@ -86,6 +86,10 @@ public sealed record ManagedDeviceSummary
 {
     public string Id { get; init; } = string.Empty;
 
+    public string EntraDeviceId { get; init; } = string.Empty;
+
+    public string ActiveDirectoryIdentity { get; init; } = string.Empty;
+
     public string Name { get; init; } = string.Empty;
 
     public string OperatingSystem { get; init; } = string.Empty;
@@ -95,6 +99,62 @@ public sealed record ManagedDeviceSummary
     public string PrimaryUser { get; init; } = string.Empty;
 
     public DateTimeOffset? LastCheckInUtc { get; init; }
+
+    public string Source { get; init; } = string.Empty;
+}
+
+public enum DeviceSecretKind
+{
+    BitLockerRecoveryKey,
+    LapsPassword
+}
+
+public enum DeviceActionTarget
+{
+    Intune,
+    EntraId,
+    ActiveDirectory,
+    All
+}
+
+public sealed record DeviceSecretRevealRequest
+{
+    public required ManagedDeviceSummary Device { get; init; }
+
+    public DeviceSecretKind SecretKind { get; init; }
+}
+
+public sealed record DeviceSecretRevealResult
+{
+    public string DeviceId { get; init; } = string.Empty;
+
+    public string DeviceName { get; init; } = string.Empty;
+
+    public DeviceSecretKind SecretKind { get; init; }
+
+    public string Secret { get; init; } = string.Empty;
+
+    public string Metadata { get; init; } = string.Empty;
+
+    public string Source { get; init; } = string.Empty;
+}
+
+public sealed record DeviceLifecycleRequest
+{
+    public required ManagedDeviceSummary Device { get; init; }
+
+    public DeviceActionTarget Target { get; init; }
+}
+
+public sealed record DeviceLifecycleResult
+{
+    public string Operation { get; init; } = string.Empty;
+
+    public string Target { get; init; } = string.Empty;
+
+    public bool Changed { get; init; }
+
+    public string Message { get; init; } = string.Empty;
 
     public string Source { get; init; } = string.Empty;
 }

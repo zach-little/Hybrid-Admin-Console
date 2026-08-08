@@ -12,6 +12,7 @@ public sealed class DirectorySimulatorProvider :
     IDirectoryAttributeReadCapability,
     IDirectoryGroupLookupCapability,
     IDeviceReadCapability,
+    IDeviceActionCapability,
     IGraphReadCapability,
     IExchangeReadCapability,
     IConfigurationPreviewCapability,
@@ -356,6 +357,73 @@ public sealed class DirectorySimulatorProvider :
             .ToArray();
 
         return OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Success(devices, correlationId);
+    }
+
+    public Task<OperationResult<DeviceSecretRevealResult>> RevealDeviceSecretAsync(
+        DeviceSecretRevealRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        var secret = request.SecretKind == DeviceSecretKind.BitLockerRecoveryKey
+            ? $"SIM-BL-{StableNumber(request.Device.Name):000000}-123456-654321"
+            : $"SIM-LAPS-{StableNumber(request.Device.Name):000000}!";
+        return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Success(
+            new DeviceSecretRevealResult
+            {
+                DeviceId = request.Device.Id,
+                DeviceName = request.Device.Name,
+                SecretKind = request.SecretKind,
+                Secret = secret,
+                Metadata = "Simulation secret; no live tenant data was queried.",
+                Source = "DirectorySimulator.Devices"
+            },
+            correlationId,
+            status: "Revealed"));
+    }
+
+    public Task<OperationResult<DeviceLifecycleResult>> RetireDeviceAsync(
+        DeviceLifecycleRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        return Task.FromResult(OperationResult<DeviceLifecycleResult>.Success(
+            new DeviceLifecycleResult
+            {
+                Operation = "RetireDevice",
+                Target = request.Target.ToString(),
+                Changed = true,
+                Message = $"Simulation retired {request.Device.Name}.",
+                Source = "DirectorySimulator.Devices"
+            },
+            correlationId,
+            status: "Retired"));
+    }
+
+    public Task<OperationResult<DeviceLifecycleResult>> DeleteDeviceAsync(
+        DeviceLifecycleRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        _ = cancellationToken;
+        foreach (var devices in _devices.Values)
+        {
+            devices.RemoveAll(device => string.Equals(device.Id, request.Device.Id, StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(device.Name, request.Device.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult(OperationResult<DeviceLifecycleResult>.Success(
+            new DeviceLifecycleResult
+            {
+                Operation = "DeleteDevice",
+                Target = request.Target.ToString(),
+                Changed = true,
+                Message = $"Simulation deleted {request.Device.Name}.",
+                Source = "DirectorySimulator.Devices"
+            },
+            correlationId,
+            status: "Deleted"));
     }
 
     public async Task<OperationResult<GraphProfileSummary?>> GetGraphProfileAsync(

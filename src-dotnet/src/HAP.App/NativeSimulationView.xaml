@@ -377,16 +377,39 @@
                             <TextBox x:Name="DeviceSearchBox" Height="38" Text="amorgan" />
                             <Button Grid.Column="1" Content="Search Devices" Style="{StaticResource CommandButton}" Height="38" Margin="12,0,0,0" Click="OnDeviceSearchClicked" />
                         </Grid>
-                        <DataGrid x:Name="DevicesGrid" Grid.Row="2" Margin="0,14,0,0">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Device" Width="220" Binding="{Binding Name}" />
-                                <DataGridTextColumn Header="OS" Width="160" Binding="{Binding OperatingSystem}" />
-                                <DataGridTextColumn Header="Compliance" Width="140" Binding="{Binding ComplianceState}" />
-                                <DataGridTextColumn Header="Primary User" Width="160" Binding="{Binding PrimaryUser}" />
-                                <DataGridTextColumn Header="Last Check-In" Width="180" Binding="{Binding LastCheckIn}" />
-                                <DataGridTextColumn Header="Source" Width="220" Binding="{Binding Source}" />
-                            </DataGrid.Columns>
-                        </DataGrid>
+                        <Grid Grid.Row="2" Margin="0,14,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="120" />
+                            </Grid.RowDefinitions>
+                            <DataGrid x:Name="DevicesGrid" SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Device" Width="220" Binding="{Binding Name}" />
+                                    <DataGridTextColumn Header="OS" Width="150" Binding="{Binding OperatingSystem}" />
+                                    <DataGridTextColumn Header="Compliance" Width="130" Binding="{Binding ComplianceState}" />
+                                    <DataGridTextColumn Header="Primary User" Width="170" Binding="{Binding PrimaryUser}" />
+                                    <DataGridTextColumn Header="Last Check-In" Width="170" Binding="{Binding LastCheckIn}" />
+                                    <DataGridTextColumn Header="Source" Width="210" Binding="{Binding Source}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <WrapPanel Grid.Row="1" Margin="0,12,0,8">
+                                <Button Content="Reveal BitLocker Key" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRevealBitLockerClicked" />
+                                <Button Content="Reveal LAPS Password" Style="{StaticResource CommandButton}" Margin="0,0,18,8" Click="OnRevealLapsClicked" />
+                                <Button Content="Retire from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRetireIntuneDeviceClicked" />
+                                <Button Content="Delete from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteIntuneDeviceClicked" />
+                                <Button Content="Delete from Entra ID" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteEntraDeviceClicked" />
+                                <Button Content="Delete from AD" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAdDeviceClicked" />
+                                <Button Content="Delete from All" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAllDeviceClicked" />
+                            </WrapPanel>
+                            <TextBox x:Name="DeviceActionOutputTextBox"
+                                     Grid.Row="2"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Text="Select a device, then reveal a protected secret or run a lifecycle action." />
+                        </Grid>
                     </Grid>
                 </TabItem>
 

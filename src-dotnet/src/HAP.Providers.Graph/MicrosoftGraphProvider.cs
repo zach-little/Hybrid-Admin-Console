@@ -1,5 +1,9 @@
 using System.Globalization;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
 using Azure.Core;
 using Azure.Identity;
 using HAP.Contracts;
@@ -16,11 +20,14 @@ public sealed class MicrosoftGraphProvider :
     IUserLookupCapability,
     IGraphReadCapability,
     IDeviceReadCapability,
+    IDeviceActionCapability,
     ISimulatorWriteCapability
 {
+    private static readonly HttpClient Http = new();
     private readonly GraphProviderOptions _options;
     private readonly List<SimulatorUserSummary> _users;
     private GraphServiceClient? _client;
+    private TokenCredential? _credential;
 
     public MicrosoftGraphProvider(GraphProviderOptions? options = null, IReadOnlyList<SimulatorUserSummary>? users = null)
     {
@@ -184,7 +191,7 @@ public sealed class MicrosoftGraphProvider :
             {
                 var devices = await CreateClient().Users[user.Value.Id].ManagedDevices.GetAsync(request =>
                 {
-                    request.QueryParameters.Select = new[] { "id", "deviceName", "operatingSystem", "complianceState", "userPrincipalName", "lastSyncDateTime" };
+                    request.QueryParameters.Select = new[] { "id", "deviceName", "operatingSystem", "complianceState", "userPrincipalName", "lastSyncDateTime", "azureADDeviceId" };
                     request.QueryParameters.Top = 50;
                 }, cancellationToken).ConfigureAwait(false);
 
@@ -236,7 +243,7 @@ public sealed class MicrosoftGraphProvider :
                 var clean = EscapeODataString(query.Trim());
                 var liveDevices = await CreateClient().DeviceManagement.ManagedDevices.GetAsync(request =>
                 {
-                    request.QueryParameters.Select = new[] { "id", "deviceName", "operatingSystem", "complianceState", "userPrincipalName", "lastSyncDateTime" };
+                    request.QueryParameters.Select = new[] { "id", "deviceName", "operatingSystem", "complianceState", "userPrincipalName", "lastSyncDateTime", "azureADDeviceId" };
                     request.QueryParameters.Filter = $"startswith(deviceName,'{clean}')";
                     request.QueryParameters.Top = 50;
                 }, cancellationToken).ConfigureAwait(false);
@@ -258,6 +265,96 @@ public sealed class MicrosoftGraphProvider :
             .OrderBy(device => device.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         return OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Success(devices, correlationId);
+    }
+
+    public async Task<OperationResult<DeviceSecretRevealResult>> RevealDeviceSecretAsync(DeviceSecretRevealRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!_options.UseLiveGraph)
+        {
+            var simulated = request.SecretKind == DeviceSecretKind.BitLockerRecoveryKey
+                ? $"SIM-GRAPH-BL-{request.Device.Name}-000000"
+                : $"SIM-GRAPH-LAPS-{request.Device.Name}!";
+            return OperationResult<DeviceSecretRevealResult>.Success(new DeviceSecretRevealResult
+            {
+                DeviceId = request.Device.Id,
+                DeviceName = request.Device.Name,
+                SecretKind = request.SecretKind,
+                Secret = simulated,
+                Metadata = "Simulation Graph secret.",
+                Source = "MicrosoftGraph.Simulation"
+            }, correlationId, status: "Revealed");
+        }
+
+        try
+        {
+            var result = request.SecretKind == DeviceSecretKind.BitLockerRecoveryKey
+                ? await RevealBitLockerKeyAsync(request.Device, cancellationToken).ConfigureAwait(false)
+                : await RevealLapsPasswordAsync(request.Device, cancellationToken).ConfigureAwait(false);
+            return OperationResult<DeviceSecretRevealResult>.Success(result, correlationId, status: "Revealed");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<DeviceSecretRevealResult>.Failure(correlationId, new[] { HapOperationError.Create("Graph.DeviceSecret.RevealFailed", $"Microsoft Graph secret reveal failed: {FriendlyError(ex)}") }, status: "Failed");
+        }
+    }
+
+    public async Task<OperationResult<DeviceLifecycleResult>> RetireDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (request.Target is not DeviceActionTarget.Intune and not DeviceActionTarget.All)
+        {
+            return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("RetireDevice", request.Target, false, "Retire applies to Intune managed devices only."), correlationId, status: "Skipped");
+        }
+
+        if (!_options.UseLiveGraph)
+        {
+            return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("RetireDevice", DeviceActionTarget.Intune, true, $"Simulation retired Intune device {request.Device.Name}."), correlationId, status: "Retired");
+        }
+
+        try
+        {
+            await SendGraphNoContentAsync(HttpMethod.Post, $"/deviceManagement/managedDevices/{Uri.EscapeDataString(request.Device.Id)}/retire", cancellationToken).ConfigureAwait(false);
+            return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("RetireDevice", DeviceActionTarget.Intune, true, $"Retire requested for Intune device {request.Device.Name}."), correlationId, status: "Retired");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<DeviceLifecycleResult>.Failure(correlationId, new[] { HapOperationError.Create("Graph.Intune.RetireFailed", $"Intune retire failed: {FriendlyError(ex)}") }, status: "Failed");
+        }
+    }
+
+    public async Task<OperationResult<DeviceLifecycleResult>> DeleteDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!_options.UseLiveGraph)
+        {
+            return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("DeleteDevice", request.Target, true, $"Simulation deleted {request.Device.Name} from {request.Target}."), correlationId, status: "Deleted");
+        }
+
+        try
+        {
+            if (request.Target is DeviceActionTarget.Intune or DeviceActionTarget.All)
+            {
+                await SendGraphNoContentAsync(HttpMethod.Delete, $"/deviceManagement/managedDevices/{Uri.EscapeDataString(request.Device.Id)}", cancellationToken).ConfigureAwait(false);
+                if (request.Target == DeviceActionTarget.Intune)
+                {
+                    return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("DeleteDevice", DeviceActionTarget.Intune, true, $"Deleted Intune managed device {request.Device.Name}."), correlationId, status: "Deleted");
+                }
+            }
+
+            if (request.Target is DeviceActionTarget.EntraId or DeviceActionTarget.All)
+            {
+                var entraObjectId = await ResolveEntraDeviceObjectIdAsync(request.Device, cancellationToken).ConfigureAwait(false);
+                await SendGraphNoContentAsync(HttpMethod.Delete, $"/devices/{Uri.EscapeDataString(entraObjectId)}", cancellationToken).ConfigureAwait(false);
+                var message = request.Target == DeviceActionTarget.All
+                    ? $"Deleted Intune and Entra records for {request.Device.Name}."
+                    : $"Deleted Entra device {request.Device.Name}.";
+                return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("DeleteDevice", request.Target, true, message), correlationId, status: "Deleted");
+            }
+
+            return OperationResult<DeviceLifecycleResult>.Success(Lifecycle("DeleteDevice", request.Target, false, "Graph provider skipped non-Graph target."), correlationId, status: "Skipped");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<DeviceLifecycleResult>.Failure(correlationId, new[] { HapOperationError.Create("Graph.Device.DeleteFailed", $"Microsoft Graph device delete failed: {FriendlyError(ex)}") }, status: "Failed");
+        }
     }
 
     public Task<OperationResult<ProviderChangeResult>> CreateUserAsync(UserCreateRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
@@ -498,6 +595,149 @@ public sealed class MicrosoftGraphProvider :
         return result.Value!;
     }
 
+    private async Task<DeviceSecretRevealResult> RevealBitLockerKeyAsync(ManagedDeviceSummary device, CancellationToken cancellationToken)
+    {
+        var deviceId = FirstNonEmpty(device.EntraDeviceId, device.Id);
+        using var list = await SendGraphJsonAsync(HttpMethod.Get, $"/informationProtection/bitlocker/recoveryKeys?$filter=deviceId eq '{EscapeODataString(deviceId)}'&$select=id,deviceId,createdDateTime,volumeType", cancellationToken).ConfigureAwait(false);
+        var first = list.RootElement.TryGetProperty("value", out var values) && values.ValueKind == JsonValueKind.Array
+            ? values.EnumerateArray().FirstOrDefault()
+            : default;
+        var keyId = first.ValueKind == JsonValueKind.Object && first.TryGetProperty("id", out var idProperty) ? idProperty.GetString() ?? string.Empty : string.Empty;
+        if (string.IsNullOrWhiteSpace(keyId))
+        {
+            throw new InvalidOperationException("No BitLocker recovery key was found for the selected device.");
+        }
+
+        using var key = await SendGraphJsonAsync(HttpMethod.Get, $"/informationProtection/bitlocker/recoveryKeys/{Uri.EscapeDataString(keyId)}?$select=id,key,deviceId,createdDateTime,volumeType", cancellationToken).ConfigureAwait(false);
+        var secret = GetJsonString(key.RootElement, "key");
+        return new DeviceSecretRevealResult
+        {
+            DeviceId = deviceId,
+            DeviceName = device.Name,
+            SecretKind = DeviceSecretKind.BitLockerRecoveryKey,
+            Secret = secret,
+            Metadata = $"Key id: {keyId}; Created: {GetJsonString(key.RootElement, "createdDateTime")}; Volume: {GetJsonString(key.RootElement, "volumeType")}",
+            Source = "MicrosoftGraph.BitLocker"
+        };
+    }
+
+    private async Task<DeviceSecretRevealResult> RevealLapsPasswordAsync(ManagedDeviceSummary device, CancellationToken cancellationToken)
+    {
+        var deviceId = FirstNonEmpty(device.EntraDeviceId, device.Id);
+        using var document = await SendGraphJsonAsync(HttpMethod.Get, $"/directory/deviceLocalCredentials/{Uri.EscapeDataString(deviceId)}?$select=deviceName,credentials,lastBackupDateTime", cancellationToken).ConfigureAwait(false);
+        var password = string.Empty;
+        var account = string.Empty;
+        if (document.RootElement.TryGetProperty("credentials", out var credentials) && credentials.ValueKind == JsonValueKind.Array)
+        {
+            var first = credentials.EnumerateArray().FirstOrDefault();
+            if (first.ValueKind == JsonValueKind.Object)
+            {
+                account = GetJsonString(first, "accountName");
+                var encoded = GetJsonString(first, "passwordBase64");
+                if (!string.IsNullOrWhiteSpace(encoded))
+                {
+                    password = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            throw new InvalidOperationException("No LAPS password was returned for the selected device.");
+        }
+
+        return new DeviceSecretRevealResult
+        {
+            DeviceId = deviceId,
+            DeviceName = device.Name,
+            SecretKind = DeviceSecretKind.LapsPassword,
+            Secret = password,
+            Metadata = $"Account: {account}; Last backup: {GetJsonString(document.RootElement, "lastBackupDateTime")}",
+            Source = "MicrosoftGraph.LAPS"
+        };
+    }
+
+    private async Task<JsonDocument> SendGraphJsonAsync(HttpMethod method, string path, CancellationToken cancellationToken)
+    {
+        using var response = await SendGraphAsync(method, path, cancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {content}");
+        }
+
+        return JsonDocument.Parse(string.IsNullOrWhiteSpace(content) ? "{}" : content);
+    }
+
+    private async Task SendGraphNoContentAsync(HttpMethod method, string path, CancellationToken cancellationToken)
+    {
+        using var response = await SendGraphAsync(method, path, cancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"{(int)response.StatusCode} {response.ReasonPhrase}: {content}");
+        }
+    }
+
+    private async Task<string> ResolveEntraDeviceObjectIdAsync(ManagedDeviceSummary device, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(device.EntraDeviceId))
+        {
+            using var byDeviceId = await SendGraphJsonAsync(HttpMethod.Get, $"/devices?$filter=deviceId eq '{EscapeODataString(device.EntraDeviceId)}'&$select=id,deviceId,displayName", cancellationToken).ConfigureAwait(false);
+            var resolved = FirstValueId(byDeviceId.RootElement);
+            if (!string.IsNullOrWhiteSpace(resolved))
+            {
+                return resolved;
+            }
+        }
+
+        using var byName = await SendGraphJsonAsync(HttpMethod.Get, $"/devices?$filter=displayName eq '{EscapeODataString(device.Name)}'&$select=id,deviceId,displayName", cancellationToken).ConfigureAwait(false);
+        var named = FirstValueId(byName.RootElement);
+        if (!string.IsNullOrWhiteSpace(named))
+        {
+            return named;
+        }
+
+        throw new InvalidOperationException("Unable to resolve the Entra device object ID for the selected device.");
+    }
+
+    private static string FirstValueId(JsonElement root)
+    {
+        if (root.TryGetProperty("value", out var values) && values.ValueKind == JsonValueKind.Array)
+        {
+            var first = values.EnumerateArray().FirstOrDefault();
+            if (first.ValueKind == JsonValueKind.Object)
+            {
+                return GetJsonString(first, "id");
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private async Task<HttpResponseMessage> SendGraphAsync(HttpMethod method, string path, CancellationToken cancellationToken)
+    {
+        var credential = CreateCredential();
+        var token = await credential.GetTokenAsync(new TokenRequestContext(GetScopes()), cancellationToken).ConfigureAwait(false);
+        using var request = new HttpRequestMessage(method, $"{GetGraphBaseUrl()}{path}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.TryAddWithoutValidation("ConsistencyLevel", "eventual");
+        return await Http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static DeviceLifecycleResult Lifecycle(string operation, DeviceActionTarget target, bool changed, string message)
+    {
+        return new DeviceLifecycleResult
+        {
+            Operation = operation,
+            Target = target.ToString(),
+            Changed = changed,
+            Message = message,
+            Source = "MicrosoftGraph.Sdk"
+        };
+    }
+
     private OperationResult<GraphServiceClient> CreateClientResult(CorrelationId correlationId)
     {
         if (_client is not null)
@@ -525,23 +765,35 @@ public sealed class MicrosoftGraphProvider :
 
     private TokenCredential CreateCredential()
     {
+        if (_credential is not null)
+        {
+            return _credential;
+        }
+
         if (_options.AuthenticationMode.Equals("Delegated", StringComparison.OrdinalIgnoreCase))
         {
-            return new InteractiveBrowserCredential(new InteractiveBrowserCredentialOptions
+            _credential = new SinglePromptTokenCredential(new InteractiveBrowserCredential(new InteractiveBrowserCredentialOptions
             {
                 TenantId = _options.TenantId,
                 ClientId = _options.ClientId,
                 AuthorityHost = AuthorityHost(),
-                RedirectUri = new Uri("http://localhost")
-            });
+                RedirectUri = new Uri("http://localhost"),
+                TokenCachePersistenceOptions = new TokenCachePersistenceOptions
+                {
+                    Name = BuildTokenCacheName()
+                }
+            }));
+            return _credential;
         }
 
         if (_options.CredentialMode.Equals("SecretReference", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(_options.ClientSecret))
         {
-            return new ClientSecretCredential(_options.TenantId, _options.ClientId, _options.ClientSecret, new ClientSecretCredentialOptions { AuthorityHost = AuthorityHost() });
+            _credential = new ClientSecretCredential(_options.TenantId, _options.ClientId, _options.ClientSecret, new ClientSecretCredentialOptions { AuthorityHost = AuthorityHost() });
+            return _credential;
         }
 
-        return new ClientCertificateCredential(_options.TenantId, _options.ClientId, FindCertificate(), new ClientCertificateCredentialOptions { AuthorityHost = AuthorityHost() });
+        _credential = new ClientCertificateCredential(_options.TenantId, _options.ClientId, FindCertificate(), new ClientCertificateCredentialOptions { AuthorityHost = AuthorityHost() });
+        return _credential;
     }
 
     private X509Certificate2 FindCertificate()
@@ -579,6 +831,84 @@ public sealed class MicrosoftGraphProvider :
         }
 
         return new[] { $"{GetGraphResource().TrimEnd('/')}/.default" };
+    }
+
+    private string BuildTokenCacheName()
+    {
+        var cacheKey = $"{_options.CloudEnvironment}|{_options.TenantId}|{_options.ClientId}";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cacheKey)))[..16];
+        return $"HAP.Graph.{hash}";
+    }
+
+    private sealed class SinglePromptTokenCredential : TokenCredential
+    {
+        private static readonly TimeSpan RefreshWindow = TimeSpan.FromMinutes(5);
+        private readonly TokenCredential _inner;
+        private readonly SemaphoreSlim _gate = new(1, 1);
+        private readonly Dictionary<string, AccessToken> _tokens = new(StringComparer.Ordinal);
+
+        public SinglePromptTokenCredential(TokenCredential inner)
+        {
+            _inner = inner;
+        }
+
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            var key = CacheKey(requestContext);
+            _gate.Wait(cancellationToken);
+            try
+            {
+                if (TryGetUsableToken(key, out var token))
+                {
+                    return token;
+                }
+
+                token = _inner.GetToken(requestContext, cancellationToken);
+                _tokens[key] = token;
+                return token;
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+
+        public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            var key = CacheKey(requestContext);
+            await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (TryGetUsableToken(key, out var token))
+                {
+                    return token;
+                }
+
+                token = await _inner.GetTokenAsync(requestContext, cancellationToken).ConfigureAwait(false);
+                _tokens[key] = token;
+                return token;
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+
+        private bool TryGetUsableToken(string key, out AccessToken token)
+        {
+            if (_tokens.TryGetValue(key, out token) && token.ExpiresOn > DateTimeOffset.UtcNow.Add(RefreshWindow))
+            {
+                return true;
+            }
+
+            token = default;
+            return false;
+        }
+
+        private static string CacheKey(TokenRequestContext requestContext)
+        {
+            return string.Join(" ", requestContext.Scopes.OrderBy(scope => scope, StringComparer.OrdinalIgnoreCase));
+        }
     }
 
     private Uri AuthorityHost()
@@ -661,6 +991,8 @@ public sealed class MicrosoftGraphProvider :
         return new ManagedDeviceSummary
         {
             Id = device.Id ?? string.Empty,
+            EntraDeviceId = device.AzureADDeviceId ?? string.Empty,
+            ActiveDirectoryIdentity = device.DeviceName ?? string.Empty,
             Name = device.DeviceName ?? string.Empty,
             OperatingSystem = device.OperatingSystem ?? string.Empty,
             ComplianceState = device.ComplianceState?.ToString() ?? string.Empty,
@@ -696,6 +1028,15 @@ public sealed class MicrosoftGraphProvider :
     }
 
     private static string FirstNonEmpty(params string?[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+
+    private static string GetJsonString(JsonElement element, string propertyName)
+    {
+        return element.ValueKind == JsonValueKind.Object &&
+               element.TryGetProperty(propertyName, out var value) &&
+               value.ValueKind != JsonValueKind.Null
+            ? value.ToString() ?? string.Empty
+            : string.Empty;
+    }
 
     private static bool IsPasswordlessMethod(string method)
     {

@@ -12,6 +12,8 @@ public sealed class ActiveDirectoryProvider :
     IDirectoryReadCapability,
     IDirectoryAttributeReadCapability,
     IDirectoryGroupLookupCapability,
+    IDeviceReadCapability,
+    IDeviceActionCapability,
     ISimulatorWriteCapability
 {
     private readonly ActiveDirectoryProviderOptions _options;
@@ -341,6 +343,132 @@ public sealed class ActiveDirectoryProvider :
         catch (Exception ex)
         {
             return Task.FromResult(OperationResult<IReadOnlyList<DirectoryGroupSummary>>.Failure(correlationId, new[] { OperationError.Create("AD.GroupLookup.LiveQueryFailed", $"AD group lookup failed: {ex.Message}") }, status: "Failed"));
+        }
+    }
+
+    public Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> GetManagedDevicesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        return SearchDevicesAsync(identity, correlationId, cancellationToken);
+    }
+
+    public Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> SearchDevicesAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        var error = Validate();
+        if (error is not null) return Task.FromResult(OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Failure(correlationId, new[] { error }, status: "Failed"));
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Task.FromResult(OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Failure(correlationId, new[] { OperationError.Create("AD.DeviceLookup.QueryRequired", "Device lookup query is required.") }));
+        }
+
+        if (!_options.UseLiveDirectory)
+        {
+            return Task.FromResult(OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Success(Array.Empty<ManagedDeviceSummary>(), correlationId, status: "NoMatches"));
+        }
+
+        try
+        {
+            using var root = CreateDirectoryRoot();
+            using var searcher = new DirectorySearcher(root)
+            {
+                Filter = $"(&(objectCategory=computer)(|(cn=*{EscapeFilter(query)}*)(dNSHostName=*{EscapeFilter(query)}*)(sAMAccountName=*{EscapeFilter(query)}*)))",
+                PageSize = 50,
+                SizeLimit = 50
+            };
+            AddComputerProperties(searcher);
+            var devices = searcher.FindAll().Cast<SearchResult>().Select(MapComputer).OrderBy(device => device.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+            return Task.FromResult(OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Success(devices, correlationId, status: devices.Length == 0 ? "NoMatches" : "Loaded"));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<IReadOnlyList<ManagedDeviceSummary>>.Failure(correlationId, new[] { OperationError.Create("AD.DeviceLookup.LiveQueryFailed", $"AD computer lookup failed: {ex.Message}") }, status: "Failed"));
+        }
+    }
+
+    public Task<OperationResult<DeviceSecretRevealResult>> RevealDeviceSecretAsync(DeviceSecretRevealRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (request.SecretKind == DeviceSecretKind.BitLockerRecoveryKey)
+        {
+            return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Failure(correlationId, new[] { OperationError.Create("AD.BitLocker.Unsupported", "BitLocker recovery key reveal is handled through Microsoft Graph in this console.") }, status: "Unsupported"));
+        }
+
+        if (!_options.UseLiveDirectory)
+        {
+            return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Success(new DeviceSecretRevealResult
+            {
+                DeviceId = request.Device.Id,
+                DeviceName = request.Device.Name,
+                SecretKind = request.SecretKind,
+                Secret = $"SIM-AD-LAPS-{request.Device.Name}!",
+                Metadata = "Simulation AD LAPS password.",
+                Source = "ActiveDirectory.Simulation"
+            }, correlationId, status: "Revealed"));
+        }
+
+        try
+        {
+            using var computer = FindLiveComputerEntry(request.Device);
+            if (computer is null)
+            {
+                return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Failure(correlationId, new[] { OperationError.Create("AD.Laps.NotFound", "Computer object was not found.") }, status: "NotFound"));
+            }
+
+            var secret = FirstNonEmpty(
+                computer.Properties["msLAPS-Password"].Value?.ToString(),
+                computer.Properties["ms-Mcs-AdmPwd"].Value?.ToString());
+            if (string.IsNullOrWhiteSpace(secret))
+            {
+                return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Failure(correlationId, new[] { OperationError.Create("AD.Laps.NoPassword", "No LAPS password attribute was readable on the computer object.") }, status: "NotFound"));
+            }
+
+            return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Success(new DeviceSecretRevealResult
+            {
+                DeviceId = request.Device.Id,
+                DeviceName = request.Device.Name,
+                SecretKind = request.SecretKind,
+                Secret = secret,
+                Metadata = $"Computer DN: {computer.Properties["distinguishedName"].Value}",
+                Source = "ActiveDirectory.LAPS"
+            }, correlationId, status: "Revealed"));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<DeviceSecretRevealResult>.Failure(correlationId, new[] { OperationError.Create("AD.Laps.RevealFailed", $"AD LAPS password reveal failed: {ex.Message}") }, status: "Failed"));
+        }
+    }
+
+    public Task<OperationResult<DeviceLifecycleResult>> RetireDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(OperationResult<DeviceLifecycleResult>.Success(new DeviceLifecycleResult
+        {
+            Operation = "RetireDevice",
+            Target = request.Target.ToString(),
+            Changed = false,
+            Message = "Active Directory computer objects do not support retire; use delete for AD cleanup.",
+            Source = "ActiveDirectory"
+        }, correlationId, status: "Skipped"));
+    }
+
+    public Task<OperationResult<DeviceLifecycleResult>> DeleteDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!_options.UseLiveDirectory) return Task.FromResult(OperationResult<DeviceLifecycleResult>.Success(new DeviceLifecycleResult { Operation = "DeleteDevice", Target = request.Target.ToString(), Changed = true, Message = $"Simulation deleted AD computer {request.Device.Name}.", Source = "ActiveDirectory.Simulation" }, correlationId, status: "Deleted"));
+        if (!_options.AllowWrites) return Task.FromResult(OperationResult<DeviceLifecycleResult>.Failure(correlationId, new[] { OperationError.Create("AD.DeviceDelete.WritesDisabled", "AD writes are disabled for this runtime profile.") }, status: "Failed"));
+
+        try
+        {
+            using var computer = FindLiveComputerEntry(request.Device);
+            if (computer is null)
+            {
+                return Task.FromResult(OperationResult<DeviceLifecycleResult>.Failure(correlationId, new[] { OperationError.Create("AD.DeviceDelete.NotFound", "Computer object was not found.") }, status: "NotFound"));
+            }
+
+            var parent = computer.Parent;
+            parent.Children.Remove(computer);
+            parent.CommitChanges();
+            return Task.FromResult(OperationResult<DeviceLifecycleResult>.Success(new DeviceLifecycleResult { Operation = "DeleteDevice", Target = DeviceActionTarget.ActiveDirectory.ToString(), Changed = true, Message = $"Deleted AD computer {request.Device.Name}.", Source = "ActiveDirectory" }, correlationId, status: "Deleted"));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<DeviceLifecycleResult>.Failure(correlationId, new[] { OperationError.Create("AD.DeviceDelete.Failed", $"AD computer delete failed: {ex.Message}") }, status: "Failed"));
         }
     }
 
@@ -761,6 +889,25 @@ public sealed class ActiveDirectoryProvider :
         return searcher.FindOne()?.GetDirectoryEntry();
     }
 
+    private DirectoryEntry? FindLiveComputerEntry(ManagedDeviceSummary device)
+    {
+        var identity = FirstNonEmpty(device.ActiveDirectoryIdentity, device.Name, device.Id);
+        if (string.IsNullOrWhiteSpace(identity))
+        {
+            return null;
+        }
+
+        using var root = CreateDirectoryRoot();
+        var sam = identity.EndsWith("$", StringComparison.Ordinal) ? identity : $"{identity}$";
+        using var searcher = new DirectorySearcher(root)
+        {
+            Filter = $"(&(objectCategory=computer)(|(cn={EscapeFilter(identity)})(dNSHostName={EscapeFilter(identity)})(sAMAccountName={EscapeFilter(sam)})(distinguishedName={EscapeFilter(identity)})))",
+            SizeLimit = 1
+        };
+        AddComputerProperties(searcher);
+        return searcher.FindOne()?.GetDirectoryEntry();
+    }
+
     private DirectoryEntry CreateUserContainer()
     {
         if (!string.IsNullOrWhiteSpace(_options.DefaultUserContainer))
@@ -861,6 +1008,19 @@ public sealed class ActiveDirectoryProvider :
         }
     }
 
+    private static void AddComputerProperties(DirectorySearcher searcher)
+    {
+        foreach (var property in new[]
+        {
+            "cn", "name", "dNSHostName", "sAMAccountName", "operatingSystem",
+            "distinguishedName", "lastLogonTimestamp", "msLAPS-Password",
+            "ms-Mcs-AdmPwd", "objectGUID"
+        })
+        {
+            searcher.PropertiesToLoad.Add(property);
+        }
+    }
+
     private static SimulatorUserSummary MapUser(SearchResult result)
     {
         var properties = result.Properties;
@@ -900,6 +1060,23 @@ public sealed class ActiveDirectoryProvider :
             Mail = GetFirst(properties, "mail"),
             SecurityIdentifier = GetFirst(properties, "objectSid"),
             Source = "ActiveDirectory.LiveLdap"
+        };
+    }
+
+    private static ManagedDeviceSummary MapComputer(SearchResult result)
+    {
+        var properties = result.Properties;
+        var name = FirstNonEmpty(GetFirst(properties, "dNSHostName"), GetFirst(properties, "cn"), GetFirst(properties, "name"));
+        return new ManagedDeviceSummary
+        {
+            Id = FirstNonEmpty(GetFirst(properties, "distinguishedName"), GetFirst(properties, "objectGUID"), name),
+            ActiveDirectoryIdentity = GetFirst(properties, "distinguishedName"),
+            Name = name,
+            OperatingSystem = GetFirst(properties, "operatingSystem"),
+            ComplianceState = "AD object",
+            PrimaryUser = string.Empty,
+            LastCheckInUtc = FileTimeToDate(GetFirst(properties, "lastLogonTimestamp")),
+            Source = "ActiveDirectory"
         };
     }
 
@@ -1011,9 +1188,16 @@ public sealed class ActiveDirectoryProvider :
         return comma > 3 ? distinguishedName.Substring(3, comma - 3) : distinguishedName[3..];
     }
 
-    private static string FirstNonEmpty(params string[] values)
+    private static string FirstNonEmpty(params string?[] values)
     {
         return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+    }
+
+    private static DateTimeOffset? FileTimeToDate(string value)
+    {
+        return long.TryParse(value, out var fileTime) && fileTime > 0
+            ? DateTimeOffset.FromFileTime(fileTime)
+            : null;
     }
 
     private static IReadOnlyList<string> CommonUserAttributeNames()

@@ -95,6 +95,7 @@ public partial class NativeSimulationView : UserControl
         if (activeDirectory is not null)
         {
             healthProviders.Add(activeDirectory);
+            deviceProviders.Add(("ActiveDirectory", activeDirectory));
         }
 
         var graph = profile.MicrosoftGraphEnabled
@@ -745,6 +746,7 @@ public partial class NativeSimulationView : UserControl
         {
             var result = await _deviceManagement.SearchDevicesAsync(query, CorrelationId.New()).ConfigureAwait(true);
             DevicesGrid.ItemsSource = result.Value?.Select(device => new DeviceRow(
+                device,
                 device.Name,
                 device.OperatingSystem,
                 device.ComplianceState,
@@ -752,11 +754,114 @@ public partial class NativeSimulationView : UserControl
                 FormatDate(device.LastCheckInUtc),
                 device.Source)).ToArray() ?? Array.Empty<DeviceRow>();
             StatusText.Text = $"Loaded {result.Value?.Count ?? 0} device result(s).";
+            DeviceActionOutputTextBox.Text = result.Warnings.Count == 0
+                ? "Select a device, then reveal a protected secret or run a lifecycle action."
+                : string.Join(Environment.NewLine, result.Warnings.Select(warning => warning.Message));
         }
         finally
         {
             SetBusy(false);
         }
+    }
+
+    private async void OnRevealBitLockerClicked(object sender, RoutedEventArgs e)
+    {
+        await RevealDeviceSecretAsync(DeviceSecretKind.BitLockerRecoveryKey).ConfigureAwait(true);
+    }
+
+    private async void OnRevealLapsClicked(object sender, RoutedEventArgs e)
+    {
+        await RevealDeviceSecretAsync(DeviceSecretKind.LapsPassword).ConfigureAwait(true);
+    }
+
+    private async void OnRetireIntuneDeviceClicked(object sender, RoutedEventArgs e)
+    {
+        await RunDeviceLifecycleAsync(DeviceActionTarget.Intune, retire: true).ConfigureAwait(true);
+    }
+
+    private async void OnDeleteIntuneDeviceClicked(object sender, RoutedEventArgs e)
+    {
+        await RunDeviceLifecycleAsync(DeviceActionTarget.Intune, retire: false).ConfigureAwait(true);
+    }
+
+    private async void OnDeleteEntraDeviceClicked(object sender, RoutedEventArgs e)
+    {
+        await RunDeviceLifecycleAsync(DeviceActionTarget.EntraId, retire: false).ConfigureAwait(true);
+    }
+
+    private async void OnDeleteAdDeviceClicked(object sender, RoutedEventArgs e)
+    {
+        await RunDeviceLifecycleAsync(DeviceActionTarget.ActiveDirectory, retire: false).ConfigureAwait(true);
+    }
+
+    private async void OnDeleteAllDeviceClicked(object sender, RoutedEventArgs e)
+    {
+        await RunDeviceLifecycleAsync(DeviceActionTarget.All, retire: false).ConfigureAwait(true);
+    }
+
+    private async Task RevealDeviceSecretAsync(DeviceSecretKind secretKind)
+    {
+        if (GetSelectedDevice() is not { } device)
+        {
+            MessageBox.Show("Select a device first.", "Device Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var label = secretKind == DeviceSecretKind.BitLockerRecoveryKey ? "BitLocker recovery key" : "LAPS password";
+        if (MessageBox.Show($"Reveal the {label} for {device.Name}?", "Reveal Protected Secret", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        SetBusy(true, $"Revealing {label}...");
+        try
+        {
+            var result = await _deviceManagement.RevealDeviceSecretAsync(new DeviceSecretRevealRequest { Device = device, SecretKind = secretKind }, CorrelationId.New()).ConfigureAwait(true);
+            DeviceActionOutputTextBox.Text = result.Succeeded && result.Value is not null
+                ? $"{label} for {result.Value.DeviceName}:{Environment.NewLine}{result.Value.Secret}{Environment.NewLine}{Environment.NewLine}{result.Value.Metadata}{Environment.NewLine}Source: {result.Value.Source}"
+                : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private async Task RunDeviceLifecycleAsync(DeviceActionTarget target, bool retire)
+    {
+        if (GetSelectedDevice() is not { } device)
+        {
+            MessageBox.Show("Select a device first.", "Device Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var action = retire ? "retire" : "delete";
+        if (MessageBox.Show($"Confirm {action} for {device.Name} on {target}?", "Device Lifecycle Action", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        SetBusy(true, $"{action} device...");
+        try
+        {
+            var request = new DeviceLifecycleRequest { Device = device, Target = target };
+            var result = retire
+                ? await _deviceManagement.RetireDeviceAsync(request, CorrelationId.New()).ConfigureAwait(true)
+                : await _deviceManagement.DeleteDeviceAsync(request, CorrelationId.New()).ConfigureAwait(true);
+            DeviceActionOutputTextBox.Text = result.Succeeded
+                ? string.Join(Environment.NewLine, result.Value?.Select(item => $"{item.Source} [{item.Target}]: {item.Message}") ?? Array.Empty<string>())
+                : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+            await SearchDevicesAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private ManagedDeviceSummary? GetSelectedDevice()
+    {
+        return DevicesGrid.SelectedItem is DeviceRow row ? row.Device : null;
     }
 
     private async Task ValidateNewUserAsync()
@@ -1381,7 +1486,7 @@ public partial class NativeSimulationView : UserControl
 
     private sealed record CapabilityRow(string Provider, string Capability, string Disposition, string Reason);
 
-    private sealed record DeviceRow(string Name, string OperatingSystem, string ComplianceState, string PrimaryUser, string LastCheckIn, string Source);
+    private sealed record DeviceRow(ManagedDeviceSummary Device, string Name, string OperatingSystem, string ComplianceState, string PrimaryUser, string LastCheckIn, string Source);
 
     private sealed record RuntimeProviderSet(
         IUserLookupCapability UserLookup,

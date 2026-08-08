@@ -30,6 +30,15 @@ public interface IDeviceReadCapability
     Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> SearchDevicesAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default);
 }
 
+public interface IDeviceActionCapability
+{
+    Task<OperationResult<DeviceSecretRevealResult>> RevealDeviceSecretAsync(DeviceSecretRevealRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default);
+
+    Task<OperationResult<DeviceLifecycleResult>> RetireDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default);
+
+    Task<OperationResult<DeviceLifecycleResult>> DeleteDeviceAsync(DeviceLifecycleRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default);
+}
+
 public interface IGraphReadCapability
 {
     Task<OperationResult<GraphProfileSummary?>> GetGraphProfileAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);
