@@ -24,6 +24,7 @@ public partial class NativeSimulationView : UserControl
     private readonly RuntimeProfileConfigurationDraft _profile;
     private readonly DirectorySimulatorProvider _simulator = new();
     private readonly BuiltInCapabilityCatalog _capabilityCatalog = new();
+    private readonly NewUserOnboardingConfiguration _newUserOnboardingConfiguration;
     private readonly NativeNewUserPreflightService _newUserPreflight;
     private readonly NativeNewUserExecutionService _newUserExecution;
     private readonly NativeDeviceManagementService _deviceManagement;
@@ -55,9 +56,10 @@ public partial class NativeSimulationView : UserControl
         _exchangeWriter = providers.ExchangeWriter;
         _healthProviders = providers.HealthProviders;
         _bindingSummary = providers.BindingSummary;
+        _newUserOnboardingConfiguration = NewUserOnboardingConfiguration.FromProfileJson(_profile.NewUserWizardJson, _profile.Departments, _profile.Locations);
         InitializeComponent();
-        _newUserPreflight = new NativeNewUserPreflightService(_userLookup);
-        _newUserExecution = new NativeNewUserExecutionService(_writer);
+        _newUserPreflight = new NativeNewUserPreflightService(_userLookup, _newUserOnboardingConfiguration);
+        _newUserExecution = new NativeNewUserExecutionService(_writer, _exchangeWriter);
         _deviceManagement = new NativeDeviceManagementService(providers.DeviceProviders);
         Loaded += OnLoaded;
     }
@@ -307,8 +309,15 @@ public partial class NativeSimulationView : UserControl
         NewUserSamTextBox.Text = string.Empty;
         NewUserManagerTextBox.Text = string.Empty;
         NewUserTitleTextBox.Text = string.Empty;
+        NewUserEmployeeIdTextBox.Text = string.Empty;
+        NewUserBadgeIdTextBox.Text = string.Empty;
+        NewUserOfficePhoneTextBox.Text = string.Empty;
+        NewUserMobilePhoneTextBox.Text = string.Empty;
         NewUserDepartmentComboBox.Text = string.Empty;
         NewUserOfficeComboBox.Text = string.Empty;
+        NewUserHomeOrganizationComboBox.Text = string.Empty;
+        NewUserCreateMailboxCheckBox.IsChecked = _profile.CreateMailboxByDefault;
+        NewUserRequiresCacCheckBox.IsChecked = false;
         NewUserPlanGrid.ItemsSource = null;
         NewUserExecutionList.ItemsSource = null;
         NewUserPreviewText.Text = "Validate a request to build the native execution plan.";
@@ -600,10 +609,31 @@ public partial class NativeSimulationView : UserControl
 
     private void LoadNewUserChoices()
     {
-        NewUserDepartmentComboBox.ItemsSource = new[] { "Operations", "Information Technology", "Finance", "Human Resources", "Security" };
-        NewUserOfficeComboBox.ItemsSource = new[] { "Headquarters", "Remote", "East Campus", "West Campus", "Field Office" };
-        NewUserDepartmentComboBox.SelectedIndex = 0;
-        NewUserOfficeComboBox.SelectedIndex = 0;
+        var departments = _newUserOnboardingConfiguration.Departments
+            .Select(department => department.Display)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .DefaultIfEmpty("General")
+            .ToArray();
+        var locations = _newUserOnboardingConfiguration.Locations
+            .Select(location => location.Display)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .DefaultIfEmpty("Default")
+            .ToArray();
+        var homeOrganizations = _newUserOnboardingConfiguration.HomeOrganizations
+            .Select(homeOrganization => homeOrganization.Display)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        NewUserDepartmentComboBox.ItemsSource = departments;
+        NewUserOfficeComboBox.ItemsSource = locations;
+        NewUserHomeOrganizationComboBox.ItemsSource = homeOrganizations;
+        NewUserDepartmentComboBox.SelectedIndex = departments.Length > 0 ? 0 : -1;
+        NewUserOfficeComboBox.SelectedIndex = locations.Length > 0 ? 0 : -1;
+        NewUserHomeOrganizationComboBox.SelectedIndex = homeOrganizations.Length > 0 ? 0 : -1;
+        NewUserCreateMailboxCheckBox.IsChecked = _profile.CreateMailboxByDefault;
     }
 
     private Task SearchAsync() => SearchAsync(SearchBox.Text);
@@ -1019,7 +1049,14 @@ public partial class NativeSimulationView : UserControl
             Department = NewUserDepartmentComboBox.Text.Trim(),
             Title = NewUserTitleTextBox.Text.Trim(),
             ManagerSamAccountName = NewUserManagerTextBox.Text.Trim(),
-            Office = NewUserOfficeComboBox.Text.Trim()
+            Office = NewUserOfficeComboBox.Text.Trim(),
+            EmployeeId = NewUserEmployeeIdTextBox.Text.Trim(),
+            BadgeId = NewUserBadgeIdTextBox.Text.Trim(),
+            OfficePhone = NewUserOfficePhoneTextBox.Text.Trim(),
+            MobilePhone = NewUserMobilePhoneTextBox.Text.Trim(),
+            HomeOrganization = NewUserHomeOrganizationComboBox.Text.Trim(),
+            CreateMailbox = NewUserCreateMailboxCheckBox.IsChecked == true,
+            RequiresCac = NewUserRequiresCacCheckBox.IsChecked == true
         };
 
         SetBusy(true, "Validating New User Wizard request...");
@@ -1031,13 +1068,36 @@ public partial class NativeSimulationView : UserControl
             NewUserExecutionList.ItemsSource = null;
             NewUserPreviewText.Text = _currentNewUserPlan is null
                 ? string.Join(" ", result.Errors.Select(error => error.Message))
-                : $"Plan {_currentNewUserPlan.PlanId}: {(_currentNewUserPlan.CanExecute ? "Ready" : "Blocked")} for {request.SamAccountName}.";
+                : BuildNewUserPreviewText(_currentNewUserPlan);
             StatusText.Text = _currentNewUserPlan?.CanExecute == true ? "New User Wizard plan ready." : "New User Wizard plan blocked.";
         }
         finally
         {
             SetBusy(false);
         }
+    }
+
+    private static string BuildNewUserPreviewText(NewUserExecutionPlan plan)
+    {
+        var resolved = plan.ResolvedOnboarding;
+        var lines = new List<string>
+        {
+            $"Plan {plan.PlanId}: {(plan.CanExecute ? "Ready" : "Blocked")} for {plan.Request.SamAccountName}.",
+            string.IsNullOrWhiteSpace(resolved.UserPrincipalName) ? string.Empty : $"UPN: {resolved.UserPrincipalName}",
+            string.IsNullOrWhiteSpace(resolved.TargetOu) ? "Target OU: profile default" : $"Target OU: {resolved.TargetOu}"
+        };
+
+        if (resolved.Groups.Count > 0)
+        {
+            lines.Add($"Groups: {string.Join(", ", resolved.Groups)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(resolved.RemoteRoutingAddress))
+        {
+            lines.Add($"Remote routing: {resolved.RemoteRoutingAddress}");
+        }
+
+        return string.Join(Environment.NewLine, lines.Where(line => !string.IsNullOrWhiteSpace(line)));
     }
 
     private async Task CompleteUserMutationAsync(string title, OperationResult<ProviderChangeResult> result)

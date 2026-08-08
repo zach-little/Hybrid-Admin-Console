@@ -669,7 +669,15 @@ public sealed class DirectorySimulatorProvider :
                 return OperationResult<ProviderChangeResult>.Success(Change("CreateUser", request.SamAccountName, false, "User already exists."), correlationId, status: "AlreadyExists");
             }
 
-            var user = CreateUser(request.GivenName, request.Surname, request.SamAccountName, request.Department, request.Title, request.ManagerSamAccountName, Array.Empty<string>(), new[] { "Domain Users" }, request.Office);
+            var user = CreateUser(request.GivenName, request.Surname, request.SamAccountName, request.Department, request.Title, request.ManagerSamAccountName, Array.Empty<string>(), new[] { "Domain Users" }, request.Office) with
+            {
+                DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? $"{request.GivenName.Trim()} {request.Surname.Trim()}" : request.DisplayName.Trim(),
+                UserPrincipalName = string.IsNullOrWhiteSpace(request.UserPrincipalName) ? $"{request.SamAccountName.Trim().ToLowerInvariant()}@littleinnovation.tech" : request.UserPrincipalName.Trim(),
+                Mail = string.IsNullOrWhiteSpace(request.UserPrincipalName) ? $"{request.SamAccountName.Trim().ToLowerInvariant()}@littleinnovation.tech" : request.UserPrincipalName.Trim(),
+                Company = string.IsNullOrWhiteSpace(request.Company) ? "Little Innovation" : request.Company.Trim(),
+                EmployeeId = string.IsNullOrWhiteSpace(request.EmployeeId) ? $"SIM-{request.SamAccountName.Trim().ToUpperInvariant()}" : request.EmployeeId.Trim(),
+                DistinguishedName = string.IsNullOrWhiteSpace(request.TargetOu) ? $"CN={request.GivenName.Trim()} {request.Surname.Trim()},OU=Users,OU={request.Department.Trim()},OU=LittleInnovation,DC=littleinnovation,DC=tech" : $"CN={request.GivenName.Trim()} {request.Surname.Trim()},{request.TargetOu.Trim()}"
+            };
             _users.Add(user);
             _devices[user.SamAccountName] = CreateGeneratedDevices(user).ToList();
             _mailboxes[user.SamAccountName] = CreateMailbox(user);
@@ -866,6 +874,44 @@ public sealed class DirectorySimulatorProvider :
             }
 
             return OperationResult<ProviderChangeResult>.Success(Change("AddMailboxDelegation", user.SamAccountName, !exists, exists ? "Mailbox delegation already exists." : "Mailbox delegation added."), correlationId, status: exists ? "NoChange" : "Updated");
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    public async Task<OperationResult<ProviderChangeResult>> EnableRemoteMailboxAsync(
+        MailboxProvisioningRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Identity))
+        {
+            return OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("Simulator.RemoteMailbox.IdentityRequired", "Identity is required.") });
+        }
+
+        await _stateLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var user = _users.FirstOrDefault(item => Matches(item, request.Identity));
+            if (user is null)
+            {
+                return OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("Simulator.RemoteMailbox.NotFound", "Mailbox user was not found.") }, status: "NotFound");
+            }
+
+            var primary = string.IsNullOrWhiteSpace(request.PrimarySmtpAddress)
+                ? user.UserPrincipalName
+                : request.PrimarySmtpAddress.Trim();
+            _mailboxes[user.SamAccountName] = CreateMailbox(user) with
+            {
+                PrimarySmtpAddress = primary,
+                UserPrincipalName = primary,
+                EmailAddresses = new[] { $"SMTP:{primary}" },
+                RecipientTypeDetails = "RemoteUserMailbox"
+            };
+
+            return OperationResult<ProviderChangeResult>.Success(Change("EnableRemoteMailbox", user.SamAccountName, true, "Remote mailbox enabled."), correlationId, status: "Updated");
         }
         finally
         {

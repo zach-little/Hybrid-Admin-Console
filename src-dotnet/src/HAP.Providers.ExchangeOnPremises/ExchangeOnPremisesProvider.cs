@@ -119,6 +119,17 @@ $stats = Get-MailboxStatistics -Identity '{Ps(identity)}' -ErrorAction Stop
     public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         InvokeChangeAsync("AddMailboxDelegation", request.Identity, $"Add-MailboxPermission -Identity '{Ps(request.Identity)}' -User '{Ps(request.Trustee)}' -AccessRights {PsBare(request.AccessRights)} -InheritanceType All -AutoMapping:$false -ErrorAction Stop", correlationId, cancellationToken);
 
+    public Task<OperationResult<ProviderChangeResult>> EnableRemoteMailboxAsync(MailboxProvisioningRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        var routing = string.IsNullOrWhiteSpace(request.RemoteRoutingAddress)
+            ? string.Empty
+            : $" -RemoteRoutingAddress '{Ps(request.RemoteRoutingAddress)}'";
+        var primary = string.IsNullOrWhiteSpace(request.PrimarySmtpAddress)
+            ? string.Empty
+            : $" -PrimarySmtpAddress '{Ps(request.PrimarySmtpAddress)}'";
+        return InvokeChangeAsync("EnableRemoteMailbox", request.Identity, $"Enable-RemoteMailbox -Identity '{Ps(request.Identity)}'{routing}{primary} -ErrorAction Stop", correlationId, cancellationToken);
+    }
+
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<ProviderChangeResult>.Success(Change("ResetState", "ExchangeOnPremises", false, "Native Exchange on-premises provider has no local mutable state."), correlationId, status: "NoChange"));
 

@@ -17,6 +17,20 @@ public sealed record NewUserPreflightRequest
     public string ManagerSamAccountName { get; init; } = string.Empty;
 
     public string Office { get; init; } = string.Empty;
+
+    public string EmployeeId { get; init; } = string.Empty;
+
+    public string BadgeId { get; init; } = string.Empty;
+
+    public string OfficePhone { get; init; } = string.Empty;
+
+    public string MobilePhone { get; init; } = string.Empty;
+
+    public string HomeOrganization { get; init; } = string.Empty;
+
+    public bool CreateMailbox { get; init; }
+
+    public bool RequiresCac { get; init; }
 }
 
 public sealed record NewUserExecutionPlan
@@ -24,6 +38,8 @@ public sealed record NewUserExecutionPlan
     public string PlanId { get; init; } = string.Empty;
 
     public NewUserPreflightRequest Request { get; init; } = new();
+
+    public NewUserResolvedOnboarding ResolvedOnboarding { get; init; } = new();
 
     public IReadOnlyList<NewUserPlanStep> Steps { get; init; } = Array.Empty<NewUserPlanStep>();
 
@@ -41,6 +57,33 @@ public sealed record NewUserPlanStep
     public bool IsBlocking { get; init; }
 
     public string Message { get; init; } = string.Empty;
+}
+
+public sealed record NewUserResolvedOnboarding
+{
+    public string DisplayName { get; init; } = string.Empty;
+
+    public string UserPrincipalName { get; init; } = string.Empty;
+
+    public string TargetOu { get; init; } = string.Empty;
+
+    public string Company { get; init; } = string.Empty;
+
+    public string City { get; init; } = string.Empty;
+
+    public string StreetAddress { get; init; } = string.Empty;
+
+    public string State { get; init; } = string.Empty;
+
+    public string PostalCode { get; init; } = string.Empty;
+
+    public string RemoteRoutingAddress { get; init; } = string.Empty;
+
+    public IReadOnlyList<string> Groups { get; init; } = Array.Empty<string>();
+
+    public IReadOnlyDictionary<string, string> AdditionalAttributes { get; init; } = new Dictionary<string, string>();
+
+    public IReadOnlyList<NewUserCustomPowerShellStep> CustomPowerShellSteps { get; init; } = Array.Empty<NewUserCustomPowerShellStep>();
 }
 
 public sealed record NewUserExecutionResult
@@ -75,4 +118,7 @@ public static class NewUserPlanStepIds
     public const string CheckUniqueness = "check-uniqueness";
     public const string CreateDirectoryUser = "create-directory-user";
     public const string SetManager = "set-manager";
+    public const string AddGroupMembershipPrefix = "add-group:";
+    public const string EnableRemoteMailbox = "enable-remote-mailbox";
+    public const string CustomPowerShellPrefix = "custom-powershell:";
 }

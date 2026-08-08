@@ -28,6 +28,32 @@ public sealed record UserCreateRequest
     public string ManagerSamAccountName { get; init; } = string.Empty;
 
     public string Office { get; init; } = string.Empty;
+
+    public string DisplayName { get; init; } = string.Empty;
+
+    public string UserPrincipalName { get; init; } = string.Empty;
+
+    public string TargetOu { get; init; } = string.Empty;
+
+    public string Company { get; init; } = string.Empty;
+
+    public string EmployeeId { get; init; } = string.Empty;
+
+    public string BadgeId { get; init; } = string.Empty;
+
+    public string OfficePhone { get; init; } = string.Empty;
+
+    public string MobilePhone { get; init; } = string.Empty;
+
+    public string City { get; init; } = string.Empty;
+
+    public string StreetAddress { get; init; } = string.Empty;
+
+    public string State { get; init; } = string.Empty;
+
+    public string PostalCode { get; init; } = string.Empty;
+
+    public IReadOnlyDictionary<string, string> OtherAttributes { get; init; } = new Dictionary<string, string>();
 }
 
 public sealed record UserUpdateRequest
@@ -74,4 +100,13 @@ public sealed record MailboxDelegationChangeRequest
     public string Trustee { get; init; } = string.Empty;
 
     public string AccessRights { get; init; } = "FullAccess";
+}
+
+public sealed record MailboxProvisioningRequest
+{
+    public string Identity { get; init; } = string.Empty;
+
+    public string RemoteRoutingAddress { get; init; } = string.Empty;
+
+    public string PrimarySmtpAddress { get; init; } = string.Empty;
 }

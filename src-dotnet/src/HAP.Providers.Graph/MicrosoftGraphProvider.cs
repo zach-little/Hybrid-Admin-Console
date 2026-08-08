@@ -381,6 +381,9 @@ public sealed class MicrosoftGraphProvider :
     public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Unsupported<ProviderChangeResult>(correlationId, "Graph.MailboxDelegation.Unsupported", "Mailbox delegation remains in the Exchange supportability gate.");
 
+    public Task<OperationResult<ProviderChangeResult>> EnableRemoteMailboxAsync(MailboxProvisioningRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        Unsupported<ProviderChangeResult>(correlationId, "Graph.RemoteMailbox.Unsupported", "Remote mailbox provisioning is handled by Exchange on-premises in hybrid mode.");
+
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<ProviderChangeResult>.Success(new ProviderChangeResult { Operation = "ResetState", TargetId = "MicrosoftGraph", Changed = false, Message = "Native Graph provider has no local mutable state.", Source = "MicrosoftGraph" }, correlationId));
 

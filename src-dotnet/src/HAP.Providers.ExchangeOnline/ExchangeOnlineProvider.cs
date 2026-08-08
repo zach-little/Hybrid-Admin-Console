@@ -127,6 +127,9 @@ $stats = Get-MailboxStatistics -Identity '{Ps(identity)}' -ErrorAction Stop
     public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         InvokeChangeAsync("AddMailboxDelegation", request.Identity, $"Add-MailboxPermission -Identity '{Ps(request.Identity)}' -User '{Ps(request.Trustee)}' -AccessRights {PsBare(request.AccessRights)} -InheritanceType All -AutoMapping:$false -ErrorAction Stop", correlationId, cancellationToken);
 
+    public Task<OperationResult<ProviderChangeResult>> EnableRemoteMailboxAsync(MailboxProvisioningRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
+        UnsupportedChange(correlationId, "EnableRemoteMailbox", request.Identity, "ExchangeOnline.RemoteMailbox.Unsupported", "Remote mailbox provisioning is handled by Exchange on-premises in hybrid mode.");
+
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<ProviderChangeResult>.Success(Change("ResetState", "ExchangeOnline", false, "Native Exchange Online provider has no local mutable state."), correlationId, status: "NoChange"));
 

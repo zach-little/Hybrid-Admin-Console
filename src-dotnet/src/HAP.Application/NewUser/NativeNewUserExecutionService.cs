@@ -6,10 +6,17 @@ namespace HAP.Application.NewUser;
 public sealed class NativeNewUserExecutionService
 {
     private readonly ISimulatorWriteCapability _directoryWriter;
+    private readonly ISimulatorWriteCapability _exchangeWriter;
 
     public NativeNewUserExecutionService(ISimulatorWriteCapability directoryWriter)
+        : this(directoryWriter, directoryWriter)
+    {
+    }
+
+    public NativeNewUserExecutionService(ISimulatorWriteCapability directoryWriter, ISimulatorWriteCapability exchangeWriter)
     {
         _directoryWriter = directoryWriter;
+        _exchangeWriter = exchangeWriter;
     }
 
     public async Task<OperationResult<NewUserExecutionResult>> ExecuteAsync(
@@ -40,12 +47,38 @@ public sealed class NativeNewUserExecutionService
                         Department = plan.Request.Department,
                         Title = plan.Request.Title,
                         ManagerSamAccountName = plan.Request.ManagerSamAccountName,
-                        Office = plan.Request.Office
+                        Office = plan.Request.Office,
+                        DisplayName = plan.ResolvedOnboarding.DisplayName,
+                        UserPrincipalName = plan.ResolvedOnboarding.UserPrincipalName,
+                        TargetOu = plan.ResolvedOnboarding.TargetOu,
+                        Company = plan.ResolvedOnboarding.Company,
+                        EmployeeId = plan.Request.EmployeeId,
+                        BadgeId = plan.Request.BadgeId,
+                        OfficePhone = plan.Request.OfficePhone,
+                        MobilePhone = plan.Request.MobilePhone,
+                        City = plan.ResolvedOnboarding.City,
+                        StreetAddress = plan.ResolvedOnboarding.StreetAddress,
+                        State = plan.ResolvedOnboarding.State,
+                        PostalCode = plan.ResolvedOnboarding.PostalCode,
+                        OtherAttributes = plan.ResolvedOnboarding.AdditionalAttributes
                     },
                     correlationId,
                     cancellationToken).ConfigureAwait(false),
                 NewUserPlanStepIds.SetManager => await _directoryWriter.SetManagerAsync(
                     new ManagerChangeRequest { Identity = plan.Request.SamAccountName, ManagerIdentity = plan.Request.ManagerSamAccountName },
+                    correlationId,
+                    cancellationToken).ConfigureAwait(false),
+                var stepId when stepId.StartsWith(NewUserPlanStepIds.AddGroupMembershipPrefix, StringComparison.OrdinalIgnoreCase) => await _directoryWriter.AddGroupMembershipAsync(
+                    new MembershipChangeRequest { Identity = plan.Request.SamAccountName, Group = step.StepId[NewUserPlanStepIds.AddGroupMembershipPrefix.Length..] },
+                    correlationId,
+                    cancellationToken).ConfigureAwait(false),
+                NewUserPlanStepIds.EnableRemoteMailbox => await _exchangeWriter.EnableRemoteMailboxAsync(
+                    new MailboxProvisioningRequest
+                    {
+                        Identity = plan.Request.SamAccountName,
+                        RemoteRoutingAddress = plan.ResolvedOnboarding.RemoteRoutingAddress,
+                        PrimarySmtpAddress = plan.ResolvedOnboarding.UserPrincipalName
+                    },
                     correlationId,
                     cancellationToken).ConfigureAwait(false),
                 _ => OperationResult<ProviderChangeResult>.Success(

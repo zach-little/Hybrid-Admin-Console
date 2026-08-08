@@ -181,17 +181,33 @@ public sealed class ActiveDirectoryProvider :
                 return Task.FromResult(OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create("AD.UserCreate.RequiredFieldsMissing", "Given name, surname, and SAM account name are required.") }));
             }
 
-            using var container = CreateUserContainer();
-            var displayName = $"{request.GivenName.Trim()} {request.Surname.Trim()}";
+            using var container = CreateUserContainer(request.TargetOu);
+            var displayName = string.IsNullOrWhiteSpace(request.DisplayName)
+                ? $"{request.GivenName.Trim()} {request.Surname.Trim()}"
+                : request.DisplayName.Trim();
             using var user = container.Children.Add($"CN={EscapeRdn(displayName)}", "user");
             SetProperty(user, "givenName", request.GivenName);
             SetProperty(user, "sn", request.Surname);
             SetProperty(user, "displayName", displayName);
             SetProperty(user, "sAMAccountName", request.SamAccountName);
-            SetProperty(user, "userPrincipalName", BuildUserPrincipalName(request.SamAccountName));
+            SetProperty(user, "userPrincipalName", string.IsNullOrWhiteSpace(request.UserPrincipalName) ? BuildUserPrincipalName(request.SamAccountName) : request.UserPrincipalName);
             SetProperty(user, "department", request.Department);
             SetProperty(user, "title", request.Title);
             SetProperty(user, "physicalDeliveryOfficeName", request.Office);
+            SetProperty(user, "company", request.Company);
+            SetProperty(user, "employeeID", request.EmployeeId);
+            SetProperty(user, "badgeID", request.BadgeId);
+            SetProperty(user, "telephoneNumber", request.OfficePhone);
+            SetProperty(user, "mobile", request.MobilePhone);
+            SetProperty(user, "l", request.City);
+            SetProperty(user, "streetAddress", request.StreetAddress);
+            SetProperty(user, "st", request.State);
+            SetProperty(user, "postalCode", request.PostalCode);
+            foreach (var attribute in request.OtherAttributes)
+            {
+                ApplyUserAttribute(user, attribute.Key, attribute.Value);
+            }
+
             user.Properties["userAccountControl"].Value = 514;
             user.CommitChanges();
 
@@ -304,6 +320,7 @@ public sealed class ActiveDirectoryProvider :
         }
     }
     public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Unsupported(correlationId, "AD.ExchangeOwnedAttribute.Unsupported", "Exchange mailbox delegation is not changed through AD.");
+    public Task<OperationResult<ProviderChangeResult>> EnableRemoteMailboxAsync(MailboxProvisioningRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) => Unsupported(correlationId, "AD.RemoteMailbox.NotExchangeResponsibility", "Remote mailbox provisioning is handled by Exchange on-premises.");
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) => Task.FromResult(OperationResult<ProviderChangeResult>.Success(new ProviderChangeResult { Operation = "ResetState", TargetId = "ActiveDirectory", Changed = false, Message = "Native AD provider has no local mutable state.", Source = "ActiveDirectory" }, correlationId));
 
     public Task<OperationResult<IReadOnlyList<DirectoryGroupSummary>>> SearchGroupsAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default)
@@ -908,8 +925,13 @@ public sealed class ActiveDirectoryProvider :
         return searcher.FindOne()?.GetDirectoryEntry();
     }
 
-    private DirectoryEntry CreateUserContainer()
+    private DirectoryEntry CreateUserContainer(string? targetOu = null)
     {
+        if (!string.IsNullOrWhiteSpace(targetOu))
+        {
+            return new DirectoryEntry($"LDAP://{BuildServerPrefix()}{targetOu.Trim()}", null, null, AuthenticationTypes.Secure);
+        }
+
         if (!string.IsNullOrWhiteSpace(_options.DefaultUserContainer))
         {
             return new DirectoryEntry($"LDAP://{BuildServerPrefix()}{_options.DefaultUserContainer}", null, null, AuthenticationTypes.Secure);

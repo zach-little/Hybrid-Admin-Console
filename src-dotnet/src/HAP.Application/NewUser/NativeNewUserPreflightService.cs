@@ -6,10 +6,17 @@ namespace HAP.Application.NewUser;
 public sealed class NativeNewUserPreflightService
 {
     private readonly IUserLookupCapability _directoryLookup;
+    private readonly NewUserOnboardingConfiguration _configuration;
 
     public NativeNewUserPreflightService(IUserLookupCapability directoryLookup)
+        : this(directoryLookup, new NewUserOnboardingConfiguration())
+    {
+    }
+
+    public NativeNewUserPreflightService(IUserLookupCapability directoryLookup, NewUserOnboardingConfiguration configuration)
     {
         _directoryLookup = directoryLookup;
+        _configuration = configuration;
     }
 
     public async Task<OperationResult<NewUserExecutionPlan>> BuildPlanAsync(
@@ -26,38 +33,75 @@ public sealed class NativeNewUserPreflightService
         if (missing.Length > 0)
         {
             steps.Add(Step(NewUserPlanStepIds.CheckUniqueness, "ActiveDirectory", "CheckUniqueness", true, $"Missing required fields: {string.Join(", ", missing)}."));
-            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps), correlationId, status: "Blocked");
+            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps, _configuration.Resolve(request)), correlationId, status: "Blocked");
         }
 
         var existing = await _directoryLookup.SearchUsersAsync(request.SamAccountName, correlationId, cancellationToken).ConfigureAwait(false);
         if (!existing.Succeeded)
         {
             steps.Add(Step(NewUserPlanStepIds.CheckUniqueness, "ActiveDirectory", "CheckUniqueness", true, "Unable to confirm account uniqueness."));
-            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps), correlationId, existing.Warnings, "Blocked");
+            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps, _configuration.Resolve(request)), correlationId, existing.Warnings, "Blocked");
         }
 
         if ((existing.Value?.Count ?? 0) > 0)
         {
             steps.Add(Step(NewUserPlanStepIds.CheckUniqueness, "ActiveDirectory", "CheckUniqueness", true, "A matching user already exists."));
-            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps), correlationId, status: "Blocked");
+            return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps, _configuration.Resolve(request)), correlationId, status: "Blocked");
         }
 
+        var resolved = _configuration.Resolve(request);
         steps.Add(Step(NewUserPlanStepIds.CheckUniqueness, "ActiveDirectory", "CheckUniqueness", false, "No existing user matched the requested SAM account name."));
-        steps.Add(Step(NewUserPlanStepIds.CreateDirectoryUser, "ActiveDirectory", "CreateUser", false, "Create the directory user."));
+        steps.Add(Step(
+            NewUserPlanStepIds.CreateDirectoryUser,
+            "ActiveDirectory",
+            "CreateUser",
+            false,
+            string.IsNullOrWhiteSpace(resolved.TargetOu)
+                ? "Create the directory user."
+                : $"Create the directory user in {resolved.TargetOu}."));
         if (!string.IsNullOrWhiteSpace(request.ManagerSamAccountName))
         {
             steps.Add(Step(NewUserPlanStepIds.SetManager, "ActiveDirectory", "SetManager", false, "Set the requested manager."));
         }
 
-        return OperationResult<NewUserExecutionPlan>.Success(CreatePlan(request, steps), correlationId, status: "Ready");
+        foreach (var group in resolved.Groups)
+        {
+            steps.Add(Step($"{NewUserPlanStepIds.AddGroupMembershipPrefix}{group}", "ActiveDirectory", "AddGroupMembership", false, $"Add user to {group}."));
+        }
+
+        if (request.CreateMailbox && _configuration.Mailbox.CreateRemoteMailboxWhenRequested)
+        {
+            steps.Add(Step(
+                NewUserPlanStepIds.EnableRemoteMailbox,
+                "ExchangeOnPremises",
+                "EnableRemoteMailbox",
+                false,
+                string.IsNullOrWhiteSpace(resolved.RemoteRoutingAddress)
+                    ? "Enable the remote mailbox."
+                    : $"Enable the remote mailbox with remote routing address {resolved.RemoteRoutingAddress}."));
+        }
+
+        foreach (var customStep in resolved.CustomPowerShellSteps)
+        {
+            steps.Add(Step(
+                $"{NewUserPlanStepIds.CustomPowerShellPrefix}{customStep.Id}",
+                "CustomPowerShell",
+                customStep.DisplayName,
+                true,
+                $"Configured custom PowerShell step '{customStep.DisplayName}' is present. Execution is blocked until the command runner is explicitly enabled for the profile."));
+        }
+
+        var plan = CreatePlan(request, steps, resolved);
+        return OperationResult<NewUserExecutionPlan>.Success(plan, correlationId, status: plan.CanExecute ? "Ready" : "Blocked");
     }
 
-    private static NewUserExecutionPlan CreatePlan(NewUserPreflightRequest request, IReadOnlyList<NewUserPlanStep> steps)
+    private static NewUserExecutionPlan CreatePlan(NewUserPreflightRequest request, IReadOnlyList<NewUserPlanStep> steps, NewUserResolvedOnboarding resolved)
     {
         return new NewUserExecutionPlan
         {
             PlanId = $"new-user:{request.SamAccountName.Trim().ToLowerInvariant()}",
             Request = request,
+            ResolvedOnboarding = resolved,
             Steps = steps
         };
     }
