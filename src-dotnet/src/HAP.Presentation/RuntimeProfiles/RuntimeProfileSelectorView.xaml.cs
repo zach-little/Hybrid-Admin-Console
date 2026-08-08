@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using HAP.Application.RuntimeProfiles;
+using HAP.Presentation.Dialogs;
 
 namespace HAP.Presentation.RuntimeProfiles;
 
@@ -41,11 +42,13 @@ public partial class RuntimeProfileSelectorView : UserControl
             return;
         }
 
-        var answer = MessageBox.Show(
-            $"Delete profile '{ViewModel.SelectedProfile.DisplayName}'? This removes the profile folder from disk.",
+        var answer = HapDialog.Show(
+            Window.GetWindow(this),
             "Delete Profile",
+            $"Delete profile '{ViewModel.SelectedProfile.DisplayName}'? This removes the profile folder from disk.",
             MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+            isDestructive: true,
+            yesText: "Delete");
         if (answer == MessageBoxResult.Yes)
         {
             await ViewModel.DeleteSelectedProfileAsync().ConfigureAwait(true);

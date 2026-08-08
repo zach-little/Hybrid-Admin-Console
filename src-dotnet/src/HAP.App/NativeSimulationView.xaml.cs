@@ -9,6 +9,7 @@ using HAP.Application.Devices;
 using HAP.Application.NewUser;
 using HAP.Application.RuntimeProfiles;
 using HAP.Contracts;
+using HAP.Presentation.Dialogs;
 using HAP.Providers.Abstractions;
 using HAP.Providers.ActiveDirectory;
 using HAP.Providers.ExchangeOnPremises;
@@ -317,11 +318,10 @@ public partial class NativeSimulationView : UserControl
     private void OnPreferencesClicked(object sender, RoutedEventArgs e)
     {
         var selected = _selectedUser is null ? "No selected user" : $"{_selectedUser.DisplayName} ({_selectedUser.SamAccountName})";
-        MessageBox.Show(
-            $"Runtime preferences\n\nSelected identity: {selected}\nDefault lookup tab: User Lookup\nTheme: Native dark\nProvider binding: {_bindingSummary}\n\nProfile-level preferences are managed from Back to Profiles > Configuration.",
+        ShowThemedNotice(
             "Preferences",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            $"Runtime preferences\n\nSelected identity: {selected}\nDefault lookup tab: User Lookup\nTheme: Native dark\nProvider binding: {_bindingSummary}\n\nProfile-level preferences are managed from Back to Profiles > Configuration.",
+            isDestructive: false);
     }
 
     private void OnExitClicked(object sender, RoutedEventArgs e)
@@ -478,7 +478,7 @@ public partial class NativeSimulationView : UserControl
         }
 
         await LoadUserDetailsAsync(_selectedUser!).ConfigureAwait(true);
-        MessageBox.Show(messages.Count == 0 ? "Selected user has no direct reports." : string.Join(Environment.NewLine, messages), "Move Reports", MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowThemedNotice("Move Reports", messages.Count == 0 ? "Selected user has no direct reports." : string.Join(Environment.NewLine, messages));
     }
 
     private async void OnChangeManagerClicked(object sender, RoutedEventArgs e)
@@ -513,7 +513,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var add = MessageBox.Show("Choose Yes to add membership. Choose No to remove membership.", "Update Distribution Groups", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var add = ShowThemedChoice("Update Distribution Groups", "Choose Yes to add membership. Choose No to remove membership.", MessageBoxButton.YesNoCancel);
         if (add == MessageBoxResult.Cancel)
         {
             return;
@@ -532,7 +532,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var answer = MessageBox.Show("Choose Yes to hide this mailbox from the GAL. Choose No to show it.", "Show/Hide GAL", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var answer = ShowThemedChoice("Show/Hide GAL", "Choose Yes to hide this mailbox from the GAL. Choose No to show it.", MessageBoxButton.YesNoCancel);
         if (answer == MessageBoxResult.Cancel)
         {
             return;
@@ -689,10 +689,10 @@ public partial class NativeSimulationView : UserControl
             SetDeviceGridItems(devices);
         }
 
-        UserLookupDeviceContextText.Text = devices.Count == 0
+        SetUserLookupDeviceContext(devices.Count == 0
             ? "No computer account or managed device matched this search."
             : string.Join(Environment.NewLine, devices.Select(device =>
-                $"{Safe(device.Name)} | Primary user: {Safe(device.PrimaryUser)} | AD identity: {Safe(device.ActiveDirectoryIdentity)} | Source: {Safe(device.Source)}"));
+                $"{Safe(device.Name)} | Primary user: {Safe(device.PrimaryUser)} | AD identity: {Safe(device.ActiveDirectoryIdentity)} | Source: {Safe(device.Source)}")));
         return devices;
     }
 
@@ -1056,7 +1056,7 @@ public partial class NativeSimulationView : UserControl
             }
         }
 
-        MessageBox.Show(message, title, MessageBoxButton.OK, result.Succeeded ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        ShowThemedNotice(title, message, isDestructive: !result.Succeeded);
     }
 
     private bool EnsureSelectedUser(string title)
@@ -1066,7 +1066,7 @@ public partial class NativeSimulationView : UserControl
             return true;
         }
 
-        MessageBox.Show("Search for and select a user first.", title, MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowThemedNotice(title, "Search for and select a user first.");
         return false;
     }
 
@@ -1566,11 +1566,10 @@ public partial class NativeSimulationView : UserControl
         }
 
         var availability = _capabilityCatalog.Get(providerId, capabilityId);
-        MessageBox.Show(
-            $"{title} is visible in the native shell for workflow parity.\n\nProvider: {providerId}\nCapability: {capabilityId}\nDisposition: {availability.Disposition}\n\n{availability.Reason}",
+        ShowThemedNotice(
             title,
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+            $"{title} is visible in the native shell for workflow parity.\n\nProvider: {providerId}\nCapability: {capabilityId}\nDisposition: {availability.Disposition}\n\n{availability.Reason}",
+            isDestructive: false);
     }
 
     private void ClearUserDetails()
@@ -1592,7 +1591,7 @@ public partial class NativeSimulationView : UserControl
         GroupsList.ItemsSource = null;
         MailboxDelegationList.ItemsSource = null;
         DistributionGroupsList.ItemsSource = null;
-        UserLookupDeviceContextText.Text = "No device lookup context.";
+        SetUserLookupDeviceContext("No device lookup context.");
         SelectedIdentityStatusText.Text = "No selected user";
         DashboardSelectedUserText.Text = "-";
         DashboardSelectedUserSubText.Text = "Search for a user to hydrate dashboard cards.";
@@ -1636,6 +1635,14 @@ public partial class NativeSimulationView : UserControl
         return FirstNonEmpty(DeviceSearchBox?.Text?.Trim() ?? string.Empty, SearchBox?.Text?.Trim() ?? string.Empty, "amorgan");
     }
 
+    private void SetUserLookupDeviceContext(string text)
+    {
+        if (FindName("UserLookupDeviceContextText") is TextBlock contextText)
+        {
+            contextText.Text = text;
+        }
+    }
+
     private void SetBusy(bool busy, string? status = null)
     {
         SearchProgressBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
@@ -1648,130 +1655,22 @@ public partial class NativeSimulationView : UserControl
 
     private void ShowThemedDeviceNotice(string title, string message)
     {
-        ShowThemedDeviceDialog(title, message, primaryText: "OK", showCancel: false, isDestructive: false);
+        ShowThemedNotice(title, message);
     }
 
     private bool ShowThemedDeviceConfirmation(string title, string message, string primaryText, bool isDestructive = false)
     {
-        return ShowThemedDeviceDialog(title, message, primaryText, showCancel: true, isDestructive);
+        return ShowThemedChoice(title, message, MessageBoxButton.YesNo, isDestructive, yesText: primaryText) == MessageBoxResult.Yes;
     }
 
-    private bool ShowThemedDeviceDialog(string title, string message, string primaryText, bool showCancel, bool isDestructive)
+    private void ShowThemedNotice(string title, string message, bool isDestructive = false)
     {
-        var owner = Window.GetWindow(this);
-        var accent = isDestructive ? "#B91C1C" : "#0369A1";
-        var primaryButton = new Button
-        {
-            Content = primaryText,
-            MinWidth = 104,
-            Height = 34,
-            Padding = new Thickness(14, 0, 14, 0),
-            Margin = new Thickness(8, 0, 0, 0),
-            Background = BrushFrom(accent),
-            Foreground = BrushFrom("#F8FAFC"),
-            BorderBrush = BrushFrom(isDestructive ? "#EF4444" : "#38BDF8"),
-            BorderThickness = new Thickness(1),
-            FontWeight = FontWeights.SemiBold,
-            IsDefault = true
-        };
-        var cancelButton = new Button
-        {
-            Content = "Cancel",
-            MinWidth = 104,
-            Height = 34,
-            Padding = new Thickness(14, 0, 14, 0),
-            Margin = new Thickness(8, 0, 0, 0),
-            Background = BrushFrom("#0F172A"),
-            Foreground = BrushFrom("#F8FAFC"),
-            BorderBrush = BrushFrom("#475569"),
-            BorderThickness = new Thickness(1),
-            FontWeight = FontWeights.SemiBold,
-            IsCancel = true
-        };
-        var buttonPanel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 22, 0, 0)
-        };
-        if (showCancel)
-        {
-            buttonPanel.Children.Add(cancelButton);
-        }
-
-        buttonPanel.Children.Add(primaryButton);
-
-        var shell = new Border
-        {
-            Background = BrushFrom("#111827"),
-            BorderBrush = BrushFrom("#334155"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(20),
-            Child = new StackPanel
-            {
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = title,
-                        Foreground = BrushFrom("#F8FAFC"),
-                        FontSize = 20,
-                        FontWeight = FontWeights.SemiBold,
-                        TextWrapping = TextWrapping.Wrap
-                    },
-                    new Border
-                    {
-                        Height = 1,
-                        Background = BrushFrom("#334155"),
-                        Margin = new Thickness(0, 12, 0, 14)
-                    },
-                    new TextBlock
-                    {
-                        Text = message,
-                        Foreground = BrushFrom("#CBD5E1"),
-                        FontSize = 13,
-                        TextWrapping = TextWrapping.Wrap,
-                        LineHeight = 19
-                    },
-                    buttonPanel
-                }
-            }
-        };
-
-        var dialog = new Window
-        {
-            Title = title,
-            Width = 440,
-            SizeToContent = SizeToContent.Height,
-            MinHeight = 190,
-            WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
-            Owner = owner,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStyle = WindowStyle.None,
-            AllowsTransparency = true,
-            Background = Brushes.Transparent,
-            Content = shell,
-            ShowInTaskbar = false
-        };
-
-        primaryButton.Click += (_, _) =>
-        {
-            dialog.DialogResult = true;
-            dialog.Close();
-        };
-        cancelButton.Click += (_, _) =>
-        {
-            dialog.DialogResult = false;
-            dialog.Close();
-        };
-
-        return dialog.ShowDialog() == true;
+        ShowThemedChoice(title, message, MessageBoxButton.OK, isDestructive);
     }
 
-    private static Brush BrushFrom(string color)
+    private MessageBoxResult ShowThemedChoice(string title, string message, MessageBoxButton buttons, bool isDestructive = false, string? yesText = null)
     {
-        return (Brush)new BrushConverter().ConvertFromString(color)!;
+        return HapDialog.Show(Window.GetWindow(this), title, message, buttons, isDestructive, yesText);
     }
 
     private static string Safe(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
