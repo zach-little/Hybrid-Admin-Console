@@ -326,6 +326,8 @@
                                                     <StackPanel Margin="0,0,14,12"><TextBlock Text="Item Count" Style="{StaticResource LabelText}" /><TextBlock x:Name="ItemCountText" Text="Not loaded" Style="{StaticResource ValueText}" /></StackPanel>
                                                     <StackPanel Margin="0,0,0,12"><TextBlock Text="Last Logon" Style="{StaticResource LabelText}" /><TextBlock x:Name="LastMailboxLogonText" Text="Not loaded" Style="{StaticResource ValueText}" /></StackPanel>
                                                 </UniformGrid>
+                                                <TextBlock Text="Addresses" Style="{StaticResource LabelText}" />
+                                                <TextBlock x:Name="EmailAddressesText" Text="Not loaded" Style="{StaticResource ValueText}" />
                                             </StackPanel>
                                         </Border>
                                     </UniformGrid>

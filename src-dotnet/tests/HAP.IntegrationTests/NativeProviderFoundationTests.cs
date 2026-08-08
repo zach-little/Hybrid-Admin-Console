@@ -69,6 +69,6 @@ public sealed class NativeProviderFoundationTests
         Assert.Equal("amorgan@example.com", mailbox.Value!.PrimarySmtpAddress);
         Assert.False(delegation.Succeeded);
         Assert.Equal("Unsupported", delegation.Status);
-        Assert.Contains(delegation.Errors, error => error.Code == "ExchangeOnline.MailboxDelegation.UnsupportedWithoutPowerShell");
+        Assert.Contains(delegation.Errors, error => error.Code == "ExchangeOnline.PowerShellDisabled");
     }
 }

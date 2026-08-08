@@ -32,6 +32,8 @@ public sealed record MailboxSummary
 
     public string PrimarySmtpAddress { get; init; } = string.Empty;
 
+    public IReadOnlyList<string> EmailAddresses { get; init; } = Array.Empty<string>();
+
     public string UserPrincipalName { get; init; } = string.Empty;
 
     public string RecipientTypeDetails { get; init; } = string.Empty;

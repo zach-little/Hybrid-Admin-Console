@@ -30,7 +30,9 @@ public sealed class NoLegacyBuiltInPowerShellTests
 
         var approvedDirectPowerShellLaunchFiles = new[]
         {
-            "NativeSimulationView.xaml.cs"
+            "NativeSimulationView.xaml.cs",
+            "ExchangeOnlineProvider.cs",
+            "ExchangeOnPremisesProvider.cs"
         };
 
         var hits = productionFiles

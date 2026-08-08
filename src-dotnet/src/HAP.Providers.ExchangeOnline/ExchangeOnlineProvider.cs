@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text.Json;
 using HAP.Contracts;
 using HAP.Providers.Abstractions;
 
@@ -16,24 +18,84 @@ public sealed class ExchangeOnlineProvider : IProviderHealthCapability, IExchang
     {
         var errors = Validate();
         if (errors.Count > 0) return Task.FromResult(OperationResult<ProviderHealthResult>.Failure(correlationId, errors, status: "Failed"));
-        return Task.FromResult(OperationResult<ProviderHealthResult>.Success(new ProviderHealthResult { ProviderId = "ExchangeOnline", Mode = "NativeSupportedApisOnly", Status = "Limited", Message = "Native Exchange Online provider is limited to Task 39 approved public API reads.", Available = true, Connected = true, Enabled = true, Required = false }, correlationId, new[] { OperationWarning.Create("ExchangeOnline.NativeScopeLimited", "Exchange recipient administration remains unsupported without a public API decision.") }, "Limited"));
+        return Task.FromResult(OperationResult<ProviderHealthResult>.Success(new ProviderHealthResult
+        {
+            ProviderId = "ExchangeOnline",
+            Mode = _options.UsePowerShell ? "ExchangeOnlineManagement" : "NativeSupportedApisOnly",
+            Status = _options.UsePowerShell ? "Connected" : "Limited",
+            Message = _options.UsePowerShell ? "Exchange Online PowerShell provider is enabled." : "Exchange Online PowerShell provider is not enabled for this profile.",
+            Available = true,
+            Connected = _options.UsePowerShell,
+            Enabled = true,
+            Required = false
+        }, correlationId, status: _options.UsePowerShell ? "Connected" : "Limited"));
     }
 
-    public Task<OperationResult<MailboxSummary?>> GetMailboxAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<MailboxSummary?>> GetMailboxAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
     {
-        var errors = Validate();
-        if (errors.Count > 0) return Task.FromResult(OperationResult<MailboxSummary?>.Failure(correlationId, errors, status: "Failed"));
-        return Task.FromResult(OperationResult<MailboxSummary?>.Success(new MailboxSummary { DisplayName = identity, UserPrincipalName = identity, PrimarySmtpAddress = identity.Contains('@', StringComparison.Ordinal) ? identity : $"{identity}@example.com", RecipientTypeDetails = "UserMailbox", Source = "ExchangeOnline.NativePublicApi" }, correlationId, new[] { OperationWarning.Create("ExchangeOnline.ReadLimited", "Only public API backed mailbox identity fields are available in native mode.") }, "Limited"));
+        if (!_options.UsePowerShell)
+        {
+            var errors = Validate();
+            if (errors.Count > 0) return OperationResult<MailboxSummary?>.Failure(correlationId, errors, status: "Failed");
+            var primary = identity.Contains('@', StringComparison.Ordinal) ? identity : $"{identity}@example.com";
+            return OperationResult<MailboxSummary?>.Success(new MailboxSummary { DisplayName = identity, UserPrincipalName = identity, PrimarySmtpAddress = primary, EmailAddresses = new[] { $"SMTP:{primary}" }, RecipientTypeDetails = "UserMailbox", Source = "ExchangeOnline.NativePublicApi" }, correlationId, new[] { OperationWarning.Create("ExchangeOnline.ReadLimited", "Only limited mailbox identity fields are available when Exchange Online PowerShell is disabled.") }, "Limited");
+        }
+
+        if (!EnsurePowerShell<MailboxSummary?>(correlationId, out var failure)) return failure!;
+        var json = await InvokeExchangeOnlineAsync($@"
+$mailbox = Get-Mailbox -Identity '{Ps(identity)}' -ErrorAction Stop
+[pscustomobject]@{{
+  DisplayName = [string]$mailbox.DisplayName
+  PrimarySmtpAddress = [string]$mailbox.PrimarySmtpAddress
+  EmailAddresses = @($mailbox.EmailAddresses | ForEach-Object {{ [string]$_ }})
+  UserPrincipalName = [string]$mailbox.UserPrincipalName
+  RecipientTypeDetails = [string]$mailbox.RecipientTypeDetails
+  ExchangeGuid = [string]$mailbox.ExchangeGuid
+  HiddenFromAddressListsEnabled = [bool]$mailbox.HiddenFromAddressListsEnabled
+  LitigationHoldEnabled = [bool]$mailbox.LitigationHoldEnabled
+  DeliverToMailboxAndForward = [bool]$mailbox.DeliverToMailboxAndForward
+  ForwardingSmtpAddress = [string]$mailbox.ForwardingSmtpAddress
+}} | ConvertTo-Json -Compress -Depth 4", cancellationToken).ConfigureAwait(false);
+        if (!json.Succeeded) return OperationResult<MailboxSummary?>.Failure(correlationId, json.Errors, status: json.Status);
+        var value = JsonSerializer.Deserialize<MailboxDto>(json.Value ?? "{}");
+        return OperationResult<MailboxSummary?>.Success(value is null ? null : MapMailbox(value, "ExchangeOnline.PowerShell"), correlationId);
     }
 
-    public Task<OperationResult<MailboxStatisticsSummary?>> GetMailboxStatisticsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        Unsupported<MailboxStatisticsSummary?>(correlationId, "ExchangeOnline.MailboxStatistics.UnsupportedWithoutPowerShell", "Mailbox statistics require an approved Exchange Online public API before native implementation.");
+    public async Task<OperationResult<MailboxStatisticsSummary?>> GetMailboxStatisticsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!EnsurePowerShell<MailboxStatisticsSummary?>(correlationId, out var failure)) return failure!;
+        var json = await InvokeExchangeOnlineAsync($@"
+$stats = Get-MailboxStatistics -Identity '{Ps(identity)}' -ErrorAction Stop
+[pscustomobject]@{{
+  DisplayName = [string]$stats.DisplayName
+  TotalItemSize = [string]$stats.TotalItemSize
+  ItemCount = [int]$stats.ItemCount
+  LastLogonTime = if ($stats.LastLogonTime) {{ $stats.LastLogonTime.ToString('o') }} else {{ $null }}
+}} | ConvertTo-Json -Compress -Depth 4", cancellationToken).ConfigureAwait(false);
+        if (!json.Succeeded) return OperationResult<MailboxStatisticsSummary?>.Failure(correlationId, json.Errors, status: json.Status);
+        return OperationResult<MailboxStatisticsSummary?>.Success(MapStatistics(JsonSerializer.Deserialize<MailboxStatisticsDto>(json.Value ?? "{}")), correlationId);
+    }
 
-    public Task<OperationResult<IReadOnlyList<MailboxDelegationSummary>>> GetMailboxDelegationsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        Unsupported<IReadOnlyList<MailboxDelegationSummary>>(correlationId, "ExchangeOnline.MailboxDelegation.UnsupportedWithoutPowerShell", "Mailbox delegation management has no approved native public API in this gate.");
+    public async Task<OperationResult<IReadOnlyList<MailboxDelegationSummary>>> GetMailboxDelegationsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!EnsurePowerShell<IReadOnlyList<MailboxDelegationSummary>>(correlationId, out var failure)) return failure!;
+        var json = await InvokeExchangeOnlineAsync($@"
+@(Get-MailboxPermission -Identity '{Ps(identity)}' -ErrorAction Stop |
+  Where-Object {{ -not $_.IsInherited -and $_.User -notlike 'NT AUTHORITY\SELF' }} |
+  Select-Object @{{n='Trustee';e={{[string]$_.User}}}}, @{{n='AccessRights';e={{[string]($_.AccessRights -join ',')}}}}, @{{n='Inherited';e={{[bool]$_.IsInherited}}}}, @{{n='Identity';e={{'{Ps(identity)}'}}}}) | ConvertTo-Json -Compress -Depth 5", cancellationToken).ConfigureAwait(false);
+        if (!json.Succeeded) return OperationResult<IReadOnlyList<MailboxDelegationSummary>>.Failure(correlationId, json.Errors, status: json.Status);
+        return OperationResult<IReadOnlyList<MailboxDelegationSummary>>.Success(ReadArray<MailboxDelegationDto>(json.Value).Select(MapDelegation).ToArray(), correlationId);
+    }
 
-    public Task<OperationResult<IReadOnlyList<DistributionGroupSummary>>> GetDistributionGroupsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        Unsupported<IReadOnlyList<DistributionGroupSummary>>(correlationId, "ExchangeOnline.DistributionGroups.UnsupportedWithoutPowerShell", "Exchange distribution group administration has no approved native public API in this gate.");
+    public async Task<OperationResult<IReadOnlyList<DistributionGroupSummary>>> GetDistributionGroupsAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        if (!EnsurePowerShell<IReadOnlyList<DistributionGroupSummary>>(correlationId, out var failure)) return failure!;
+        var json = await InvokeExchangeOnlineAsync($@"
+@(Get-DistributionGroup -ResultSize Unlimited -Filter ""Members -eq '{Ps(identity)}'"" -ErrorAction SilentlyContinue |
+  Select-Object @{{n='Id';e={{[string]$_.Identity}}}}, @{{n='DisplayName';e={{[string]$_.DisplayName}}}}, @{{n='Mail';e={{[string]$_.PrimarySmtpAddress}}}}, @{{n='Source';e={{'ExchangeOnline.PowerShell'}}}}) | ConvertTo-Json -Compress -Depth 5", cancellationToken).ConfigureAwait(false);
+        if (!json.Succeeded) return OperationResult<IReadOnlyList<DistributionGroupSummary>>.Failure(correlationId, json.Errors, status: json.Status);
+        return OperationResult<IReadOnlyList<DistributionGroupSummary>>.Success(ReadArray<DistributionGroupDto>(json.Value).Select(MapDistributionGroup).ToArray(), correlationId);
+    }
 
     public Task<OperationResult<ProviderChangeResult>> CreateUserAsync(UserCreateRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
         UnsupportedChange(correlationId, "CreateUser", request.SamAccountName, "ExchangeOnline.UserCreate.NotExchangeResponsibility", "User creation is not an Exchange Online responsibility in native HAP.");
@@ -45,32 +107,94 @@ public sealed class ExchangeOnlineProvider : IProviderHealthCapability, IExchang
         UnsupportedChange(correlationId, "SetManager", request.Identity, "ExchangeOnline.Manager.NotExchangeResponsibility", "Manager changes are handled by Graph or Active Directory providers.");
 
     public Task<OperationResult<ProviderChangeResult>> AddGroupMembershipAsync(MembershipChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        UnsupportedChange(correlationId, "AddGroupMembership", request.Group, "ExchangeOnline.DistributionGroupWrite.UnsupportedWithoutPowerShell", "Exchange distribution group writes are deferred until an approved public API or customer extension is selected.");
+        InvokeChangeAsync("AddDistributionGroupMember", request.Group, $"Add-DistributionGroupMember -Identity '{Ps(request.Group)}' -Member '{Ps(request.Identity)}' -BypassSecurityGroupManagerCheck -ErrorAction Stop", correlationId, cancellationToken);
 
     public Task<OperationResult<ProviderChangeResult>> RemoveGroupMembershipAsync(MembershipChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        UnsupportedChange(correlationId, "RemoveGroupMembership", request.Group, "ExchangeOnline.DistributionGroupWrite.UnsupportedWithoutPowerShell", "Exchange distribution group writes are deferred until an approved public API or customer extension is selected.");
+        InvokeChangeAsync("RemoveDistributionGroupMember", request.Group, $"Remove-DistributionGroupMember -Identity '{Ps(request.Group)}' -Member '{Ps(request.Identity)}' -BypassSecurityGroupManagerCheck -Confirm:$false -ErrorAction Stop", correlationId, cancellationToken);
 
-    public Task<OperationResult<ProviderChangeResult>> SetMailboxForwardingAsync(MailboxForwardingRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        UnsupportedChange(correlationId, "SetMailboxForwarding", request.Identity, "ExchangeOnline.MailboxForwarding.UnsupportedWithoutPowerShell", "Mailbox forwarding is deferred until an approved public API or customer extension is selected.");
+    public Task<OperationResult<ProviderChangeResult>> SetMailboxForwardingAsync(MailboxForwardingRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        var clear = string.IsNullOrWhiteSpace(request.ForwardingSmtpAddress);
+        var command = clear
+            ? $"Set-Mailbox -Identity '{Ps(request.Identity)}' -ForwardingSmtpAddress $null -DeliverToMailboxAndForward:$false -ErrorAction Stop"
+            : $"Set-Mailbox -Identity '{Ps(request.Identity)}' -ForwardingSmtpAddress '{Ps(request.ForwardingSmtpAddress)}' -DeliverToMailboxAndForward:${request.DeliverToMailboxAndForward.ToString().ToLowerInvariant()} -ErrorAction Stop";
+        return InvokeChangeAsync("SetMailboxForwarding", request.Identity, command, correlationId, cancellationToken);
+    }
 
     public Task<OperationResult<ProviderChangeResult>> SetGalVisibilityAsync(GalVisibilityRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        UnsupportedChange(correlationId, "SetGalVisibility", request.Identity, "ExchangeOnline.GalVisibility.UnsupportedWithoutPowerShell", "GAL visibility is deferred until an approved public API or customer extension is selected.");
+        InvokeChangeAsync("SetGalVisibility", request.Identity, $"Set-Mailbox -Identity '{Ps(request.Identity)}' -HiddenFromAddressListsEnabled:${request.HiddenFromAddressListsEnabled.ToString().ToLowerInvariant()} -ErrorAction Stop", correlationId, cancellationToken);
 
     public Task<OperationResult<ProviderChangeResult>> AddMailboxDelegationAsync(MailboxDelegationChangeRequest request, CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        UnsupportedChange(correlationId, "AddMailboxDelegation", request.Identity, "ExchangeOnline.MailboxDelegation.UnsupportedWithoutPowerShell", "Mailbox delegation is deferred until an approved public API or customer extension is selected.");
+        InvokeChangeAsync("AddMailboxDelegation", request.Identity, $"Add-MailboxPermission -Identity '{Ps(request.Identity)}' -User '{Ps(request.Trustee)}' -AccessRights {PsBare(request.AccessRights)} -InheritanceType All -AutoMapping:$false -ErrorAction Stop", correlationId, cancellationToken);
 
     public Task<OperationResult<ProviderChangeResult>> ResetStateAsync(CorrelationId correlationId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(OperationResult<ProviderChangeResult>.Success(
-            new ProviderChangeResult
+        Task.FromResult(OperationResult<ProviderChangeResult>.Success(Change("ResetState", "ExchangeOnline", false, "Native Exchange Online provider has no local mutable state."), correlationId, status: "NoChange"));
+
+    private async Task<OperationResult<ProviderChangeResult>> InvokeChangeAsync(string operation, string target, string command, CorrelationId correlationId, CancellationToken cancellationToken)
+    {
+        if (!EnsurePowerShell<ProviderChangeResult>(correlationId, out var failure)) return failure!;
+        var result = await InvokeExchangeOnlineAsync($"{command}; [pscustomobject]@{{Changed=$true;Message='{Ps(operation)} completed.'}} | ConvertTo-Json -Compress", cancellationToken).ConfigureAwait(false);
+        return result.Succeeded
+            ? OperationResult<ProviderChangeResult>.Success(Change(operation, target, true, $"{operation} completed."), correlationId, status: "Updated")
+            : OperationResult<ProviderChangeResult>.Failure(correlationId, result.Errors, status: result.Status);
+    }
+
+    private async Task<OperationResult<string>> InvokeExchangeOnlineAsync(string body, CancellationToken cancellationToken)
+    {
+        var connect = BuildConnectCommand();
+        var script = "$ErrorActionPreference='Stop'; Import-Module ExchangeOnlineManagement -ErrorAction Stop; " + connect + "; try { " + body + " } finally { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue }";
+        return await RunPowerShellAsync(script, cancellationToken).ConfigureAwait(false);
+    }
+
+    private string BuildConnectCommand()
+    {
+        var environment = ExchangeEnvironmentName();
+        var environmentArg = string.IsNullOrWhiteSpace(environment) ? string.Empty : $" -ExchangeEnvironmentName {environment}";
+        if (!string.IsNullOrWhiteSpace(_options.ClientId) && !string.IsNullOrWhiteSpace(_options.CertificateThumbprint))
+        {
+            return $"Connect-ExchangeOnline -AppId '{Ps(_options.ClientId)}' -CertificateThumbprint '{Ps(_options.CertificateThumbprint)}' -Organization '{Ps(Organization())}'{environmentArg} -ShowBanner:$false";
+        }
+
+        return $"Connect-ExchangeOnline{environmentArg} -ShowBanner:$false";
+    }
+
+    private async Task<OperationResult<string>> RunPowerShellAsync(string script, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
             {
-                Operation = "ResetState",
-                TargetId = "ExchangeOnline",
-                Changed = false,
-                Message = "Native Exchange Online provider has no local mutable state.",
-                Source = "ExchangeOnline"
-            },
-            correlationId,
-            status: "NoChange"));
+                FileName = "pwsh.exe",
+                Arguments = $"-NoLogo -NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "`\"", StringComparison.Ordinal)}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to start PowerShell.");
+            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            var output = await outputTask.ConfigureAwait(false);
+            var error = await errorTask.ConfigureAwait(false);
+            return process.ExitCode == 0
+                ? OperationResult<string>.Success(output.Trim(), CorrelationId.New())
+                : OperationResult<string>.Failure(CorrelationId.New(), new[] { OperationError.Create("ExchangeOnline.PowerShellFailed", "Exchange Online PowerShell command failed.", error) }, status: "Failed");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<string>.Failure(CorrelationId.New(), new[] { OperationError.Create("ExchangeOnline.PowerShellLaunchFailed", ex.Message) }, status: "Failed");
+        }
+    }
+
+    private bool EnsurePowerShell<T>(CorrelationId correlationId, out OperationResult<T>? result)
+    {
+        var errors = Validate();
+        if (errors.Count > 0) { result = OperationResult<T>.Failure(correlationId, errors, status: "Failed"); return false; }
+        if (!_options.UsePowerShell) { result = OperationResult<T>.Failure(correlationId, new[] { OperationError.Create("ExchangeOnline.PowerShellDisabled", "Exchange Online PowerShell is not enabled for this runtime profile.") }, status: "Unsupported"); return false; }
+        result = null;
+        return true;
+    }
 
     private IReadOnlyList<OperationError> Validate()
     {
@@ -81,19 +205,62 @@ public sealed class ExchangeOnlineProvider : IProviderHealthCapability, IExchang
         return errors;
     }
 
-    private static Task<OperationResult<T>> Unsupported<T>(CorrelationId correlationId, string code, string message) =>
-        Task.FromResult(OperationResult<T>.Failure(correlationId, new[] { OperationError.Create(code, message) }, status: "Unsupported"));
+    private string Organization() => _options.TenantDomain;
 
-    private static Task<OperationResult<ProviderChangeResult>> UnsupportedChange(
-        CorrelationId correlationId,
-        string operation,
-        string targetId,
-        string code,
-        string message)
+    private string ExchangeEnvironmentName()
     {
-        return Task.FromResult(OperationResult<ProviderChangeResult>.Failure(
-            correlationId,
-            new[] { OperationError.Create(code, message, operation, $"Operation={operation}; Target={targetId}; Disposition=UnsupportedWithoutPowerShell") },
-            status: "Unsupported"));
+        var cloud = _options.CloudEnvironment ?? string.Empty;
+        if (cloud.Contains("DoD", StringComparison.OrdinalIgnoreCase)) return "O365USGovDoD";
+        if (cloud.Contains("GCC High", StringComparison.OrdinalIgnoreCase) || cloud.Contains("GCCHigh", StringComparison.OrdinalIgnoreCase)) return "O365USGovGCCHigh";
+        return string.Empty;
     }
+
+    private static IReadOnlyList<T> ReadArray<T>(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return Array.Empty<T>();
+        var trimmed = json.Trim();
+        return trimmed.StartsWith("[", StringComparison.Ordinal)
+            ? JsonSerializer.Deserialize<T[]>(trimmed) ?? Array.Empty<T>()
+            : new[] { JsonSerializer.Deserialize<T>(trimmed)! }.Where(item => item is not null).ToArray();
+    }
+
+    private static MailboxSummary MapMailbox(MailboxDto dto, string source) => new()
+    {
+        DisplayName = dto.DisplayName ?? string.Empty,
+        PrimarySmtpAddress = dto.PrimarySmtpAddress ?? string.Empty,
+        EmailAddresses = dto.EmailAddresses ?? Array.Empty<string>(),
+        UserPrincipalName = dto.UserPrincipalName ?? string.Empty,
+        RecipientTypeDetails = dto.RecipientTypeDetails ?? string.Empty,
+        ExchangeGuid = dto.ExchangeGuid ?? string.Empty,
+        HiddenFromAddressListsEnabled = dto.HiddenFromAddressListsEnabled,
+        LitigationHoldEnabled = dto.LitigationHoldEnabled,
+        DeliverToMailboxAndForward = dto.DeliverToMailboxAndForward,
+        ForwardingSmtpAddress = dto.ForwardingSmtpAddress ?? string.Empty,
+        Source = source
+    };
+
+    private static MailboxStatisticsSummary? MapStatistics(MailboxStatisticsDto? dto) => dto is null ? null : new()
+    {
+        DisplayName = dto.DisplayName ?? string.Empty,
+        TotalItemSize = dto.TotalItemSize ?? string.Empty,
+        ItemCount = dto.ItemCount,
+        LastLogonTime = DateTimeOffset.TryParse(dto.LastLogonTime, out var parsed) ? parsed : null
+    };
+
+    private static MailboxDelegationSummary MapDelegation(MailboxDelegationDto dto) => new() { Trustee = dto.Trustee ?? string.Empty, AccessRights = dto.AccessRights ?? string.Empty, Inherited = dto.Inherited, Identity = dto.Identity ?? string.Empty };
+
+    private static DistributionGroupSummary MapDistributionGroup(DistributionGroupDto dto) => new() { Id = dto.Id ?? string.Empty, DisplayName = dto.DisplayName ?? string.Empty, Mail = dto.Mail ?? string.Empty, Source = string.IsNullOrWhiteSpace(dto.Source) ? "ExchangeOnline.PowerShell" : dto.Source! };
+
+    private static ProviderChangeResult Change(string operation, string targetId, bool changed, string message) => new() { Operation = operation, TargetId = targetId, Changed = changed, Message = message, Source = "ExchangeOnline.PowerShell" };
+
+    private static Task<OperationResult<ProviderChangeResult>> UnsupportedChange(CorrelationId correlationId, string operation, string targetId, string code, string message) => Task.FromResult(OperationResult<ProviderChangeResult>.Failure(correlationId, new[] { OperationError.Create(code, message, operation) }, status: "Unsupported"));
+
+    private static string Ps(string value) => (value ?? string.Empty).Replace("'", "''", StringComparison.Ordinal);
+
+    private static string PsBare(string value) => string.IsNullOrWhiteSpace(value) ? "FullAccess" : value.Replace("'", string.Empty, StringComparison.Ordinal);
+
+    private sealed record MailboxDto(string? DisplayName, string? PrimarySmtpAddress, IReadOnlyList<string>? EmailAddresses, string? UserPrincipalName, string? RecipientTypeDetails, string? ExchangeGuid, bool HiddenFromAddressListsEnabled, bool LitigationHoldEnabled, bool DeliverToMailboxAndForward, string? ForwardingSmtpAddress);
+    private sealed record MailboxStatisticsDto(string? DisplayName, string? TotalItemSize, int ItemCount, string? LastLogonTime);
+    private sealed record MailboxDelegationDto(string? Trustee, string? AccessRights, bool Inherited, string? Identity);
+    private sealed record DistributionGroupDto(string? Id, string? DisplayName, string? Mail, string? Source);
 }

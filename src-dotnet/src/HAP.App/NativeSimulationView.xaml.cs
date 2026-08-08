@@ -33,6 +33,7 @@ public partial class NativeSimulationView : UserControl
     private readonly IGraphReadCapability? _graphRead;
     private readonly IExchangeReadCapability? _exchangeRead;
     private readonly ISimulatorWriteCapability _writer;
+    private readonly ISimulatorWriteCapability _exchangeWriter;
     private readonly IReadOnlyList<IProviderHealthCapability> _healthProviders;
     private readonly string _bindingSummary;
     private NewUserExecutionPlan? _currentNewUserPlan;
@@ -50,6 +51,7 @@ public partial class NativeSimulationView : UserControl
         _graphRead = providers.GraphRead;
         _exchangeRead = providers.ExchangeRead;
         _writer = providers.Writer;
+        _exchangeWriter = providers.ExchangeWriter;
         _healthProviders = providers.HealthProviders;
         _bindingSummary = providers.BindingSummary;
         InitializeComponent();
@@ -67,6 +69,7 @@ public partial class NativeSimulationView : UserControl
         if (useSimulator)
         {
             return new RuntimeProviderSet(
+                simulator,
                 simulator,
                 simulator,
                 simulator,
@@ -122,7 +125,19 @@ public partial class NativeSimulationView : UserControl
         }
 
         var exchangeOnline = profile.ExchangeOnlineEnabled
-            ? new ExchangeOnlineProvider()
+            ? new ExchangeOnlineProvider(new ExchangeOnlineProviderOptions
+            {
+                UsePowerShell = true,
+                CloudEnvironment = profile.CloudEnvironment,
+                TenantDomain = FirstNonEmpty(profile.AppOnlyTenantDomain, profile.TenantId),
+                ClientId = profile.AppOnlyClientId,
+                CertificateThumbprint = profile.CertificateThumbprint,
+                CertificatePath = profile.CertificatePath,
+                CredentialMode = profile.AppOnlyCredentialMode,
+                ServiceAvailable = true,
+                AuthenticationSucceeded = true,
+                PermissionValidationSucceeded = true
+            })
             : null;
         if (exchangeOnline is not null)
         {
@@ -133,9 +148,12 @@ public partial class NativeSimulationView : UserControl
             ? new ExchangeOnPremisesProvider(new ExchangeOnPremisesProviderOptions
             {
                 Server = profile.ExchangeOnPremisesServer,
+                ConnectionUri = profile.ExchangeOnPremisesConnectionUri,
+                Authentication = profile.ExchangeOnPremisesAuthentication,
+                UsePowerShell = true,
                 ConnectionAvailable = true,
                 AuthenticationSucceeded = true,
-                SupportedManagementApiAvailable = false
+                SupportedManagementApiAvailable = true
             })
             : null;
         if (exchangeOnPremises is not null)
@@ -162,6 +180,11 @@ public partial class NativeSimulationView : UserControl
             : graph is not null
                 ? graph
                 : simulator;
+        var exchangeWriter = exchangeOnPremises is not null
+            ? (ISimulatorWriteCapability)exchangeOnPremises
+            : exchangeOnline is not null
+                ? exchangeOnline
+                : simulator;
 
         return new RuntimeProviderSet(
             userLookup,
@@ -171,6 +194,7 @@ public partial class NativeSimulationView : UserControl
             graphRead,
             exchangeRead,
             writer,
+            exchangeWriter,
             deviceProviders,
             healthProviders.Count > 0 ? healthProviders : new IProviderHealthCapability[] { simulator },
             $"Mode={profile.RuntimeMode}; Directory={ProviderName(directoryRead)}; Graph={ProviderName(graphRead)}; Exchange={ProviderName(exchangeRead)}");
@@ -496,8 +520,8 @@ public partial class NativeSimulationView : UserControl
         }
 
         var result = add == MessageBoxResult.Yes
-            ? await _writer.AddGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true)
-            : await _writer.RemoveGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true);
+            ? await _exchangeWriter.AddGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true)
+            : await _exchangeWriter.RemoveGroupMembershipAsync(new MembershipChangeRequest { Identity = _selectedUser!.SamAccountName, Group = group.Trim() }, CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Update Distribution Groups", result).ConfigureAwait(true);
     }
 
@@ -514,7 +538,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _writer.SetGalVisibilityAsync(
+        var result = await _exchangeWriter.SetGalVisibilityAsync(
             new GalVisibilityRequest { Identity = _selectedUser!.SamAccountName, HiddenFromAddressListsEnabled = answer == MessageBoxResult.Yes },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Show/Hide GAL", result).ConfigureAwait(true);
@@ -533,7 +557,7 @@ public partial class NativeSimulationView : UserControl
             return;
         }
 
-        var result = await _writer.AddMailboxDelegationAsync(
+        var result = await _exchangeWriter.AddMailboxDelegationAsync(
             new MailboxDelegationChangeRequest { Identity = _selectedUser!.SamAccountName, Trustee = trustee.Trim(), AccessRights = "FullAccess" },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("Add Delegates", result).ConfigureAwait(true);
@@ -547,7 +571,7 @@ public partial class NativeSimulationView : UserControl
         }
 
         var forwarding = PromptForText("E-mail Forwarding", "Forwarding SMTP address. Leave blank to clear:");
-        var result = await _writer.SetMailboxForwardingAsync(
+        var result = await _exchangeWriter.SetMailboxForwardingAsync(
             new MailboxForwardingRequest { Identity = _selectedUser!.SamAccountName, ForwardingSmtpAddress = forwarding.Trim(), DeliverToMailboxAndForward = !string.IsNullOrWhiteSpace(forwarding) },
             CorrelationId.New()).ConfigureAwait(true);
         await CompleteUserMutationAsync("E-mail Forwarding", result).ConfigureAwait(true);
@@ -784,6 +808,7 @@ public partial class NativeSimulationView : UserControl
             RecipientTypeText.Text = "Not loaded";
             HiddenGalText.Text = "Not loaded";
             ForwardingText.Text = "Not loaded";
+            EmailAddressesText.Text = "Not loaded";
             ItemCountText.Text = "Not loaded";
             LastMailboxLogonText.Text = "Not loaded";
             MailboxDelegationList.ItemsSource = Array.Empty<string>();
@@ -799,6 +824,7 @@ public partial class NativeSimulationView : UserControl
             RecipientTypeText.Text = "Not loaded";
             HiddenGalText.Text = "Not loaded";
             ForwardingText.Text = "Not loaded";
+            EmailAddressesText.Text = "Not loaded";
             DashboardExchangeText.Text = "Mailbox not loaded";
         }
         else
@@ -809,6 +835,9 @@ public partial class NativeSimulationView : UserControl
             ForwardingText.Text = string.IsNullOrWhiteSpace(mailbox.Value.ForwardingSmtpAddress)
                 ? "No forwarding configured"
                 : $"{mailbox.Value.ForwardingSmtpAddress} (deliver copy: {mailbox.Value.DeliverToMailboxAndForward})";
+            EmailAddressesText.Text = mailbox.Value.EmailAddresses.Count == 0
+                ? "None"
+                : string.Join(", ", mailbox.Value.EmailAddresses);
             DashboardExchangeText.Text = $"{mailbox.Value.RecipientTypeDetails} | {mailbox.Value.PrimarySmtpAddress}";
         }
 
@@ -1554,7 +1583,7 @@ public partial class NativeSimulationView : UserControl
             PimRolesText, RiskStateText, LastSignInText, PasswordChangedText, GraphMethodsText,
             AuthDefaultText, AuthStrengthText, ConditionalAccessText, SignInRiskText, MfaRegisteredText,
             PasswordlessText, MailboxText, RecipientTypeText, HiddenGalText, ForwardingText, ItemCountText,
-            LastMailboxLogonText
+            LastMailboxLogonText, EmailAddressesText
         })
         {
             text.Text = "-";
@@ -1777,6 +1806,7 @@ public partial class NativeSimulationView : UserControl
         IGraphReadCapability? GraphRead,
         IExchangeReadCapability? ExchangeRead,
         ISimulatorWriteCapability Writer,
+        ISimulatorWriteCapability ExchangeWriter,
         IReadOnlyList<(string ProviderId, IDeviceReadCapability Provider)> DeviceProviders,
         IReadOnlyList<IProviderHealthCapability> HealthProviders,
         string BindingSummary);
