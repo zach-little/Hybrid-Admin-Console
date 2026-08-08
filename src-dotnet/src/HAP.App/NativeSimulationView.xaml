@@ -134,7 +134,7 @@
             </MenuItem>
             <MenuItem Header="_Tools" Style="{StaticResource TopMenuItem}">
                 <MenuItem Header="Device Management" Click="OnOpenDeviceManagementClicked" />
-                <MenuItem Header="New User Wizard" Click="OnOpenNewUserWizardClicked" />
+                <MenuItem Header="Workflows" Click="OnOpenWorkflowsClicked" />
                 <MenuItem Header="User Lookup" Click="OnOpenUserLookupClicked" />
                 <Separator />
                 <MenuItem Header="Utilities" Click="OnOpenUtilitiesClicked" />
@@ -432,61 +432,84 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="New User Wizard">
+                <TabItem Header="Workflows">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
                         <Grid Margin="16">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="560" />
+                                <ColumnDefinition Width="320" />
                                 <ColumnDefinition Width="16" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="260" />
                             </Grid.ColumnDefinitions>
                             <Border Style="{StaticResource Card}">
-                                <StackPanel>
-                                    <TextBlock Text="New User Wizard" FontSize="26" FontWeight="SemiBold" />
-                                    <TextBlock Text="Enterprise Ready onboarding with validated identity intake, manager lookup, preview, and confirmed provider-backed creation."
-                                               Foreground="{StaticResource AccentBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,6,0,16" />
-                                    <UniformGrid Columns="2">
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="First Name" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserFirstNameTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Last Name" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserLastNameTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="SAM Account" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserSamTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Manager SAM" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserManagerTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="Department" Style="{StaticResource LabelText}" /><ComboBox x:Name="NewUserDepartmentComboBox" IsEditable="True" /></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Location" Style="{StaticResource LabelText}" /><ComboBox x:Name="NewUserOfficeComboBox" IsEditable="True" /></StackPanel>
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="Employee Number" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserEmployeeIdTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="BadgeID" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserBadgeIdTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="Office Phone" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserOfficePhoneTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,0,12"><TextBlock Text="Mobile Phone" Style="{StaticResource LabelText}" /><TextBox x:Name="NewUserMobilePhoneTextBox" Height="32" /></StackPanel>
-                                        <StackPanel Margin="0,0,12,12"><TextBlock Text="Home Organization" Style="{StaticResource LabelText}" /><ComboBox x:Name="NewUserHomeOrganizationComboBox" IsEditable="True" /></StackPanel>
-                                        <StackPanel Margin="0,18,0,12">
-                                            <CheckBox x:Name="NewUserCreateMailboxCheckBox" Content="Create mailbox" IsChecked="True" Margin="0,0,0,8" />
-                                            <CheckBox x:Name="NewUserRequiresCacCheckBox" Content="Requires CAC" />
-                                        </StackPanel>
-                                    </UniformGrid>
-                                    <TextBlock Text="Job Title" Style="{StaticResource LabelText}" />
-                                    <TextBox x:Name="NewUserTitleTextBox" Height="32" Margin="0,0,0,16" />
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Content="Validate" Style="{StaticResource CommandButton}" Click="OnValidateNewUserClicked" />
-                                        <Button Content="Execute" Style="{StaticResource CommandButton}" Margin="10,0,0,0" Click="OnExecuteNewUserClicked" />
-                                        <Button Content="Clear" Style="{StaticResource CommandButton}" Margin="10,0,0,0" Click="OnClearNewUserClicked" />
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Workflows" FontSize="26" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="WorkflowDirectoryText" Text="Loading workflow directory..." Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,0" />
                                     </StackPanel>
-                                </StackPanel>
+                                    <ListBox x:Name="WorkflowList"
+                                             Grid.Row="1"
+                                             MinHeight="360"
+                                             DisplayMemberPath="Name"
+                                             SelectionChanged="OnWorkflowSelectionChanged" />
+                                    <WrapPanel Grid.Row="2" Margin="0,12,0,0">
+                                        <Button Content="Add" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnAddWorkflowClicked" />
+                                        <Button Content="Edit" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnEditWorkflowClicked" />
+                                        <Button Content="Remove" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRemoveWorkflowClicked" />
+                                    </WrapPanel>
+                                </Grid>
                             </Border>
                             <Border Grid.Column="2" Style="{StaticResource Card}">
-                                <StackPanel>
-                                    <TextBlock Text="Validation and Execution Review" Style="{StaticResource SectionTitle}" />
-                                    <TextBlock x:Name="NewUserPreviewText" Text="Validate a request to build the native execution plan." Style="{StaticResource MutedText}" Margin="0,0,0,12" />
-                                    <DataGrid x:Name="NewUserPlanGrid" MinHeight="290">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="260" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Workflow Definition JSON" Style="{StaticResource SectionTitle}" />
+                                    <TextBox x:Name="WorkflowJsonTextBox"
+                                             Grid.Row="1"
+                                             AcceptsReturn="True"
+                                             AcceptsTab="True"
+                                             TextWrapping="NoWrap"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             VerticalScrollBarVisibility="Auto"
+                                             FontFamily="Consolas"
+                                             FontSize="13"
+                                             Margin="0,8,0,12" />
+                                    <StackPanel Grid.Row="2">
+                                        <WrapPanel>
+                                            <Button Content="Save" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnSaveWorkflowClicked" />
+                                            <Button Content="Run" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRunWorkflowClicked" />
+                                        </WrapPanel>
+                                        <TextBlock x:Name="WorkflowStatusText" Text="Select or add a workflow." Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                    </StackPanel>
+                                    <DataGrid x:Name="WorkflowResultGrid" Grid.Row="3" MinHeight="220">
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Provider" Width="160" Binding="{Binding ProviderId}" />
-                                            <DataGridTextColumn Header="Operation" Width="160" Binding="{Binding Operation}" />
-                                            <DataGridTextColumn Header="Blocking" Width="90" Binding="{Binding IsBlocking}" />
+                                            <DataGridTextColumn Header="Action" Width="170" Binding="{Binding ActionName}" />
+                                            <DataGridTextColumn Header="Type" Width="155" Binding="{Binding ActionType}" />
+                                            <DataGridTextColumn Header="Provider" Width="145" Binding="{Binding ProviderId}" />
+                                            <DataGridTextColumn Header="Status" Width="110" Binding="{Binding Status}" />
                                             <DataGridTextColumn Header="Message" Width="*" Binding="{Binding Message}" />
                                         </DataGrid.Columns>
                                     </DataGrid>
-                                    <TextBlock Text="Execution Log" Style="{StaticResource LabelText}" Margin="0,14,0,4" />
-                                    <ListBox x:Name="NewUserExecutionList" MinHeight="120" Background="#0B1220" Foreground="{StaticResource InkBrush}" BorderBrush="{StaticResource BorderBrush}" />
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="4" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="Workflow Actions" Style="{StaticResource SectionTitle}" />
+                                    <TextBlock Text="Use these Type values in JSON actions. Inputs support {{VariableName}} placeholders."
+                                               Style="{StaticResource MutedText}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,12" />
+                                    <ListBox x:Name="WorkflowActionReferenceList" MinHeight="420" />
                                 </StackPanel>
                             </Border>
                         </Grid>

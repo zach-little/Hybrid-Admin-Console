@@ -1,13 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using HAP.Application.Capabilities;
 using HAP.Application.Devices;
-using HAP.Application.NewUser;
 using HAP.Application.RuntimeProfiles;
+using HAP.Application.Workflows;
 using HAP.Contracts;
 using HAP.Presentation.Dialogs;
 using HAP.Providers.Abstractions;
@@ -24,9 +26,7 @@ public partial class NativeSimulationView : UserControl
     private readonly RuntimeProfileConfigurationDraft _profile;
     private readonly DirectorySimulatorProvider _simulator = new();
     private readonly BuiltInCapabilityCatalog _capabilityCatalog = new();
-    private readonly NewUserOnboardingConfiguration _newUserOnboardingConfiguration;
-    private readonly NativeNewUserPreflightService _newUserPreflight;
-    private readonly NativeNewUserExecutionService _newUserExecution;
+    private readonly string _workflowDirectory;
     private readonly NativeDeviceManagementService _deviceManagement;
     private readonly IUserLookupCapability _userLookup;
     private readonly IDirectoryReadCapability _directoryRead;
@@ -38,7 +38,7 @@ public partial class NativeSimulationView : UserControl
     private readonly ISimulatorWriteCapability _exchangeWriter;
     private readonly IReadOnlyList<IProviderHealthCapability> _healthProviders;
     private readonly string _bindingSummary;
-    private NewUserExecutionPlan? _currentNewUserPlan;
+    private string? _currentWorkflowPath;
     private SimulatorUserSummary? _selectedUser;
     private bool _syncingSearchText;
 
@@ -56,10 +56,8 @@ public partial class NativeSimulationView : UserControl
         _exchangeWriter = providers.ExchangeWriter;
         _healthProviders = providers.HealthProviders;
         _bindingSummary = providers.BindingSummary;
-        _newUserOnboardingConfiguration = NewUserOnboardingConfiguration.FromProfileJson(_profile.NewUserWizardJson, _profile.Departments, _profile.Locations);
+        _workflowDirectory = Path.Combine(AppContext.BaseDirectory, "workflows");
         InitializeComponent();
-        _newUserPreflight = new NativeNewUserPreflightService(_userLookup, _newUserOnboardingConfiguration);
-        _newUserExecution = new NativeNewUserExecutionService(_writer, _exchangeWriter);
         _deviceManagement = new NativeDeviceManagementService(providers.DeviceProviders);
         Loaded += OnLoaded;
     }
@@ -206,7 +204,7 @@ public partial class NativeSimulationView : UserControl
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         LoadCapabilityGrid();
-        LoadNewUserChoices();
+        LoadWorkflowDesigner();
         await RefreshDashboardAsync().ConfigureAwait(true);
         await SearchAsync().ConfigureAwait(true);
         await SearchDevicesAsync().ConfigureAwait(true);
@@ -276,52 +274,38 @@ public partial class NativeSimulationView : UserControl
         UpdateSelectedDeviceDisplay();
     }
 
-    private async void OnValidateNewUserClicked(object sender, RoutedEventArgs e)
+    private void OnAddWorkflowClicked(object sender, RoutedEventArgs e)
     {
-        await ValidateNewUserAsync().ConfigureAwait(true);
+        _currentWorkflowPath = null;
+        WorkflowList.SelectedIndex = -1;
+        WorkflowJsonTextBox.Text = CreateWorkflowTemplate();
+        WorkflowResultGrid.ItemsSource = null;
+        WorkflowStatusText.Text = "New workflow draft. Save to create a JSON file.";
     }
 
-    private async void OnExecuteNewUserClicked(object sender, RoutedEventArgs e)
+    private void OnEditWorkflowClicked(object sender, RoutedEventArgs e)
     {
-        if (_currentNewUserPlan is null)
-        {
-            await ValidateNewUserAsync().ConfigureAwait(true);
-        }
-
-        if (_currentNewUserPlan is null)
-        {
-            return;
-        }
-
-        var result = await _newUserExecution.ExecuteAsync(_currentNewUserPlan, CorrelationId.New()).ConfigureAwait(true);
-        NewUserExecutionList.ItemsSource = result.Value?.Steps.Select(step =>
-            $"{step.ProviderId} {step.Operation}: {(step.Succeeded ? "Succeeded" : "Failed")} - {step.Message}").ToArray()
-            ?? result.Errors.Select(error => error.Message).ToArray();
-
-        StatusText.Text = result.Succeeded ? "New User Wizard execution completed." : "New User Wizard execution blocked or failed.";
-        await SearchAsync(_currentNewUserPlan.Request.SamAccountName).ConfigureAwait(true);
+        LoadSelectedWorkflowIntoEditor();
     }
 
-    private void OnClearNewUserClicked(object sender, RoutedEventArgs e)
+    private void OnWorkflowSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        NewUserFirstNameTextBox.Text = string.Empty;
-        NewUserLastNameTextBox.Text = string.Empty;
-        NewUserSamTextBox.Text = string.Empty;
-        NewUserManagerTextBox.Text = string.Empty;
-        NewUserTitleTextBox.Text = string.Empty;
-        NewUserEmployeeIdTextBox.Text = string.Empty;
-        NewUserBadgeIdTextBox.Text = string.Empty;
-        NewUserOfficePhoneTextBox.Text = string.Empty;
-        NewUserMobilePhoneTextBox.Text = string.Empty;
-        NewUserDepartmentComboBox.Text = string.Empty;
-        NewUserOfficeComboBox.Text = string.Empty;
-        NewUserHomeOrganizationComboBox.Text = string.Empty;
-        NewUserCreateMailboxCheckBox.IsChecked = _profile.CreateMailboxByDefault;
-        NewUserRequiresCacCheckBox.IsChecked = false;
-        NewUserPlanGrid.ItemsSource = null;
-        NewUserExecutionList.ItemsSource = null;
-        NewUserPreviewText.Text = "Validate a request to build the native execution plan.";
-        _currentNewUserPlan = null;
+        LoadSelectedWorkflowIntoEditor();
+    }
+
+    private void OnSaveWorkflowClicked(object sender, RoutedEventArgs e)
+    {
+        SaveCurrentWorkflow();
+    }
+
+    private void OnRemoveWorkflowClicked(object sender, RoutedEventArgs e)
+    {
+        RemoveSelectedWorkflow();
+    }
+
+    private async void OnRunWorkflowClicked(object sender, RoutedEventArgs e)
+    {
+        await RunCurrentWorkflowAsync().ConfigureAwait(true);
     }
 
     private void OnPreferencesClicked(object sender, RoutedEventArgs e)
@@ -350,10 +334,10 @@ public partial class NativeSimulationView : UserControl
         DeviceSearchBox.Focus();
     }
 
-    private void OnOpenNewUserWizardClicked(object sender, RoutedEventArgs e)
+    private void OnOpenWorkflowsClicked(object sender, RoutedEventArgs e)
     {
         WorkflowTabs.SelectedIndex = 3;
-        NewUserFirstNameTextBox.Focus();
+        WorkflowJsonTextBox.Focus();
     }
 
     private void OnOpenUtilitiesClicked(object sender, RoutedEventArgs e)
@@ -607,33 +591,195 @@ public partial class NativeSimulationView : UserControl
             .ToArray();
     }
 
-    private void LoadNewUserChoices()
+    private void LoadWorkflowDesigner()
     {
-        var departments = _newUserOnboardingConfiguration.Departments
-            .Select(department => department.Display)
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .DefaultIfEmpty("General")
-            .ToArray();
-        var locations = _newUserOnboardingConfiguration.Locations
-            .Select(location => location.Display)
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .DefaultIfEmpty("Default")
-            .ToArray();
-        var homeOrganizations = _newUserOnboardingConfiguration.HomeOrganizations
-            .Select(homeOrganization => homeOrganization.Display)
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+        Directory.CreateDirectory(_workflowDirectory);
+        WorkflowDirectoryText.Text = _workflowDirectory;
+        WorkflowActionReferenceList.ItemsSource = new[]
+        {
+            "CreateAdUser",
+            "UpdateAdAttributes",
+            "SetManager",
+            "AddGroup",
+            "RemoveGroup",
+            "EnableRemoteMailbox",
+            "SetMailboxForwarding",
+            "SetGalVisibility",
+            "AddMailboxDelegation",
+            "ExecutePowerShell",
+            "InvokeRestApi (future)",
+            "Delay (future)",
+            "Approval (future)",
+            "ConditionalBranch (future)"
+        };
+        LoadWorkflowList();
+    }
+
+    private void LoadWorkflowList()
+    {
+        Directory.CreateDirectory(_workflowDirectory);
+        var items = Directory.EnumerateFiles(_workflowDirectory, "*.json")
+            .Select(path =>
+            {
+                try
+                {
+                    var definition = WorkflowDefinition.FromJson(File.ReadAllText(path));
+                    return new WorkflowListItem(
+                        string.IsNullOrWhiteSpace(definition.Name) ? Path.GetFileNameWithoutExtension(path) : definition.Name,
+                        string.IsNullOrWhiteSpace(definition.Category) ? "Workflow" : definition.Category,
+                        path);
+                }
+                catch
+                {
+                    return new WorkflowListItem(Path.GetFileNameWithoutExtension(path), "Invalid JSON", path);
+                }
+            })
+            .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        NewUserDepartmentComboBox.ItemsSource = departments;
-        NewUserOfficeComboBox.ItemsSource = locations;
-        NewUserHomeOrganizationComboBox.ItemsSource = homeOrganizations;
-        NewUserDepartmentComboBox.SelectedIndex = departments.Length > 0 ? 0 : -1;
-        NewUserOfficeComboBox.SelectedIndex = locations.Length > 0 ? 0 : -1;
-        NewUserHomeOrganizationComboBox.SelectedIndex = homeOrganizations.Length > 0 ? 0 : -1;
-        NewUserCreateMailboxCheckBox.IsChecked = _profile.CreateMailboxByDefault;
+        WorkflowList.ItemsSource = items;
+        WorkflowStatusText.Text = items.Length == 0
+            ? "No workflows found. Add a workflow to create the first JSON file."
+            : $"Loaded {items.Length} workflow definition(s).";
+    }
+
+    private void LoadSelectedWorkflowIntoEditor()
+    {
+        if (WorkflowList.SelectedItem is not WorkflowListItem item)
+        {
+            return;
+        }
+
+        _currentWorkflowPath = item.Path;
+        WorkflowJsonTextBox.Text = File.ReadAllText(item.Path);
+        WorkflowResultGrid.ItemsSource = null;
+        WorkflowStatusText.Text = $"Editing {item.Name}.";
+    }
+
+    private void SaveCurrentWorkflow()
+    {
+        try
+        {
+            var definition = WorkflowDefinition.FromJson(WorkflowJsonTextBox.Text);
+            if (string.IsNullOrWhiteSpace(definition.Name))
+            {
+                ShowThemedNotice("Save Workflow", "Workflow name is required.");
+                return;
+            }
+
+            Directory.CreateDirectory(_workflowDirectory);
+            var path = _currentWorkflowPath;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Path.Combine(_workflowDirectory, $"{SafeFileName(definition.Name)}.json");
+            }
+
+            var formatted = JsonSerializer.Serialize(definition, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, formatted);
+            _currentWorkflowPath = path;
+            WorkflowJsonTextBox.Text = formatted;
+            LoadWorkflowList();
+            WorkflowStatusText.Text = $"Saved workflow to {path}.";
+        }
+        catch (Exception ex)
+        {
+            ShowThemedNotice("Save Workflow", $"Workflow JSON could not be saved: {ex.Message}", isDestructive: true);
+        }
+    }
+
+    private void RemoveSelectedWorkflow()
+    {
+        if (WorkflowList.SelectedItem is not WorkflowListItem item)
+        {
+            ShowThemedNotice("Remove Workflow", "Select a workflow first.");
+            return;
+        }
+
+        if (ShowThemedChoice("Remove Workflow", $"Remove workflow '{item.Name}'?", MessageBoxButton.YesNo, isDestructive: true, yesText: "Remove") != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        File.Delete(item.Path);
+        _currentWorkflowPath = null;
+        WorkflowJsonTextBox.Text = string.Empty;
+        WorkflowResultGrid.ItemsSource = null;
+        LoadWorkflowList();
+        WorkflowStatusText.Text = "Workflow removed.";
+    }
+
+    private async Task RunCurrentWorkflowAsync()
+    {
+        SetBusy(true, "Running workflow...");
+        try
+        {
+            var definition = WorkflowDefinition.FromJson(WorkflowJsonTextBox.Text);
+            var providers = new Dictionary<string, ISimulatorWriteCapability>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["DirectorySimulator"] = _writer,
+                ["ActiveDirectory"] = _writer,
+                ["MicrosoftGraph"] = _writer,
+                ["ExchangeOnPremises"] = _exchangeWriter,
+                ["ExchangeOnline"] = _exchangeWriter
+            };
+            var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(providers));
+            var result = await engine.ExecuteAsync(
+                new WorkflowExecutionRequest { Definition = definition },
+                CorrelationId.New()).ConfigureAwait(true);
+
+            WorkflowResultGrid.ItemsSource = result.Value?.Actions ?? Array.Empty<WorkflowActionResult>();
+            WorkflowStatusText.Text = result.Succeeded
+                ? $"Workflow '{definition.Name}' completed."
+                : $"Workflow '{definition.Name}' failed: {string.Join(" ", result.Errors.Select(error => error.Message))}";
+            StatusText.Text = WorkflowStatusText.Text;
+        }
+        catch (Exception ex)
+        {
+            WorkflowResultGrid.ItemsSource = null;
+            WorkflowStatusText.Text = $"Workflow failed before execution: {ex.Message}";
+            StatusText.Text = WorkflowStatusText.Text;
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private static string CreateWorkflowTemplate()
+    {
+        return """
+        {
+          "SchemaVersion": "1.0",
+          "Id": "new-workflow",
+          "Name": "New Workflow",
+          "Category": "Onboarding",
+          "Actions": [
+            {
+              "Id": "create-ad-user",
+              "Name": "Create AD user",
+              "Type": "CreateAdUser",
+              "ProviderId": "ActiveDirectory",
+              "Inputs": {
+                "GivenName": "First",
+                "Surname": "Last",
+                "SamAccountName": "flast",
+                "UserPrincipalName": "flast@example.com",
+                "Attribute:badgeID": "B-0000"
+              }
+            },
+            {
+              "Id": "add-group",
+              "Name": "Add group",
+              "Type": "AddGroup",
+              "ProviderId": "ActiveDirectory",
+              "Inputs": {
+                "Identity": "flast",
+                "Group": "GG-Example"
+              }
+            }
+          ]
+        }
+        """;
     }
 
     private Task SearchAsync() => SearchAsync(SearchBox.Text);
@@ -1037,67 +1183,6 @@ public partial class NativeSimulationView : UserControl
         SelectedDeviceText.Text = device is null
             ? "Selected device: none"
             : $"Selected device: {Safe(device.Name)} | Primary user: {Safe(device.PrimaryUser)} | Source: {Safe(device.Source)}";
-    }
-
-    private async Task ValidateNewUserAsync()
-    {
-        var request = new NewUserPreflightRequest
-        {
-            GivenName = NewUserFirstNameTextBox.Text.Trim(),
-            Surname = NewUserLastNameTextBox.Text.Trim(),
-            SamAccountName = NewUserSamTextBox.Text.Trim(),
-            Department = NewUserDepartmentComboBox.Text.Trim(),
-            Title = NewUserTitleTextBox.Text.Trim(),
-            ManagerSamAccountName = NewUserManagerTextBox.Text.Trim(),
-            Office = NewUserOfficeComboBox.Text.Trim(),
-            EmployeeId = NewUserEmployeeIdTextBox.Text.Trim(),
-            BadgeId = NewUserBadgeIdTextBox.Text.Trim(),
-            OfficePhone = NewUserOfficePhoneTextBox.Text.Trim(),
-            MobilePhone = NewUserMobilePhoneTextBox.Text.Trim(),
-            HomeOrganization = NewUserHomeOrganizationComboBox.Text.Trim(),
-            CreateMailbox = NewUserCreateMailboxCheckBox.IsChecked == true,
-            RequiresCac = NewUserRequiresCacCheckBox.IsChecked == true
-        };
-
-        SetBusy(true, "Validating New User Wizard request...");
-        try
-        {
-            var result = await _newUserPreflight.BuildPlanAsync(request, CorrelationId.New()).ConfigureAwait(true);
-            _currentNewUserPlan = result.Value;
-            NewUserPlanGrid.ItemsSource = _currentNewUserPlan?.Steps;
-            NewUserExecutionList.ItemsSource = null;
-            NewUserPreviewText.Text = _currentNewUserPlan is null
-                ? string.Join(" ", result.Errors.Select(error => error.Message))
-                : BuildNewUserPreviewText(_currentNewUserPlan);
-            StatusText.Text = _currentNewUserPlan?.CanExecute == true ? "New User Wizard plan ready." : "New User Wizard plan blocked.";
-        }
-        finally
-        {
-            SetBusy(false);
-        }
-    }
-
-    private static string BuildNewUserPreviewText(NewUserExecutionPlan plan)
-    {
-        var resolved = plan.ResolvedOnboarding;
-        var lines = new List<string>
-        {
-            $"Plan {plan.PlanId}: {(plan.CanExecute ? "Ready" : "Blocked")} for {plan.Request.SamAccountName}.",
-            string.IsNullOrWhiteSpace(resolved.UserPrincipalName) ? string.Empty : $"UPN: {resolved.UserPrincipalName}",
-            string.IsNullOrWhiteSpace(resolved.TargetOu) ? "Target OU: profile default" : $"Target OU: {resolved.TargetOu}"
-        };
-
-        if (resolved.Groups.Count > 0)
-        {
-            lines.Add($"Groups: {string.Join(", ", resolved.Groups)}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(resolved.RemoteRoutingAddress))
-        {
-            lines.Add($"Remote routing: {resolved.RemoteRoutingAddress}");
-        }
-
-        return string.Join(Environment.NewLine, lines.Where(line => !string.IsNullOrWhiteSpace(line)));
     }
 
     private async Task CompleteUserMutationAsync(string title, OperationResult<ProviderChangeResult> result)
@@ -1753,9 +1838,18 @@ public partial class NativeSimulationView : UserControl
 
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("g") ?? "Not loaded";
 
+    private static string SafeFileName(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var clean = new string(value.Select(ch => invalid.Contains(ch) ? '-' : ch).ToArray()).Trim();
+        return string.IsNullOrWhiteSpace(clean) ? "workflow" : clean;
+    }
+
     private sealed record CapabilityRow(string Provider, string Capability, string Disposition, string Reason);
 
     private sealed record DeviceRow(ManagedDeviceSummary Device, string Name, string OperatingSystem, string ComplianceState, string PrimaryUser, string LastCheckIn, string Source);
+
+    private sealed record WorkflowListItem(string Name, string Category, string Path);
 
     private sealed record RuntimeProviderSet(
         IUserLookupCapability UserLookup,
