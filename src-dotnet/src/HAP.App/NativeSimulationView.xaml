@@ -395,7 +395,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="120" />
                             </Grid.RowDefinitions>
-                            <DataGrid x:Name="DevicesGrid" SelectionMode="Single">
+                            <DataGrid x:Name="DevicesGrid" SelectionMode="Single" SelectionChanged="OnDeviceSelectionChanged">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Device" Width="220" Binding="{Binding Name}" />
                                     <DataGridTextColumn Header="OS" Width="150" Binding="{Binding OperatingSystem}" />
@@ -405,15 +405,20 @@
                                     <DataGridTextColumn Header="Source" Width="210" Binding="{Binding Source}" />
                                 </DataGrid.Columns>
                             </DataGrid>
-                            <WrapPanel Grid.Row="1" Margin="0,12,0,8">
-                                <Button Content="Reveal BitLocker Key" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRevealBitLockerClicked" />
-                                <Button Content="Reveal LAPS Password" Style="{StaticResource CommandButton}" Margin="0,0,18,8" Click="OnRevealLapsClicked" />
-                                <Button Content="Retire from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRetireIntuneDeviceClicked" />
-                                <Button Content="Delete from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteIntuneDeviceClicked" />
-                                <Button Content="Delete from Entra ID" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteEntraDeviceClicked" />
-                                <Button Content="Delete from AD" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAdDeviceClicked" />
-                                <Button Content="Delete from All" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAllDeviceClicked" />
-                            </WrapPanel>
+                            <StackPanel Grid.Row="1" Margin="0,12,0,8">
+                                <Border Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                                    <TextBlock x:Name="SelectedDeviceText" Text="Selected device: none" Style="{StaticResource MutedText}" />
+                                </Border>
+                                <WrapPanel>
+                                    <Button Content="Reveal BitLocker Key" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRevealBitLockerClicked" />
+                                    <Button Content="Reveal LAPS Password" Style="{StaticResource CommandButton}" Margin="0,0,18,8" Click="OnRevealLapsClicked" />
+                                    <Button Content="Retire from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnRetireIntuneDeviceClicked" />
+                                    <Button Content="Delete from Intune" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteIntuneDeviceClicked" />
+                                    <Button Content="Delete from Entra ID" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteEntraDeviceClicked" />
+                                    <Button Content="Delete from AD" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAdDeviceClicked" />
+                                    <Button Content="Delete from All" Style="{StaticResource CommandButton}" Margin="0,0,8,8" Click="OnDeleteAllDeviceClicked" />
+                                </WrapPanel>
+                            </StackPanel>
                             <TextBox x:Name="DeviceActionOutputTextBox"
                                      Grid.Row="2"
                                      IsReadOnly="True"

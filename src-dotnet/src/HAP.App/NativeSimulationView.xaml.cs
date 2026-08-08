@@ -200,7 +200,7 @@ public partial class NativeSimulationView : UserControl
 
     private async void OnSearchClicked(object sender, RoutedEventArgs e)
     {
-        await SearchAsync().ConfigureAwait(true);
+        await SearchBothPanelsAsync().ConfigureAwait(true);
     }
 
     private async void OnSearchKeyDown(object sender, KeyEventArgs e)
@@ -208,7 +208,7 @@ public partial class NativeSimulationView : UserControl
         if (e.Key == Key.Return)
         {
             e.Handled = true;
-            await SearchAsync().ConfigureAwait(true);
+            await SearchBothPanelsAsync().ConfigureAwait(true);
         }
     }
 
@@ -232,7 +232,7 @@ public partial class NativeSimulationView : UserControl
 
     private async void OnDeviceSearchClicked(object sender, RoutedEventArgs e)
     {
-        await SearchDevicesAsync().ConfigureAwait(true);
+        await SearchBothPanelsAsync().ConfigureAwait(true);
     }
 
     private async void OnDeviceSearchKeyDown(object sender, KeyEventArgs e)
@@ -240,8 +240,13 @@ public partial class NativeSimulationView : UserControl
         if (e.Key == Key.Return)
         {
             e.Handled = true;
-            await SearchDevicesAsync().ConfigureAwait(true);
+            await SearchBothPanelsAsync().ConfigureAwait(true);
         }
+    }
+
+    private void OnDeviceSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateSelectedDeviceDisplay();
     }
 
     private async void OnValidateNewUserClicked(object sender, RoutedEventArgs e)
@@ -579,6 +584,15 @@ public partial class NativeSimulationView : UserControl
 
     private Task SearchAsync() => SearchAsync(SearchBox.Text);
 
+    private async Task SearchBothPanelsAsync()
+    {
+        var query = CurrentSearchQuery();
+        SyncSearchText(query);
+        await SearchAsync(query).ConfigureAwait(true);
+        await SearchDevicesAsync(query).ConfigureAwait(true);
+        StatusText.Text = $"Loaded user and device results for {query}.";
+    }
+
     private async Task SearchAsync(string? query)
     {
         var effectiveQuery = string.IsNullOrWhiteSpace(query) ? "amorgan" : query.Trim();
@@ -809,9 +823,11 @@ public partial class NativeSimulationView : UserControl
         DistributionGroupsList.ItemsSource = distributionGroups.Value?.Select(item => $"{item.DisplayName} <{item.Mail}>").ToArray() ?? Array.Empty<string>();
     }
 
-    private async Task SearchDevicesAsync()
+    private async Task SearchDevicesAsync(string? searchQuery = null)
     {
-        var query = string.IsNullOrWhiteSpace(DeviceSearchBox.Text) ? SearchBox.Text : DeviceSearchBox.Text.Trim();
+        var query = string.IsNullOrWhiteSpace(searchQuery)
+            ? CurrentSearchQuery()
+            : searchQuery.Trim();
         SyncSearchText(query);
         SetBusy(true, $"Searching devices for {query}...");
 
@@ -840,6 +856,8 @@ public partial class NativeSimulationView : UserControl
             device.PrimaryUser,
             FormatDate(device.LastCheckInUtc),
             device.Source)).ToArray();
+        DevicesGrid.SelectedIndex = devices.Count > 0 ? 0 : -1;
+        UpdateSelectedDeviceDisplay();
     }
 
     private async void OnRevealBitLockerClicked(object sender, RoutedEventArgs e)
@@ -947,6 +965,19 @@ public partial class NativeSimulationView : UserControl
     private ManagedDeviceSummary? GetSelectedDevice()
     {
         return DevicesGrid.SelectedItem is DeviceRow row ? row.Device : null;
+    }
+
+    private void UpdateSelectedDeviceDisplay()
+    {
+        if (SelectedDeviceText is null)
+        {
+            return;
+        }
+
+        var device = GetSelectedDevice();
+        SelectedDeviceText.Text = device is null
+            ? "Selected device: none"
+            : $"Selected device: {Safe(device.Name)} | Primary user: {Safe(device.PrimaryUser)} | Source: {Safe(device.Source)}";
     }
 
     private async Task ValidateNewUserAsync()
@@ -1551,12 +1582,16 @@ public partial class NativeSimulationView : UserControl
         _syncingSearchText = true;
         try
         {
-            if (!ReferenceEquals(source, SearchBox) && !string.Equals(SearchBox.Text, next, StringComparison.Ordinal))
+            if (SearchBox is not null &&
+                !ReferenceEquals(source, SearchBox) &&
+                !string.Equals(SearchBox.Text, next, StringComparison.Ordinal))
             {
                 SearchBox.Text = next;
             }
 
-            if (!ReferenceEquals(source, DeviceSearchBox) && !string.Equals(DeviceSearchBox.Text, next, StringComparison.Ordinal))
+            if (DeviceSearchBox is not null &&
+                !ReferenceEquals(source, DeviceSearchBox) &&
+                !string.Equals(DeviceSearchBox.Text, next, StringComparison.Ordinal))
             {
                 DeviceSearchBox.Text = next;
             }
@@ -1565,6 +1600,11 @@ public partial class NativeSimulationView : UserControl
         {
             _syncingSearchText = false;
         }
+    }
+
+    private string CurrentSearchQuery()
+    {
+        return FirstNonEmpty(DeviceSearchBox?.Text?.Trim() ?? string.Empty, SearchBox?.Text?.Trim() ?? string.Empty, "amorgan");
     }
 
     private void SetBusy(bool busy, string? status = null)
