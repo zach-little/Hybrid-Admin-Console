@@ -16,14 +16,34 @@ public sealed class ActiveDirectoryProvider :
 {
     private readonly ActiveDirectoryProviderOptions _options;
     private readonly List<SimulatorUserSummary> _users;
+    private static readonly HashSet<string> WritableUserAttributeNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "adminDescription", "assistant", "c", "co", "company", "countryCode",
+        "department", "departmentNumber", "description", "displayName", "division",
+        "employeeID", "employeeNumber", "EmployeeNumber", "BadgeID",
+        "facsimileTelephoneNumber", "givenName", "homeDirectory", "homeDrive",
+        "homePhone", "initials", "info", "ipPhone", "l", "mail", "mailNickname",
+        "manager", "middleName", "mobile", "otherMailbox", "otherTelephone",
+        "pager", "physicalDeliveryOfficeName", "postalAddress", "postalCode",
+        "postOfficeBox", "proxyAddresses", "sAMAccountName", "scriptPath", "sn",
+        "st", "streetAddress", "telephoneNumber", "title", "url",
+        "userAccountControl", "userPrincipalName", "wWWHomePage",
+        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3",
+        "extensionAttribute4", "extensionAttribute5", "extensionAttribute6",
+        "extensionAttribute7", "extensionAttribute8", "extensionAttribute9",
+        "extensionAttribute10", "extensionAttribute11", "extensionAttribute12",
+        "extensionAttribute13", "extensionAttribute14", "extensionAttribute15",
+        "targetAddress", "legacyExchangeDN", "msExchHideFromAddressLists",
+        "altRecipient", "deliverAndRedirect"
+    };
 
     public ActiveDirectoryProvider(ActiveDirectoryProviderOptions? options = null, IReadOnlyList<SimulatorUserSummary>? users = null)
     {
         _options = options ?? new ActiveDirectoryProviderOptions();
         _users = users?.ToList() ?? new List<SimulatorUserSummary>
         {
-            new() { DisplayName = "Alex Morgan", SamAccountName = "amorgan", UserPrincipalName = "amorgan@atlas-tech.com", Mail = "amorgan@atlas-tech.com", Department = "Information Technology", Title = "Systems Administrator", ManagerSamAccountName = "treed", Groups = new[] { "Domain Users", "GG-IT-Administrators" }, Source = "ActiveDirectory", Enabled = true },
-            new() { DisplayName = "Taylor Reed", SamAccountName = "treed", UserPrincipalName = "treed@atlas-tech.com", Mail = "treed@atlas-tech.com", Department = "Information Technology", Title = "IT Manager", DirectReportSamAccountNames = new[] { "amorgan" }, Groups = new[] { "Domain Users", "GG-IT-Managers" }, Source = "ActiveDirectory", Enabled = true }
+            new() { DisplayName = "Alex Morgan", SamAccountName = "amorgan", UserPrincipalName = "amorgan@littleinnovation.tech", Mail = "amorgan@littleinnovation.tech", Department = "Information Technology", Title = "Systems Administrator", ManagerSamAccountName = "treed", Groups = new[] { "Domain Users", "GG-IT-Administrators" }, Source = "ActiveDirectory", Enabled = true },
+            new() { DisplayName = "Taylor Reed", SamAccountName = "treed", UserPrincipalName = "treed@littleinnovation.tech", Mail = "treed@littleinnovation.tech", Department = "Information Technology", Title = "IT Manager", DirectReportSamAccountNames = new[] { "amorgan" }, Groups = new[] { "Domain Users", "GG-IT-Managers" }, Source = "ActiveDirectory", Enabled = true }
         };
     }
 
@@ -423,7 +443,7 @@ public sealed class ActiveDirectoryProvider :
     private bool ApplyUserAttribute(DirectoryEntry user, string requestedName, string value)
     {
         var name = NormalizeWritableAttributeName(requestedName);
-        if (string.IsNullOrWhiteSpace(name) || IsReadOnlyAttribute(name))
+        if (string.IsNullOrWhiteSpace(name) || IsReadOnlyAttribute(name) || !IsWritableAttribute(name))
         {
             return false;
         }
@@ -525,6 +545,11 @@ public sealed class ActiveDirectoryProvider :
     private static bool IsBooleanAttribute(string name)
     {
         return name.Equals("msExchHideFromAddressLists", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsWritableAttribute(string name)
+    {
+        return WritableUserAttributeNames.Contains(name);
     }
 
     private static bool SetProperty(DirectoryEntry entry, string name, string value)
@@ -666,7 +691,7 @@ public sealed class ActiveDirectoryProvider :
                     DisplayName = name,
                     Values = GetValues(result.Properties, name),
                     IsSingleValued = !IsMultiValuedAttribute(name) && (!result.Properties.Contains(name) || result.Properties[name].Count <= 1),
-                    IsReadOnly = IsReadOnlyAttribute(name),
+                    IsReadOnly = IsReadOnlyAttribute(name) || !IsWritableAttribute(name),
                     Syntax = "DirectoryAttribute",
                     Source = "ActiveDirectory.LiveLdap"
                 })

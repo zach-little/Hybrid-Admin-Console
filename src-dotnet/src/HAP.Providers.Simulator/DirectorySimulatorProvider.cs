@@ -208,7 +208,7 @@ public sealed class DirectorySimulatorProvider :
             {
                 Id = StableId(group),
                 DisplayName = group,
-                Mail = group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase) ? $"{group.ToLowerInvariant()}@atlas-tech.com" : string.Empty,
+                Mail = group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase) ? $"{group.ToLowerInvariant()}@littleinnovation.tech" : string.Empty,
                 SecurityIdentifier = $"S-1-5-21-SIM-{StableNumber(group):000000}",
                 Source = "DirectorySimulator.ActiveDirectory"
             })
@@ -244,7 +244,7 @@ public sealed class DirectorySimulatorProvider :
             {
                 Id = StableId(group),
                 DisplayName = group,
-                Mail = group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase) ? $"{group.ToLowerInvariant()}@atlas-tech.com" : string.Empty,
+                Mail = group.StartsWith("DL-", StringComparison.OrdinalIgnoreCase) ? $"{group.ToLowerInvariant()}@littleinnovation.tech" : string.Empty,
                 SecurityIdentifier = $"S-1-5-21-SIM-{StableNumber(group):000000}",
                 Source = "DirectorySimulator.ActiveDirectory"
             })
@@ -880,14 +880,14 @@ public sealed class DirectorySimulatorProvider :
             GivenName = first,
             Surname = last,
             SamAccountName = sam,
-            UserPrincipalName = $"{sam}@atlas-tech.com",
-            Mail = $"{sam}@atlas-tech.com",
+            UserPrincipalName = $"{sam}@littleinnovation.tech",
+            Mail = $"{sam}@littleinnovation.tech",
             Department = "Information Technology",
             Title = "Systems Specialist",
-            Company = "Atlas",
+            Company = "Little Innovation",
             Office = "Charleston",
             EmployeeId = $"SIM-{sam.ToUpperInvariant()}",
-            DistinguishedName = $"CN={first} {last},OU=Users,OU=Information Technology,OU=Atlas,DC=atlas-tech,DC=com",
+            DistinguishedName = $"CN={first} {last},OU=Users,OU=Information Technology,OU=LittleInnovation,DC=littleinnovation,DC=tech",
             ManagerSamAccountName = "treed",
             Groups = new[] { "Domain Users", "GG-InformationTechnology", "GG-VPN" },
             Enabled = true,
@@ -916,14 +916,14 @@ public sealed class DirectorySimulatorProvider :
             GivenName = firstName.Trim(),
             Surname = lastName.Trim(),
             SamAccountName = samAccountName.Trim().ToLowerInvariant(),
-            UserPrincipalName = $"{samAccountName.Trim().ToLowerInvariant()}@atlas-tech.com",
-            Mail = $"{samAccountName.Trim().ToLowerInvariant()}@atlas-tech.com",
+            UserPrincipalName = $"{samAccountName.Trim().ToLowerInvariant()}@littleinnovation.tech",
+            Mail = $"{samAccountName.Trim().ToLowerInvariant()}@littleinnovation.tech",
             Department = cleanDepartment,
             Title = string.IsNullOrWhiteSpace(title) ? "User" : title.Trim(),
-            Company = "Atlas",
+            Company = "Little Innovation",
             Office = cleanOffice,
             EmployeeId = $"SIM-{samAccountName.Trim().ToUpperInvariant()}",
-            DistinguishedName = $"CN={displayName},OU=Users,OU={cleanDepartment},OU=Atlas,DC=atlas-tech,DC=com",
+            DistinguishedName = $"CN={displayName},OU=Users,OU={cleanDepartment},OU=LittleInnovation,DC=littleinnovation,DC=tech",
             ManagerSamAccountName = managerSamAccountName.Trim(),
             DirectReportSamAccountNames = directReports,
             Groups = groups,
@@ -1185,7 +1185,7 @@ public sealed class DirectorySimulatorProvider :
         {
             Id = StableId(name),
             DisplayName = name,
-            Mail = $"{name.ToLowerInvariant()}@atlas-tech.com",
+            Mail = $"{name.ToLowerInvariant()}@littleinnovation.tech",
             Source = "DirectorySimulator.ExchangeOnline"
         };
     }

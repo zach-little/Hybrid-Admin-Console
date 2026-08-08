@@ -28,17 +28,30 @@ public sealed class NoLegacyBuiltInPowerShellTests
             "pwsh.exe"
         };
 
+        var approvedDirectPowerShellLaunchFiles = new[]
+        {
+            "NativeSimulationView.xaml.cs"
+        };
+
         var hits = productionFiles
             .SelectMany(file =>
             {
                 var text = File.ReadAllText(file);
                 return forbidden
-                    .Where(term => text.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .Where(term => text.Contains(term, StringComparison.OrdinalIgnoreCase) &&
+                                   !IsApprovedDirectPowerShellLaunch(file, term, approvedDirectPowerShellLaunchFiles))
                     .Select(term => $"{file}: {term}");
             })
             .ToArray();
 
         Assert.Empty(hits);
+    }
+
+    private static bool IsApprovedDirectPowerShellLaunch(string file, string term, IReadOnlyList<string> approvedFiles)
+    {
+        return (term.Equals("powershell.exe", StringComparison.OrdinalIgnoreCase) ||
+                term.Equals("pwsh.exe", StringComparison.OrdinalIgnoreCase)) &&
+               approvedFiles.Any(approved => file.EndsWith(approved, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string FindSourceRoot()

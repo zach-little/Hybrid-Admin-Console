@@ -3,4 +3,8 @@
     <ProjectReference Include="..\HAP.Contracts\HAP.Contracts.csproj" />
     <ProjectReference Include="..\HAP.Providers.Abstractions\HAP.Providers.Abstractions.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Graph" />
+  </ItemGroup>
 </Project>

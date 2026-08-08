@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -101,8 +102,14 @@ public partial class NativeSimulationView : UserControl
             {
                 TenantId = profile.TenantId,
                 ClientId = profile.AppOnlyClientId,
+                ClientSecret = profile.SecretReference,
+                CertificateThumbprint = profile.CertificateThumbprint,
+                CertificatePath = profile.CertificatePath,
+                CredentialMode = profile.AppOnlyCredentialMode,
+                CloudEnvironment = profile.CloudEnvironment,
                 AuthenticationMode = profile.DelegatedEnabled ? "Delegated" : "AppOnly",
-                Scopes = Array.Empty<string>()
+                Scopes = Array.Empty<string>(),
+                UseLiveGraph = true
             })
             : null;
         if (graph is not null)
@@ -300,18 +307,27 @@ public partial class NativeSimulationView : UserControl
         try
         {
             UtilityStatusTextBox.Text = $"[{DateTimeOffset.Now:g}] Hybrid connection sync requested...\n";
-            await Task.Delay(350).ConfigureAwait(true);
-            var status = new[]
+            if (_profile.DirectorySimulatorEnabled || (_profile.RuntimeMode ?? string.Empty).Equals("Simulation", StringComparison.OrdinalIgnoreCase))
             {
-                $"[{DateTimeOffset.Now:g}] Status: Completed",
-                "Provider: DirectorySimulator.HybridConnection",
-                "Remote request: Simulated",
-                "Remote server: Runtime profile Hybrid Wizard Remote Server",
-                "Result: Hybrid connection sync completed for simulation runtime.",
-                "Live mode will replace this with the remote invocation response, exit code, and returned output."
-            };
-            UtilityStatusTextBox.Text = string.Join(Environment.NewLine, status);
-            StatusText.Text = "Hybrid connection sync completed for simulation runtime.";
+                await Task.Delay(350).ConfigureAwait(true);
+                var status = new[]
+                {
+                    $"[{DateTimeOffset.Now:g}] Status: Completed",
+                    "Provider: DirectorySimulator.HybridConnection",
+                    "Remote request: Simulated",
+                    "Remote server: Runtime profile Hybrid Wizard Remote Server",
+                    "Result: Hybrid connection sync completed for simulation runtime."
+                };
+                UtilityStatusTextBox.Text = string.Join(Environment.NewLine, status);
+                StatusText.Text = "Hybrid connection sync completed for simulation runtime.";
+                return;
+            }
+
+            var result = await RunHybridSyncAsync(_profile.HybridConnectionServer).ConfigureAwait(true);
+            UtilityStatusTextBox.Text = result;
+            StatusText.Text = result.Contains("Exit code: 0", StringComparison.OrdinalIgnoreCase)
+                ? "Hybrid connection sync request completed."
+                : "Hybrid connection sync request returned an error.";
         }
         finally
         {
@@ -344,6 +360,47 @@ public partial class NativeSimulationView : UserControl
             CorrelationId.New()).ConfigureAwait(true);
         await ApplyGroupRelationshipChangesAsync(user, desiredGroups).ConfigureAwait(true);
         await CompleteUserMutationAsync("Edit Current User", result).ConfigureAwait(true);
+    }
+
+    private static async Task<string> RunHybridSyncAsync(string remoteServer)
+    {
+        var target = string.IsNullOrWhiteSpace(remoteServer) ? "Local ADSync host" : remoteServer.Trim();
+        var scriptBlock = "Import-Module ADSync -ErrorAction SilentlyContinue; if (-not (Get-Command Start-ADSyncSyncCycle -ErrorAction SilentlyContinue)) { throw 'Start-ADSyncSyncCycle was not found. Install/run on the Azure AD Connect server or set the Hybrid Wizard Remote Server profile field.' }; Start-ADSyncSyncCycle -PolicyType Delta";
+        var command = string.IsNullOrWhiteSpace(remoteServer)
+            ? $"$ErrorActionPreference='Stop'; {scriptBlock}"
+            : $"$ErrorActionPreference='Stop'; Invoke-Command -ComputerName '{EscapePowerShellSingleQuoted(remoteServer)}' -ScriptBlock {{ {scriptBlock} }}";
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command.Replace("\"", "\\\"", StringComparison.Ordinal)}\"",
+            CreateNoWindow = false,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Unable to start PowerShell for hybrid sync.");
+        var stdout = await process.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
+        var stderr = await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+        await process.WaitForExitAsync().ConfigureAwait(false);
+
+        return string.Join(
+            Environment.NewLine,
+            new[]
+            {
+                $"[{DateTimeOffset.Now:g}] Hybrid connection sync completed",
+                "Provider: ADSync.PowerShell",
+                $"Target: {target}",
+                $"Exit code: {process.ExitCode}",
+                string.IsNullOrWhiteSpace(stdout) ? "Output: <none>" : $"Output:{Environment.NewLine}{stdout.Trim()}",
+                string.IsNullOrWhiteSpace(stderr) ? "Error: <none>" : $"Error:{Environment.NewLine}{stderr.Trim()}"
+            });
+    }
+
+    private static string EscapePowerShellSingleQuoted(string value)
+    {
+        return (value ?? string.Empty).Replace("'", "''", StringComparison.Ordinal);
     }
 
     private async void OnMoveReportsClicked(object sender, RoutedEventArgs e)

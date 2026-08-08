@@ -34,7 +34,7 @@ public sealed class DirectorySimulatorProviderTests
         var user = Assert.Single(result.Value!);
         Assert.Equal("Alex Morgan", user.DisplayName);
         Assert.Equal("amorgan", user.SamAccountName);
-        Assert.Equal("amorgan@atlas-tech.com", user.UserPrincipalName);
+        Assert.Equal("amorgan@littleinnovation.tech", user.UserPrincipalName);
         Assert.Equal("SIM-AMORGAN", user.EmployeeId);
         Assert.Equal("treed", user.ManagerSamAccountName);
         Assert.Empty(result.Warnings);
@@ -45,7 +45,7 @@ public sealed class DirectorySimulatorProviderTests
     {
         var provider = new DirectorySimulatorProvider();
 
-        var result = await provider.SearchUsersAsync("jlee@atlas-tech.com", CorrelationId.From("sim-upn"));
+        var result = await provider.SearchUsersAsync("jlee@littleinnovation.tech", CorrelationId.From("sim-upn"));
 
         Assert.True(result.Succeeded);
         var user = Assert.Single(result.Value!);
@@ -181,7 +181,7 @@ public sealed class DirectorySimulatorProviderTests
         Assert.Equal(new[] { "SIM-AMORGAN-LT01", "SIM-AMORGAN-PAW01" }, devices.Value!.Select(device => device.Name));
         Assert.Equal("Microsoft 365 E3", Assert.Single(graph.Value!.Licenses, license => license.SkuPartNumber == "ENTERPRISEPACK").FriendlyName);
         Assert.Contains("microsoftAuthenticatorPush", auth.Value!.AuthenticationMethods);
-        Assert.Equal("amorgan@atlas-tech.com", mailbox.Value!.PrimarySmtpAddress);
+        Assert.Equal("amorgan@littleinnovation.tech", mailbox.Value!.PrimarySmtpAddress);
         Assert.Contains(distributionGroups.Value!, group => group.DisplayName == "DL-InformationTechnology-Announcements");
     }
 
@@ -229,7 +229,7 @@ public sealed class DirectorySimulatorProviderTests
             },
             CorrelationId.From("sim-update"));
         var forwarding = await provider.SetMailboxForwardingAsync(
-            new MailboxForwardingRequest { Identity = "cstone", ForwardingSmtpAddress = "finance-archive@atlas-tech.com", DeliverToMailboxAndForward = true },
+            new MailboxForwardingRequest { Identity = "cstone", ForwardingSmtpAddress = "finance-archive@littleinnovation.tech", DeliverToMailboxAndForward = true },
             CorrelationId.From("sim-forward"));
 
         var user = await provider.GetUserAsync("cstone", CorrelationId.From("sim-created-user"));
@@ -243,7 +243,7 @@ public sealed class DirectorySimulatorProviderTests
         Assert.True(forwarding.Value!.Changed);
         Assert.Equal("Senior Analyst", user.Value!.Title);
         Assert.Contains("GG-Finance", user.Value.Groups);
-        Assert.Equal("finance-archive@atlas-tech.com", mailbox.Value!.ForwardingSmtpAddress);
+        Assert.Equal("finance-archive@littleinnovation.tech", mailbox.Value!.ForwardingSmtpAddress);
         Assert.True(reset.Value!.Changed);
         Assert.Contains(afterReset.Warnings, warning => warning.Code == "Simulator.UserGenerated");
     }
@@ -278,8 +278,8 @@ public sealed class DirectorySimulatorProviderTests
             DisplayName = displayName,
             GivenName = displayName.Split(' ')[0],
             Surname = displayName.Split(' ')[1],
-            UserPrincipalName = $"{samAccountName}@atlas-tech.com",
-            Mail = $"{samAccountName}@atlas-tech.com",
+            UserPrincipalName = $"{samAccountName}@littleinnovation.tech",
+            Mail = $"{samAccountName}@littleinnovation.tech",
             Enabled = true,
             Source = "DirectorySimulator"
         };
