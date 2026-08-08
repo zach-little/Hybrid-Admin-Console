@@ -233,7 +233,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="SearchBox" Height="40" FontSize="15" Text="amorgan" KeyDown="OnSearchKeyDown" />
+                            <TextBox x:Name="SearchBox" Height="40" FontSize="15" Text="amorgan" KeyDown="OnSearchKeyDown" TextChanged="OnSharedSearchTextChanged" />
                             <Button Grid.Column="1" Content="Search" Style="{StaticResource CommandButton}" Width="126" Height="40" Margin="12,0,0,0" Click="OnSearchClicked" />
                         </Grid>
 
@@ -243,14 +243,26 @@
                                 <ColumnDefinition Width="16" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <DataGrid x:Name="UsersGrid" SelectionChanged="OnUserSelectionChanged">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="SAM" Width="110" Binding="{Binding SamAccountName}" />
-                                    <DataGridTextColumn Header="Display Name" Width="170" Binding="{Binding DisplayName}" />
-                                    <DataGridTextColumn Header="UPN" Width="220" Binding="{Binding UserPrincipalName}" />
-                                    <DataGridTextColumn Header="Source" Width="160" Binding="{Binding Source}" />
-                                </DataGrid.Columns>
-                            </DataGrid>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <DataGrid x:Name="UsersGrid" SelectionChanged="OnUserSelectionChanged">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="SAM" Width="110" Binding="{Binding SamAccountName}" />
+                                        <DataGridTextColumn Header="Display Name" Width="170" Binding="{Binding DisplayName}" />
+                                        <DataGridTextColumn Header="UPN" Width="220" Binding="{Binding UserPrincipalName}" />
+                                        <DataGridTextColumn Header="Source" Width="160" Binding="{Binding Source}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="12">
+                                    <StackPanel>
+                                        <TextBlock Text="Device Match" Style="{StaticResource SectionTitle}" />
+                                        <TextBlock x:Name="UserLookupDeviceContextText" Text="No device lookup context." Style="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
 
                             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
                                 <StackPanel>
@@ -374,7 +386,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="DeviceSearchBox" Height="38" Text="amorgan" />
+                            <TextBox x:Name="DeviceSearchBox" Height="38" Text="amorgan" KeyDown="OnDeviceSearchKeyDown" TextChanged="OnSharedSearchTextChanged" />
                             <Button Grid.Column="1" Content="Search Devices" Style="{StaticResource CommandButton}" Height="38" Margin="12,0,0,0" Click="OnDeviceSearchClicked" />
                         </Grid>
                         <Grid Grid.Row="2" Margin="0,14,0,0">

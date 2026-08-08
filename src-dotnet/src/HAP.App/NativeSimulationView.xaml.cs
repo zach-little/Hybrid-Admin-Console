@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using HAP.Application.Capabilities;
 using HAP.Application.Devices;
 using HAP.Application.NewUser;
@@ -36,6 +37,7 @@ public partial class NativeSimulationView : UserControl
     private readonly string _bindingSummary;
     private NewUserExecutionPlan? _currentNewUserPlan;
     private SimulatorUserSummary? _selectedUser;
+    private bool _syncingSearchText;
 
     public NativeSimulationView(RuntimeProfileConfigurationDraft? profile = null)
     {
@@ -210,6 +212,16 @@ public partial class NativeSimulationView : UserControl
         }
     }
 
+    private void OnSharedSearchTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_syncingSearchText || sender is not TextBox source)
+        {
+            return;
+        }
+
+        SyncSearchText(source.Text, source);
+    }
+
     private async void OnUserSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (UsersGrid.SelectedItem is SimulatorUserSummary user)
@@ -221,6 +233,15 @@ public partial class NativeSimulationView : UserControl
     private async void OnDeviceSearchClicked(object sender, RoutedEventArgs e)
     {
         await SearchDevicesAsync().ConfigureAwait(true);
+    }
+
+    private async void OnDeviceSearchKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Return)
+        {
+            e.Handled = true;
+            await SearchDevicesAsync().ConfigureAwait(true);
+        }
     }
 
     private async void OnValidateNewUserClicked(object sender, RoutedEventArgs e)
@@ -561,7 +582,7 @@ public partial class NativeSimulationView : UserControl
     private async Task SearchAsync(string? query)
     {
         var effectiveQuery = string.IsNullOrWhiteSpace(query) ? "amorgan" : query.Trim();
-        SearchBox.Text = effectiveQuery;
+        SyncSearchText(effectiveQuery);
         SetBusy(true, $"Searching for {effectiveQuery}...");
         ClearUserDetails();
 
@@ -576,6 +597,11 @@ public partial class NativeSimulationView : UserControl
             }
 
             var users = result.Value ?? Array.Empty<SimulatorUserSummary>();
+            if (users.Count == 0)
+            {
+                users = await ResolveDeviceUserMatchesAsync(effectiveQuery).ConfigureAwait(true);
+            }
+
             UsersGrid.ItemsSource = users;
             UsersGrid.SelectedIndex = users.Count > 0 ? 0 : -1;
             StatusText.Text = users.Count == 0 ? "No user result." : $"Loaded {users.Count} user result(s).";
@@ -584,6 +610,52 @@ public partial class NativeSimulationView : UserControl
         {
             SetBusy(false);
         }
+    }
+
+    private async Task<IReadOnlyList<SimulatorUserSummary>> ResolveDeviceUserMatchesAsync(string query)
+    {
+        var devices = await LoadDeviceContextAsync(query, hydrateDeviceGrid: true).ConfigureAwait(true);
+        var primaryUsers = devices
+            .Select(device => device.PrimaryUser)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (primaryUsers.Length == 0)
+        {
+            return Array.Empty<SimulatorUserSummary>();
+        }
+
+        var users = new List<SimulatorUserSummary>();
+        foreach (var primaryUser in primaryUsers)
+        {
+            var result = await _userLookup.SearchUsersAsync(primaryUser, CorrelationId.New()).ConfigureAwait(true);
+            if (result.Succeeded)
+            {
+                users.AddRange(result.Value ?? Array.Empty<SimulatorUserSummary>());
+            }
+        }
+
+        return users
+            .GroupBy(user => FirstNonEmpty(user.SamAccountName, user.UserPrincipalName, user.Mail), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(user => user.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private async Task<IReadOnlyList<ManagedDeviceSummary>> LoadDeviceContextAsync(string query, bool hydrateDeviceGrid)
+    {
+        var deviceResult = await _deviceManagement.SearchDevicesAsync(query, CorrelationId.New()).ConfigureAwait(true);
+        var devices = deviceResult.Value ?? Array.Empty<ManagedDeviceSummary>();
+        if (hydrateDeviceGrid)
+        {
+            SetDeviceGridItems(devices);
+        }
+
+        UserLookupDeviceContextText.Text = devices.Count == 0
+            ? "No computer account or managed device matched this search."
+            : string.Join(Environment.NewLine, devices.Select(device =>
+                $"{Safe(device.Name)} | Primary user: {Safe(device.PrimaryUser)} | AD identity: {Safe(device.ActiveDirectoryIdentity)} | Source: {Safe(device.Source)}"));
+        return devices;
     }
 
     private async Task LoadUserDetailsAsync(SimulatorUserSummary user)
@@ -739,20 +811,14 @@ public partial class NativeSimulationView : UserControl
 
     private async Task SearchDevicesAsync()
     {
-        var query = string.IsNullOrWhiteSpace(DeviceSearchBox.Text) ? SearchBox.Text : DeviceSearchBox.Text;
+        var query = string.IsNullOrWhiteSpace(DeviceSearchBox.Text) ? SearchBox.Text : DeviceSearchBox.Text.Trim();
+        SyncSearchText(query);
         SetBusy(true, $"Searching devices for {query}...");
 
         try
         {
             var result = await _deviceManagement.SearchDevicesAsync(query, CorrelationId.New()).ConfigureAwait(true);
-            DevicesGrid.ItemsSource = result.Value?.Select(device => new DeviceRow(
-                device,
-                device.Name,
-                device.OperatingSystem,
-                device.ComplianceState,
-                device.PrimaryUser,
-                FormatDate(device.LastCheckInUtc),
-                device.Source)).ToArray() ?? Array.Empty<DeviceRow>();
+            SetDeviceGridItems(result.Value ?? Array.Empty<ManagedDeviceSummary>());
             StatusText.Text = $"Loaded {result.Value?.Count ?? 0} device result(s).";
             DeviceActionOutputTextBox.Text = result.Warnings.Count == 0
                 ? "Select a device, then reveal a protected secret or run a lifecycle action."
@@ -762,6 +828,18 @@ public partial class NativeSimulationView : UserControl
         {
             SetBusy(false);
         }
+    }
+
+    private void SetDeviceGridItems(IReadOnlyList<ManagedDeviceSummary> devices)
+    {
+        DevicesGrid.ItemsSource = devices.Select(device => new DeviceRow(
+            device,
+            device.Name,
+            device.OperatingSystem,
+            device.ComplianceState,
+            device.PrimaryUser,
+            FormatDate(device.LastCheckInUtc),
+            device.Source)).ToArray();
     }
 
     private async void OnRevealBitLockerClicked(object sender, RoutedEventArgs e)
@@ -803,12 +881,15 @@ public partial class NativeSimulationView : UserControl
     {
         if (GetSelectedDevice() is not { } device)
         {
-            MessageBox.Show("Select a device first.", "Device Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            ShowThemedDeviceNotice("Device Management", "Select a device first.");
             return;
         }
 
         var label = secretKind == DeviceSecretKind.BitLockerRecoveryKey ? "BitLocker recovery key" : "LAPS password";
-        if (MessageBox.Show($"Reveal the {label} for {device.Name}?", "Reveal Protected Secret", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        if (!ShowThemedDeviceConfirmation(
+                "Reveal Protected Secret",
+                $"Reveal the {label} for {device.Name}?",
+                "Reveal"))
         {
             return;
         }
@@ -831,12 +912,16 @@ public partial class NativeSimulationView : UserControl
     {
         if (GetSelectedDevice() is not { } device)
         {
-            MessageBox.Show("Select a device first.", "Device Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            ShowThemedDeviceNotice("Device Management", "Select a device first.");
             return;
         }
 
         var action = retire ? "retire" : "delete";
-        if (MessageBox.Show($"Confirm {action} for {device.Name} on {target}?", "Device Lifecycle Action", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        if (!ShowThemedDeviceConfirmation(
+                "Device Lifecycle Action",
+                $"Confirm {action} for {device.Name} on {target}?",
+                retire ? "Retire" : "Delete",
+                isDestructive: !retire))
         {
             return;
         }
@@ -1447,11 +1532,39 @@ public partial class NativeSimulationView : UserControl
         GroupsList.ItemsSource = null;
         MailboxDelegationList.ItemsSource = null;
         DistributionGroupsList.ItemsSource = null;
+        UserLookupDeviceContextText.Text = "No device lookup context.";
         SelectedIdentityStatusText.Text = "No selected user";
         DashboardSelectedUserText.Text = "-";
         DashboardSelectedUserSubText.Text = "Search for a user to hydrate dashboard cards.";
         DashboardGraphText.Text = "Not loaded";
         DashboardExchangeText.Text = "Not loaded";
+    }
+
+    private void SyncSearchText(string? value, TextBox? source = null)
+    {
+        var next = value ?? string.Empty;
+        if (_syncingSearchText)
+        {
+            return;
+        }
+
+        _syncingSearchText = true;
+        try
+        {
+            if (!ReferenceEquals(source, SearchBox) && !string.Equals(SearchBox.Text, next, StringComparison.Ordinal))
+            {
+                SearchBox.Text = next;
+            }
+
+            if (!ReferenceEquals(source, DeviceSearchBox) && !string.Equals(DeviceSearchBox.Text, next, StringComparison.Ordinal))
+            {
+                DeviceSearchBox.Text = next;
+            }
+        }
+        finally
+        {
+            _syncingSearchText = false;
+        }
     }
 
     private void SetBusy(bool busy, string? status = null)
@@ -1462,6 +1575,134 @@ public partial class NativeSimulationView : UserControl
         {
             StatusText.Text = status;
         }
+    }
+
+    private void ShowThemedDeviceNotice(string title, string message)
+    {
+        ShowThemedDeviceDialog(title, message, primaryText: "OK", showCancel: false, isDestructive: false);
+    }
+
+    private bool ShowThemedDeviceConfirmation(string title, string message, string primaryText, bool isDestructive = false)
+    {
+        return ShowThemedDeviceDialog(title, message, primaryText, showCancel: true, isDestructive);
+    }
+
+    private bool ShowThemedDeviceDialog(string title, string message, string primaryText, bool showCancel, bool isDestructive)
+    {
+        var owner = Window.GetWindow(this);
+        var accent = isDestructive ? "#B91C1C" : "#0369A1";
+        var primaryButton = new Button
+        {
+            Content = primaryText,
+            MinWidth = 104,
+            Height = 34,
+            Padding = new Thickness(14, 0, 14, 0),
+            Margin = new Thickness(8, 0, 0, 0),
+            Background = BrushFrom(accent),
+            Foreground = BrushFrom("#F8FAFC"),
+            BorderBrush = BrushFrom(isDestructive ? "#EF4444" : "#38BDF8"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeights.SemiBold,
+            IsDefault = true
+        };
+        var cancelButton = new Button
+        {
+            Content = "Cancel",
+            MinWidth = 104,
+            Height = 34,
+            Padding = new Thickness(14, 0, 14, 0),
+            Margin = new Thickness(8, 0, 0, 0),
+            Background = BrushFrom("#0F172A"),
+            Foreground = BrushFrom("#F8FAFC"),
+            BorderBrush = BrushFrom("#475569"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeights.SemiBold,
+            IsCancel = true
+        };
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 22, 0, 0)
+        };
+        if (showCancel)
+        {
+            buttonPanel.Children.Add(cancelButton);
+        }
+
+        buttonPanel.Children.Add(primaryButton);
+
+        var shell = new Border
+        {
+            Background = BrushFrom("#111827"),
+            BorderBrush = BrushFrom("#334155"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(20),
+            Child = new StackPanel
+            {
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = title,
+                        Foreground = BrushFrom("#F8FAFC"),
+                        FontSize = 20,
+                        FontWeight = FontWeights.SemiBold,
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new Border
+                    {
+                        Height = 1,
+                        Background = BrushFrom("#334155"),
+                        Margin = new Thickness(0, 12, 0, 14)
+                    },
+                    new TextBlock
+                    {
+                        Text = message,
+                        Foreground = BrushFrom("#CBD5E1"),
+                        FontSize = 13,
+                        TextWrapping = TextWrapping.Wrap,
+                        LineHeight = 19
+                    },
+                    buttonPanel
+                }
+            }
+        };
+
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 440,
+            SizeToContent = SizeToContent.Height,
+            MinHeight = 190,
+            WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
+            Owner = owner,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = Brushes.Transparent,
+            Content = shell,
+            ShowInTaskbar = false
+        };
+
+        primaryButton.Click += (_, _) =>
+        {
+            dialog.DialogResult = true;
+            dialog.Close();
+        };
+        cancelButton.Click += (_, _) =>
+        {
+            dialog.DialogResult = false;
+            dialog.Close();
+        };
+
+        return dialog.ShowDialog() == true;
+    }
+
+    private static Brush BrushFrom(string color)
+    {
+        return (Brush)new BrushConverter().ConvertFromString(color)!;
     }
 
     private static string Safe(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
