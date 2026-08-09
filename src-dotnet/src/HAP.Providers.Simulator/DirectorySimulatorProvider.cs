@@ -11,6 +11,7 @@ public sealed class DirectorySimulatorProvider :
     IDirectoryReadCapability,
     IDirectoryAttributeReadCapability,
     IDirectoryGroupLookupCapability,
+    IDirectoryManagerLookupCapability,
     IDeviceReadCapability,
     IDeviceActionCapability,
     IGraphReadCapability,
@@ -272,6 +273,25 @@ public sealed class DirectorySimulatorProvider :
             .ToArray();
 
         return OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(reports, correlationId);
+    }
+
+    public async Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> GetManagerCandidatesAsync(
+        CorrelationId correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = await ValidateReadyAsync(correlationId, cancellationToken).ConfigureAwait(false);
+        if (validation is not null)
+        {
+            return OperationResult<IReadOnlyList<SimulatorUserSummary>>.Failure(correlationId, validation);
+        }
+
+        var managers = _users
+            .Where(user => user.DirectReportSamAccountNames.Count > 0)
+            .OrderBy(user => user.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(user => user.SamAccountName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(managers, correlationId, status: managers.Length == 0 ? "NoMatches" : "Loaded");
     }
 
     public async Task<OperationResult<DirectoryObjectAttributeSet>> GetDirectoryAttributesAsync(

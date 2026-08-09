@@ -12,6 +12,7 @@ public sealed class ActiveDirectoryProvider :
     IDirectoryReadCapability,
     IDirectoryAttributeReadCapability,
     IDirectoryGroupLookupCapability,
+    IDirectoryManagerLookupCapability,
     IDeviceReadCapability,
     IDeviceActionCapability,
     ISimulatorWriteCapability
@@ -124,6 +125,49 @@ public sealed class ActiveDirectoryProvider :
         return Task.FromResult(OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(reports, correlationId));
     }
 
+    public Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> GetManagerCandidatesAsync(CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        var error = Validate();
+        if (error is not null) return Task.FromResult(OperationResult<IReadOnlyList<SimulatorUserSummary>>.Failure(correlationId, new[] { error }, status: "Failed"));
+
+        if (!_options.UseLiveDirectory)
+        {
+            var managers = _users
+                .Where(user => user.DirectReportSamAccountNames.Count > 0)
+                .OrderBy(user => user.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            return Task.FromResult(OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(managers, correlationId, status: managers.Length == 0 ? "NoMatches" : "Loaded"));
+        }
+
+        try
+        {
+            using var root = CreateDirectoryRoot();
+            using var searcher = new DirectorySearcher(root)
+            {
+                Filter = "(&(objectCategory=person)(objectClass=user)(directReports=*))",
+                PageSize = 250,
+                SizeLimit = 1000
+            };
+            AddUserProperties(searcher);
+            var managers = searcher.FindAll()
+                .Cast<SearchResult>()
+                .Select(MapUser)
+                .Where(user => !string.IsNullOrWhiteSpace(user.SamAccountName))
+                .OrderBy(user => user.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(user => user.SamAccountName, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            return Task.FromResult(OperationResult<IReadOnlyList<SimulatorUserSummary>>.Success(managers, correlationId, status: managers.Length == 0 ? "NoMatches" : "Loaded"));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<IReadOnlyList<SimulatorUserSummary>>.Failure(
+                correlationId,
+                new[] { OperationError.Create("AD.ManagerLookup.LiveQueryFailed", $"Active Directory manager lookup failed: {ex.Message}") },
+                status: "Failed"));
+        }
+    }
+
     public async Task<OperationResult<DirectoryObjectAttributeSet>> GetDirectoryAttributesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default)
     {
         var error = Validate();
@@ -210,6 +254,11 @@ public sealed class ActiveDirectoryProvider :
 
             user.Properties["userAccountControl"].Value = 514;
             user.CommitChanges();
+            if (!string.IsNullOrWhiteSpace(request.TemporaryPassword))
+            {
+                user.Invoke("SetPassword", new object[] { request.TemporaryPassword });
+                user.CommitChanges();
+            }
 
             if (!string.IsNullOrWhiteSpace(request.ManagerSamAccountName))
             {

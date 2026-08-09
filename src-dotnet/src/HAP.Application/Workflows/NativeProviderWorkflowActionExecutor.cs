@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Net;
+using System.Net.Mail;
 using HAP.Contracts;
 using HAP.Providers.Abstractions;
 
@@ -34,6 +37,16 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
         if (action.Type.Equals(WorkflowActionTypes.ExecutePowerShell, StringComparison.OrdinalIgnoreCase))
         {
             return await ExecutePowerShellAsync(action, request, correlationId, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (action.Type.Equals(WorkflowActionTypes.LaunchBrowser, StringComparison.OrdinalIgnoreCase))
+        {
+            return ExecuteLaunchBrowser(action, request);
+        }
+
+        if (action.Type.Equals(WorkflowActionTypes.SendEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            return await ExecuteSendEmailAsync(action, request, cancellationToken).ConfigureAwait(false);
         }
 
         if (IsFutureAction(action.Type))
@@ -127,6 +140,7 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
             StreetAddress = Optional(inputs, "StreetAddress"),
             State = Optional(inputs, "State"),
             PostalCode = Optional(inputs, "PostalCode"),
+            TemporaryPassword = Optional(inputs, "TemporaryPassword"),
             OtherAttributes = inputs
                 .Where(pair => pair.Key.StartsWith("Attribute:", StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(pair => pair.Key["Attribute:".Length..], pair => pair.Value, StringComparer.OrdinalIgnoreCase)
@@ -192,6 +206,93 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
                actionType.Equals(WorkflowActionTypes.Delay, StringComparison.OrdinalIgnoreCase) ||
                actionType.Equals(WorkflowActionTypes.Approval, StringComparison.OrdinalIgnoreCase) ||
                actionType.Equals(WorkflowActionTypes.ConditionalBranch, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static WorkflowActionResult ExecuteLaunchBrowser(WorkflowActionDefinition action, WorkflowExecutionRequest request)
+    {
+        try
+        {
+            var inputs = ExpandInputs(action.Inputs, request.Variables);
+            var url = Required(inputs, "Url");
+            var browser = Optional(inputs, "Browser");
+            if (browser.Equals("Chrome", StringComparison.OrdinalIgnoreCase))
+            {
+                var chrome = ChromePath();
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = chrome,
+                    Arguments = url,
+                    UseShellExecute = string.Equals(chrome, "chrome.exe", StringComparison.OrdinalIgnoreCase)
+                });
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+
+            return Completed(action, true, $"Launched browser URL: {url}");
+        }
+        catch (Exception ex)
+        {
+            return Failed(action, "Failed", $"Browser launch failed: {ex.Message}");
+        }
+    }
+
+    private static async Task<WorkflowActionResult> ExecuteSendEmailAsync(
+        WorkflowActionDefinition action,
+        WorkflowExecutionRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var inputs = ExpandInputs(action.Inputs, request.Variables);
+            using var message = new MailMessage
+            {
+                From = new MailAddress(Required(inputs, "From")),
+                Subject = Required(inputs, "Subject"),
+                Body = Required(inputs, "Body"),
+                IsBodyHtml = Bool(inputs, "IsBodyHtml")
+            };
+            foreach (var recipient in Required(inputs, "To").Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                message.To.Add(recipient);
+            }
+
+            using var client = new SmtpClient(Required(inputs, "SmtpServer"));
+            if (int.TryParse(Optional(inputs, "SmtpPort"), out var port) && port > 0)
+            {
+                client.Port = port;
+            }
+
+            client.EnableSsl = Bool(inputs, "EnableSsl");
+            var username = Optional(inputs, "Username");
+            if (!string.IsNullOrWhiteSpace(username))
+            {
+                client.Credentials = new NetworkCredential(username, Optional(inputs, "Password"));
+            }
+
+            await client.SendMailAsync(message, cancellationToken).ConfigureAwait(false);
+            return Completed(action, true, $"Sent email to {inputs["To"]}.");
+        }
+        catch (Exception ex)
+        {
+            return Failed(action, "Failed", $"Email send failed: {ex.Message}");
+        }
+    }
+
+    private static WorkflowActionResult Completed(WorkflowActionDefinition action, bool changed, string message)
+    {
+        return new WorkflowActionResult { ActionId = action.Id, ActionName = action.Name, ActionType = action.Type, ProviderId = action.ProviderId, Succeeded = true, Changed = changed, Status = "Completed", Message = message };
+    }
+
+    private static string ChromePath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe")
+        };
+        return candidates.FirstOrDefault(File.Exists) ?? "chrome.exe";
     }
 
     private static WorkflowActionResult Failed(WorkflowActionDefinition action, string status, string message)

@@ -44,9 +44,10 @@
       },
       {
         "Key": "ManagerSamAccountName",
-        "Label": "Manager SAM Account",
-        "Control": "TextBox",
-        "Required": true
+        "Label": "Manager",
+        "Control": "ComboBox",
+        "Required": true,
+        "OptionSource": "DirectoryManagers"
       },
       {
         "Key": "LocationNumber",
@@ -116,6 +117,13 @@
         "Control": "TextBox"
       },
       {
+        "Key": "StartDate",
+        "Label": "Expected Start Date",
+        "Control": "TextBox",
+        "ValidationRegex": "^$|^\\d{4}-\\d{2}-\\d{2}$",
+        "ValidationMessage": "Start date must be blank or YYYY-MM-DD."
+      },
+      {
         "Key": "CreateMailbox",
         "Label": "Create Microsoft 365 / cloud mailbox",
         "Control": "CheckBox",
@@ -126,6 +134,108 @@
         "Label": "CAC Required",
         "Control": "CheckBox",
         "DefaultValue": "false"
+      },
+      {
+        "Key": "JamisClaimSetup",
+        "Label": "Launch JAMIS claim setup",
+        "Control": "CheckBox",
+        "DefaultValue": "true"
+      },
+      {
+        "Key": "SendNewHireNotice",
+        "Label": "Send new-hire onboarding notice",
+        "Control": "CheckBox",
+        "DefaultValue": "true"
+      },
+      {
+        "Key": "NotificationSender",
+        "Label": "Notification Sender",
+        "Control": "TextBox",
+        "DefaultValue": "New Hire Onboarding Notice <NEW-HIRE-INFO@atlas-tech.com>"
+      },
+      {
+        "Key": "NotificationRecipient",
+        "Label": "Notification Recipient",
+        "Control": "TextBox",
+        "DefaultValue": "ITSupport <ITSupport@atlas-tech.com>"
+      },
+      {
+        "Key": "SmtpServer",
+        "Label": "SMTP Server",
+        "Control": "TextBox",
+        "DefaultValue": "atlastechcloud.mail.protection.office365.us"
+      },
+      {
+        "Key": "NothingRequested",
+        "Label": "Nothing Requested",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "TemporaryOfficeSpace",
+        "Label": "Temporary Office Space",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "PermanentOfficeSpace",
+        "Label": "Permanent Office Space",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "Desktop",
+        "Label": "Desktop",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "Laptop",
+        "Label": "Laptop",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "DockingStation",
+        "Label": "Docking Station",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "MouseKeyboard",
+        "Label": "Mouse/Keyboard Combo",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "Monitor",
+        "Label": "Monitor",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "DualMonitor",
+        "Label": "Dual Monitors",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "DeskPhone",
+        "Label": "Desk Phone",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "CellPhone",
+        "Label": "Cell Phone",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "Speakers",
+        "Label": "Speakers",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
       }
     ]
   },
@@ -134,6 +244,8 @@
     { "Key": "DisplayName", "Type": "DisplayName" },
     { "Key": "UserPrincipalName", "Type": "UserPrincipalName", "Value": "atlas-tech.com" },
     { "Key": "OfficePhoneNormalized", "Type": "OfficePhone12OrNA", "Value": "OfficePhone" },
+    { "Key": "RunDate", "Type": "CurrentDateTime", "Value": "yyyy-MM-dd HH:mm:ss" },
+    { "Key": "RunBy", "Type": "CurrentUser" },
     { "Key": "OfficeDisplay", "Type": "StripNumberPrefix", "Value": "LocationNumberText" },
     { "Key": "DepartmentDisplay", "Type": "LegacyDepartmentDisplay", "Value": "DepartmentNumberText" },
     {
@@ -296,6 +408,7 @@
         "StreetAddress": "{{StreetAddress}}",
         "State": "{{State}}",
         "PostalCode": "{{PostalCode}}",
+        "TemporaryPassword": "Temp123456",
         "Attribute:title": "{{JobTitle}}",
         "Attribute:badgeID": "{{BadgeId}}",
         "Attribute:ipPhone": "{{OfficePhoneNormalized}}"
@@ -375,6 +488,30 @@
         "Identity": "{{SamAccountName}}",
         "PrimarySmtpAddress": "{{UserPrincipalName}}",
         "RemoteRoutingAddress": "{{SamAccountName}}@atlastechcloud.mail.onmicrosoft.com"
+      }
+    },
+    {
+      "Id": "send-new-hire-notice",
+      "Name": "Send new-hire onboarding notice",
+      "Type": "SendEmail",
+      "RunWhen": "{{SendNewHireNotice}} == true",
+      "Inputs": {
+        "SmtpServer": "{{SmtpServer}}",
+        "To": "{{NotificationRecipient}}",
+        "From": "{{NotificationSender}}",
+        "Subject": "[NEW-HIRE-INFO] New Hire Account {{DisplayName}} Has Been Created",
+        "IsBodyHtml": "true",
+        "Body": "<div style='font-family:Arial; font-size:14px;'><p><b>THIS EMAIL MAY CONTAIN CONFIDENTIAL OR PII DATA.<br>DO NOT FORWARD OUTSIDE THE ORGANIZATION.</b></p><p>The account for <b>{{DisplayName}}</b> has been created.<br>Please complete the ERP and inventory portions of onboarding.</p><h3 style='margin-top:25px;'>General Information</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Field</th><th align='left'>Value</th></tr><tr><td>Expected Start Date</td><td>{{StartDate}}</td></tr><tr><td>Script Run By</td><td>{{RunBy}}</td></tr><tr><td>Script Run Date</td><td>{{RunDate}}</td></tr><tr><td>Network Username</td><td>{{SamAccountName}}</td></tr><tr><td>User Principal Name</td><td>{{UserPrincipalName}}</td></tr><tr><td>Temporary Password</td><td>Temp123456</td></tr><tr><td>First Name</td><td>{{FirstName}}</td></tr><tr><td>Last Name</td><td>{{LastName}}</td></tr><tr><td>Middle Initial</td><td>{{MiddleInitial}}</td></tr><tr><td>Display Name</td><td>{{DisplayName}}</td></tr><tr><td>Use Middle Initial in Username</td><td>{{IncludeMiddleInitial}}</td></tr><tr><td>Title</td><td>{{JobTitle}}</td></tr><tr><td>Manager</td><td>{{ManagerSamAccountName}}</td></tr><tr><td>Department</td><td>{{DepartmentDisplay}}</td></tr><tr><td>Employee ID</td><td>{{EmployeeId}}</td></tr><tr><td>Badge ID</td><td>{{BadgeId}}</td></tr><tr><td>Office Phone</td><td>{{OfficePhoneNormalized}}</td></tr><tr><td>Mobile Phone</td><td>{{MobilePhone}}</td></tr><tr><td>Company</td><td>Atlas Technologies, Inc.</td></tr><tr><td>Office</td><td>{{OfficeDisplay}}</td></tr><tr><td>Street Address</td><td>{{StreetAddress}}</td></tr><tr><td>City</td><td>{{City}}</td></tr><tr><td>State</td><td>{{State}}</td></tr><tr><td>Postal Code</td><td>{{PostalCode}}</td></tr><tr><td>Email Address</td><td>{{UserPrincipalName}}</td></tr></table><h3 style='margin-top:25px;'>Group Assignments</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Group</th><th align='left'>Value</th></tr><tr><td>RODC SC</td><td>SC_CGUsers</td></tr><tr><td>RODC SD</td><td>SD_CGUsers</td></tr><tr><td>RODC VA</td><td>VABeach_CGUsers</td></tr><tr><td>Default Email Distribution</td><td>{{LocationGroup}}</td></tr></table><h3 style='margin-top:25px;'>Equipment &amp; Workspace Requests</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Asset</th><th align='left'>Requested</th></tr><tr><td>Nothing Requested</td><td>{{NothingRequested}}</td></tr><tr><td>Temporary Office Space</td><td>{{TemporaryOfficeSpace}}</td></tr><tr><td>Permanent Office Space</td><td>{{PermanentOfficeSpace}}</td></tr><tr><td>Desktop</td><td>{{Desktop}}</td></tr><tr><td>Laptop</td><td>{{Laptop}}</td></tr><tr><td>Docking Station</td><td>{{DockingStation}}</td></tr><tr><td>Mouse/Keyboard Combo</td><td>{{MouseKeyboard}}</td></tr><tr><td>Monitor</td><td>{{Monitor}}</td></tr><tr><td>Dual Monitors</td><td>{{DualMonitor}}</td></tr><tr><td>Desk Phone</td><td>{{DeskPhone}}</td></tr><tr><td>Cell Phone</td><td>{{CellPhone}}</td></tr><tr><td>Speakers</td><td>{{Speakers}}</td></tr></table></div>"
+      }
+    },
+    {
+      "Id": "launch-jamis-browser",
+      "Name": "Launch JAMIS claim setup",
+      "Type": "LaunchBrowser",
+      "RunWhen": "{{AssignStandardGroups}} == true && {{JamisClaimSetup}} == true",
+      "Inputs": {
+        "Browser": "Chrome",
+        "Url": "https://axisng.atlas-tech.com/Main.aspx?ScreenId=DH000100&SilentLogin=Federation"
       }
     }
   ]

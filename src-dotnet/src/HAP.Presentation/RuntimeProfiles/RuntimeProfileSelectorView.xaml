@@ -119,7 +119,6 @@
             <MenuItem Header="_Configuration">
                 <MenuItem Header="Runtime Profile Wizard" Click="OnEditProfileClicked" />
                 <MenuItem Header="Provider Setup" Click="OnProviderSetupClicked" />
-                <MenuItem Header="New User Wizard Defaults" Click="OnNewUserWizardConfigClicked" />
                 <MenuItem Header="Branding and Theme" Click="OnBrandingClicked" />
             </MenuItem>
         </Menu>
@@ -244,37 +243,6 @@
                                         <TextBlock Text="Hybrid Wizard Remote Server" Style="{StaticResource LabelText}" Margin="0,12,0,3" /><TextBox x:Name="HybridConnectionServerTextBox" Text="{Binding ProfileConfiguration.HybridConnectionServer, Mode=OneWay}" ToolTip="Server where the hybrid connection wizard can be remotely invoked." />
                                     </StackPanel>
                                 </Grid>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </TabItem>
-
-                    <TabItem Header="New User Wizard">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
-                            <StackPanel>
-                                <Grid Margin="14">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="18" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Notification Recipient" Style="{StaticResource LabelText}" /><TextBox x:Name="NotificationRecipientTextBox" Text="{Binding ProfileConfiguration.NotificationRecipient, Mode=OneWay}" Margin="0,0,0,12" />
-                                        <TextBlock Text="Notification Sender" Style="{StaticResource LabelText}" /><TextBox x:Name="NotificationSenderTextBox" Text="{Binding ProfileConfiguration.NotificationSender, Mode=OneWay}" Margin="0,0,0,12" />
-                                        <TextBlock Text="Departments" Style="{StaticResource LabelText}" /><TextBox x:Name="DepartmentsTextBox" Text="{Binding ProfileConfiguration.Departments, Mode=OneWay}" AcceptsReturn="True" Height="72" VerticalContentAlignment="Top" Margin="0,0,0,12" />
-                                        <TextBlock Text="Locations" Style="{StaticResource LabelText}" /><TextBox x:Name="LocationsTextBox" Text="{Binding ProfileConfiguration.Locations, Mode=OneWay}" AcceptsReturn="True" Height="72" VerticalContentAlignment="Top" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Department/Location Rules" FontSize="18" FontWeight="SemiBold" />
-                                        <TextBlock Text="The native editor will expose configurable mappings for OU placement, portfolio, equipment defaults, groups, and mailbox request behavior." Style="{StaticResource MutedText}" Margin="0,5,0,14" />
-                                        <TextBlock Text="Job Titles" Style="{StaticResource LabelText}" /><TextBox x:Name="JobTitlesTextBox" Text="{Binding ProfileConfiguration.JobTitles, Mode=OneWay}" AcceptsReturn="True" Height="60" VerticalContentAlignment="Top" Margin="0,0,0,12" />
-                                        <TextBlock Text="Portfolios" Style="{StaticResource LabelText}" /><TextBox x:Name="PortfoliosTextBox" Text="{Binding ProfileConfiguration.Portfolios, Mode=OneWay}" AcceptsReturn="True" Height="60" VerticalContentAlignment="Top" Margin="0,0,0,12" />
-                                        <TextBlock Text="Default Licenses" Style="{StaticResource LabelText}" /><TextBox x:Name="DefaultLicenseSetTextBox" Text="{Binding ProfileConfiguration.DefaultLicenseSet, Mode=OneWay}" Margin="0,0,0,12" />
-                                        <CheckBox x:Name="CreateMailboxCheckBox" Content="Create mailbox by default" IsChecked="{Binding ProfileConfiguration.CreateMailboxByDefault, Mode=OneWay}" />
-                                        <CheckBox x:Name="SendNoticeCheckBox" Content="Send onboarding notification" IsChecked="{Binding ProfileConfiguration.SendOnboardingNotification, Mode=OneWay}" />
-                                        <CheckBox x:Name="RequireManagerCheckBox" Content="Require manager validation" IsChecked="{Binding ProfileConfiguration.RequireManagerValidation, Mode=OneWay}" />
-                                    </StackPanel>
-                                </Grid>
-                                <StackPanel Margin="14,0,14,14">
-                                    <TextBlock Text="Raw New User Wizard JSON" FontSize="18" FontWeight="SemiBold" />
-                                    <TextBlock Text="Advanced editor for the entire NewUserWizard object. Structured fields above are also saved into this JSON before writing config.json." Style="{StaticResource MutedText}" Margin="0,5,0,8" />
-                                    <TextBox x:Name="NewUserWizardJsonTextBox" Text="{Binding ProfileConfiguration.NewUserWizardJson, Mode=OneWay}" AcceptsReturn="True" AcceptsTab="True" Height="260" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top" />
-                                </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>

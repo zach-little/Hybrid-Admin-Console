@@ -76,14 +76,9 @@ public partial class RuntimeProfileSelectorView : UserControl
         ProfileConfigurationTabs.SelectedIndex = 2;
     }
 
-    private void OnNewUserWizardConfigClicked(object sender, RoutedEventArgs e)
-    {
-        ProfileConfigurationTabs.SelectedIndex = 3;
-    }
-
     private void OnBrandingClicked(object sender, RoutedEventArgs e)
     {
-        ProfileConfigurationTabs.SelectedIndex = 4;
+        ProfileConfigurationTabs.SelectedIndex = 3;
     }
 
     private async void OnReloadProfileConfigurationClicked(object sender, RoutedEventArgs e)
@@ -126,22 +121,22 @@ public partial class RuntimeProfileSelectorView : UserControl
             ExchangeOnPremisesConnectionUri = ExchangeOnPremisesConnectionUriTextBox.Text.Trim(),
             ExchangeOnPremisesAuthentication = ExchangeOnPremisesAuthenticationComboBox.Text.Trim(),
             HybridConnectionServer = HybridConnectionServerTextBox.Text.Trim(),
-            NotificationRecipient = NotificationRecipientTextBox.Text.Trim(),
-            NotificationSender = NotificationSenderTextBox.Text.Trim(),
-            Departments = DepartmentsTextBox.Text.Trim(),
-            Locations = LocationsTextBox.Text.Trim(),
-            JobTitles = JobTitlesTextBox.Text.Trim(),
-            Portfolios = PortfoliosTextBox.Text.Trim(),
-            DefaultLicenseSet = DefaultLicenseSetTextBox.Text.Trim(),
-            NewUserWizardJson = NewUserWizardJsonTextBox.Text,
+            NotificationRecipient = ViewModel.ProfileConfiguration.NotificationRecipient,
+            NotificationSender = ViewModel.ProfileConfiguration.NotificationSender,
+            Departments = ViewModel.ProfileConfiguration.Departments,
+            Locations = ViewModel.ProfileConfiguration.Locations,
+            JobTitles = ViewModel.ProfileConfiguration.JobTitles,
+            Portfolios = ViewModel.ProfileConfiguration.Portfolios,
+            DefaultLicenseSet = ViewModel.ProfileConfiguration.DefaultLicenseSet,
+            NewUserWizardJson = ViewModel.ProfileConfiguration.NewUserWizardJson,
             DirectorySimulatorEnabled = DirectorySimulatorCheckBox.IsChecked == true,
             ActiveDirectoryEnabled = ActiveDirectoryCheckBox.IsChecked == true,
             MicrosoftGraphEnabled = MicrosoftGraphCheckBox.IsChecked == true,
             ExchangeOnlineEnabled = ExchangeOnlineCheckBox.IsChecked == true,
             ExchangeOnPremisesEnabled = ExchangeOnPremisesCheckBox.IsChecked == true,
-            CreateMailboxByDefault = CreateMailboxCheckBox.IsChecked == true,
-            SendOnboardingNotification = SendNoticeCheckBox.IsChecked == true,
-            RequireManagerValidation = RequireManagerCheckBox.IsChecked == true,
+            CreateMailboxByDefault = ViewModel.ProfileConfiguration.CreateMailboxByDefault,
+            SendOnboardingNotification = ViewModel.ProfileConfiguration.SendOnboardingNotification,
+            RequireManagerValidation = ViewModel.ProfileConfiguration.RequireManagerValidation,
             WindowTitle = WindowTitleTextBox.Text.Trim(),
             ThemeName = ThemeNameTextBox.Text.Trim(),
             PrimaryColor = PrimaryColorTextBox.Text.Trim(),

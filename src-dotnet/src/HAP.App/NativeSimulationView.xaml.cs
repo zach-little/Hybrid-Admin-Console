@@ -33,6 +33,7 @@ public partial class NativeSimulationView : UserControl
     private readonly IDirectoryReadCapability _directoryRead;
     private readonly IDirectoryAttributeReadCapability _directoryAttributeRead;
     private readonly IDirectoryGroupLookupCapability _directoryGroupLookup;
+    private readonly IDirectoryManagerLookupCapability _directoryManagerLookup;
     private readonly IGraphReadCapability? _graphRead;
     private readonly IExchangeReadCapability? _exchangeRead;
     private readonly ISimulatorWriteCapability _writer;
@@ -51,6 +52,7 @@ public partial class NativeSimulationView : UserControl
         _directoryRead = providers.DirectoryRead;
         _directoryAttributeRead = providers.DirectoryAttributeRead;
         _directoryGroupLookup = providers.DirectoryGroupLookup;
+        _directoryManagerLookup = providers.DirectoryManagerLookup;
         _graphRead = providers.GraphRead;
         _exchangeRead = providers.ExchangeRead;
         _writer = providers.Writer;
@@ -71,6 +73,7 @@ public partial class NativeSimulationView : UserControl
         if (useSimulator)
         {
             return new RuntimeProviderSet(
+                simulator,
                 simulator,
                 simulator,
                 simulator,
@@ -166,6 +169,7 @@ public partial class NativeSimulationView : UserControl
         var directoryRead = activeDirectory is not null ? (IDirectoryReadCapability)activeDirectory : simulator;
         var directoryAttributes = activeDirectory is not null ? (IDirectoryAttributeReadCapability)activeDirectory : simulator;
         var groupLookup = activeDirectory is not null ? (IDirectoryGroupLookupCapability)activeDirectory : simulator;
+        var managerLookup = activeDirectory is not null ? (IDirectoryManagerLookupCapability)activeDirectory : simulator;
         var userLookup = activeDirectory is not null
             ? (IUserLookupCapability)activeDirectory
             : graph is not null
@@ -193,6 +197,7 @@ public partial class NativeSimulationView : UserControl
             directoryRead,
             directoryAttributes,
             groupLookup,
+            managerLookup,
             graphRead,
             exchangeRead,
             writer,
@@ -607,6 +612,8 @@ public partial class NativeSimulationView : UserControl
             "SetMailboxForwarding",
             "SetGalVisibility",
             "AddMailboxDelegation",
+            "LaunchBrowser",
+            "SendEmail",
             "ExecutePowerShell",
             "InvokeRestApi (future)",
             "Delay (future)",
@@ -724,6 +731,13 @@ public partial class NativeSimulationView : UserControl
             }
 
             variables = ResolveComputedWorkflowVariables(definition, variables);
+            if (!ShowWorkflowReview(definition, variables))
+            {
+                WorkflowStatusText.Text = "Workflow run cancelled during review.";
+                StatusText.Text = WorkflowStatusText.Text;
+                return;
+            }
+
             var providers = new Dictionary<string, ISimulatorWriteCapability>(StringComparer.OrdinalIgnoreCase)
             {
                 ["DirectorySimulator"] = _writer,
@@ -814,10 +828,11 @@ public partial class NativeSimulationView : UserControl
             }
             else if (field.Control.Equals("ComboBox", StringComparison.OrdinalIgnoreCase))
             {
+                var options = ResolveWorkflowOptions(field);
                 var combo = new ComboBox
                 {
                     IsEditable = false,
-                    ItemsSource = field.Options,
+                    ItemsSource = options,
                     DisplayMemberPath = nameof(WorkflowFormOptionDefinition.Label),
                     SelectedValuePath = nameof(WorkflowFormOptionDefinition.Value),
                     Height = 34,
@@ -827,7 +842,7 @@ public partial class NativeSimulationView : UserControl
                 {
                     combo.SelectedValue = field.DefaultValue;
                 }
-                else if (field.Options.Count > 0)
+                else if (options.Count > 0)
                 {
                     combo.SelectedIndex = 0;
                 }
@@ -868,6 +883,131 @@ public partial class NativeSimulationView : UserControl
         };
 
         return window.ShowDialog() == true ? values : null;
+    }
+
+    private IReadOnlyList<WorkflowFormOptionDefinition> ResolveWorkflowOptions(WorkflowFormFieldDefinition field)
+    {
+        if (!field.OptionSource.Equals("DirectoryManagers", StringComparison.OrdinalIgnoreCase))
+        {
+            return field.Options;
+        }
+
+        try
+        {
+            var result = _directoryManagerLookup.GetManagerCandidatesAsync(CorrelationId.New()).GetAwaiter().GetResult();
+            if (!result.Succeeded || result.Value is null || result.Value.Count == 0)
+            {
+                return field.Options;
+            }
+
+            return result.Value
+                .Where(user => !string.IsNullOrWhiteSpace(user.SamAccountName))
+                .Select(user => new WorkflowFormOptionDefinition
+                {
+                    Label = $"{FirstNonEmpty(user.DisplayName, user.SamAccountName)} ({user.SamAccountName})",
+                    Value = user.SamAccountName
+                })
+                .ToArray();
+        }
+        catch
+        {
+            return field.Options;
+        }
+    }
+
+    private bool ShowWorkflowReview(WorkflowDefinition definition, IReadOnlyDictionary<string, string> variables)
+    {
+        var window = new Window
+        {
+            Title = $"Review {definition.Name}",
+            Width = 780,
+            Height = 720,
+            MinWidth = 640,
+            MinHeight = 520,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = System.Windows.Application.Current.MainWindow,
+            Background = BrushResource("HapBackgroundBrush"),
+            Foreground = BrushResource("HapInkBrush")
+        };
+
+        var root = new Grid { Margin = new Thickness(18) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var header = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
+        header.Children.Add(new TextBlock
+        {
+            Text = "Review Selections",
+            FontSize = 24,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = BrushResource("HapInkBrush")
+        });
+        header.Children.Add(new TextBlock
+        {
+            Text = "Verify these values before HAP creates or updates anything.",
+            Foreground = BrushResource("HapMutedBrush"),
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+        root.Children.Add(header);
+
+        var grid = new DataGrid
+        {
+            AutoGenerateColumns = false,
+            IsReadOnly = true,
+            CanUserAddRows = false,
+            HeadersVisibility = DataGridHeadersVisibility.Column,
+            ItemsSource = BuildWorkflowReviewRows(definition, variables),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        grid.Columns.Add(new DataGridTextColumn { Header = "Selection", Binding = new System.Windows.Data.Binding(nameof(WorkflowReviewRow.Label)), Width = new DataGridLength(230) });
+        grid.Columns.Add(new DataGridTextColumn { Header = "Value", Binding = new System.Windows.Data.Binding(nameof(WorkflowReviewRow.Value)), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+
+        Grid.SetRow(grid, 1);
+        root.Children.Add(grid);
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
+        var finish = new Button { Content = "Finish", MinWidth = 110, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new Button { Content = "Cancel", MinWidth = 110, IsCancel = true };
+        buttons.Children.Add(finish);
+        buttons.Children.Add(cancel);
+        Grid.SetRow(buttons, 2);
+        root.Children.Add(buttons);
+
+        finish.Click += (_, _) =>
+        {
+            window.DialogResult = true;
+            window.Close();
+        };
+
+        window.Content = root;
+        return window.ShowDialog() == true;
+    }
+
+    private static IReadOnlyList<WorkflowReviewRow> BuildWorkflowReviewRows(WorkflowDefinition definition, IReadOnlyDictionary<string, string> variables)
+    {
+        var rows = new List<WorkflowReviewRow>();
+        foreach (var field in definition.Form.Fields)
+        {
+            var value = Get(variables, field.Key);
+            if (field.Control.Equals("ComboBox", StringComparison.OrdinalIgnoreCase))
+            {
+                value = FirstNonEmpty(Get(variables, $"{field.Key}Text"), value);
+            }
+
+            rows.Add(new WorkflowReviewRow(field.Label, FormatWorkflowReviewValue(value)));
+        }
+
+        rows.AddRange(definition.ComputedVariables
+            .Where(item => !definition.Form.Fields.Any(field => field.Key.Equals(item.Key, StringComparison.OrdinalIgnoreCase)))
+            .Select(item => new WorkflowReviewRow(item.Key, FormatWorkflowReviewValue(Get(variables, item.Key)))));
+
+        return rows;
+    }
+
+    private static string FormatWorkflowReviewValue(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
     }
 
     private static Dictionary<string, string>? CollectWorkflowFormValues(
@@ -926,6 +1066,8 @@ public partial class NativeSimulationView : UserControl
                 "DisplayName" => $"{Get(values, "FirstName")} {Get(values, "LastName")}".Trim(),
                 "UserPrincipalName" => $"{Get(values, "SamAccountName")}@{computed.Value}".Trim('@'),
                 "OfficePhone12OrNA" => Get(values, computed.Value).Length == 12 ? Get(values, computed.Value) : "NA",
+                "CurrentDateTime" => DateTimeOffset.Now.ToString(string.IsNullOrWhiteSpace(computed.Value) ? "yyyy-MM-dd HH:mm:ss" : computed.Value),
+                "CurrentUser" => Environment.UserName,
                 "StripNumberPrefix" => Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty),
                 "LegacyDepartmentDisplay" => Regex.Replace(Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty), @"^Dept\s*(\d+)\s*-.*$", "$1"),
                 "Map" => computed.Map.TryGetValue(ExpandWorkflowTemplate(computed.Value, values), out var mapped) ? mapped : computed.Fallback,
@@ -2074,11 +2216,14 @@ public partial class NativeSimulationView : UserControl
 
     private sealed record WorkflowListItem(string Name, string Category, string Path);
 
+    private sealed record WorkflowReviewRow(string Label, string Value);
+
     private sealed record RuntimeProviderSet(
         IUserLookupCapability UserLookup,
         IDirectoryReadCapability DirectoryRead,
         IDirectoryAttributeReadCapability DirectoryAttributeRead,
         IDirectoryGroupLookupCapability DirectoryGroupLookup,
+        IDirectoryManagerLookupCapability DirectoryManagerLookup,
         IGraphReadCapability? GraphRead,
         IExchangeReadCapability? ExchangeRead,
         ISimulatorWriteCapability Writer,

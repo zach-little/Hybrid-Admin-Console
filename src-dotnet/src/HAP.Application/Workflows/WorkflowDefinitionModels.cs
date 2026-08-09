@@ -77,6 +77,8 @@ public sealed record WorkflowFormFieldDefinition
 
     public string ValidationMessage { get; init; } = string.Empty;
 
+    public string OptionSource { get; init; } = string.Empty;
+
     public IReadOnlyList<WorkflowFormOptionDefinition> Options { get; init; } = Array.Empty<WorkflowFormOptionDefinition>();
 }
 
@@ -111,6 +113,8 @@ public static class WorkflowActionTypes
     public const string SetMailboxForwarding = "SetMailboxForwarding";
     public const string SetGalVisibility = "SetGalVisibility";
     public const string AddMailboxDelegation = "AddMailboxDelegation";
+    public const string LaunchBrowser = "LaunchBrowser";
+    public const string SendEmail = "SendEmail";
     public const string ExecutePowerShell = "ExecutePowerShell";
     public const string InvokeRestApi = "InvokeRestApi";
     public const string Delay = "Delay";

@@ -186,6 +186,40 @@ public sealed class NativeUserAdministrationAndWorkflowTests
         Assert.Equal("RunnerRequired", result.Value.Actions[0].Status);
     }
 
+    [Fact]
+    public async Task WorkflowEngine_ExpandsTemporaryPasswordIntoCreateUserRequest()
+    {
+        var writer = new FakeWriter();
+        var definition = WorkflowDefinition.FromJson(
+            """
+            {
+              "Id": "password-flow",
+              "Name": "Password Flow",
+              "Actions": [
+                {
+                  "Id": "create-user",
+                  "Name": "Create AD user",
+                  "Type": "CreateAdUser",
+                  "ProviderId": "ActiveDirectory",
+                  "Inputs": {
+                    "GivenName": "Casey",
+                    "Surname": "Stone",
+                    "SamAccountName": "cstone",
+                    "TemporaryPassword": "Temp123456"
+                  }
+                }
+              ]
+            }
+            """);
+        var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(
+            new Dictionary<string, ISimulatorWriteCapability> { ["ActiveDirectory"] = writer }));
+
+        var result = await engine.ExecuteAsync(new WorkflowExecutionRequest { Definition = definition }, CorrelationId.From("workflow-temp-password"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("Temp123456", writer.LastCreateUser?.TemporaryPassword);
+    }
+
     private sealed class FakeWriter : ISimulatorWriteCapability
     {
         public string Operation { get; private set; } = string.Empty;

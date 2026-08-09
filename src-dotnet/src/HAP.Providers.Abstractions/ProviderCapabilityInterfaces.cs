@@ -23,6 +23,11 @@ public interface IDirectoryGroupLookupCapability
     Task<OperationResult<IReadOnlyList<DirectoryGroupSummary>>> SearchGroupsAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default);
 }
 
+public interface IDirectoryManagerLookupCapability
+{
+    Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> GetManagerCandidatesAsync(CorrelationId correlationId, CancellationToken cancellationToken = default);
+}
+
 public interface IDeviceReadCapability
 {
     Task<OperationResult<IReadOnlyList<ManagedDeviceSummary>>> GetManagedDevicesAsync(string identity, CorrelationId correlationId, CancellationToken cancellationToken = default);

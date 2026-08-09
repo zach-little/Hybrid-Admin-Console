@@ -53,6 +53,8 @@ public sealed record UserCreateRequest
 
     public string PostalCode { get; init; } = string.Empty;
 
+    public string TemporaryPassword { get; init; } = string.Empty;
+
     public IReadOnlyDictionary<string, string> OtherAttributes { get; init; } = new Dictionary<string, string>();
 }
 
