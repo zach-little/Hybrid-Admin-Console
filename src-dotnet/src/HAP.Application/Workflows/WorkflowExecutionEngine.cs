@@ -33,6 +33,7 @@ public sealed class WorkflowExecutionEngine
         }
 
         var results = new List<WorkflowActionResult>();
+        var variables = new Dictionary<string, string>(request.Variables, StringComparer.OrdinalIgnoreCase);
         foreach (var action in request.Definition.Actions)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -42,14 +43,19 @@ public sealed class WorkflowExecutionEngine
                 continue;
             }
 
-            if (!ShouldRun(action.RunWhen, request.Variables))
+            if (!ShouldRun(action.RunWhen, variables))
             {
                 results.Add(Result(action, skipped: true, status: "Skipped", message: "Run condition was not met."));
                 continue;
             }
 
-            var result = await _executor.ExecuteAsync(action, request, correlationId, cancellationToken).ConfigureAwait(false);
+            var result = await _executor.ExecuteAsync(action, request with { Variables = variables }, correlationId, cancellationToken).ConfigureAwait(false);
             results.Add(result);
+            foreach (var output in result.Outputs)
+            {
+                variables[output.Key] = output.Value;
+            }
+
             if (!result.Succeeded && !result.Skipped && !action.ContinueOnError)
             {
                 break;

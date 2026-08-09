@@ -37,4 +37,6 @@ public sealed record WorkflowActionResult
     public string Status { get; init; } = string.Empty;
 
     public string Message { get; init; } = string.Empty;
+
+    public IReadOnlyDictionary<string, string> Outputs { get; init; } = new Dictionary<string, string>();
 }

@@ -50,6 +50,8 @@ public sealed record WorkflowActionDefinition
     public string RunWhen { get; init; } = string.Empty;
 
     public IReadOnlyDictionary<string, string> Inputs { get; init; } = new Dictionary<string, string>();
+
+    public IReadOnlyDictionary<string, string> Outputs { get; init; } = new Dictionary<string, string>();
 }
 
 public sealed record WorkflowFormDefinition

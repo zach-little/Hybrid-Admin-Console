@@ -735,6 +735,7 @@ public partial class NativeSimulationView : UserControl
             }
 
             variables = ResolveComputedWorkflowVariables(definition, variables);
+            variables = await ResolveWorkflowGraphIdentityAsync(definition, variables).ConfigureAwait(true);
             if (!ShowWorkflowReview(definition, variables))
             {
                 WorkflowStatusText.Text = "Workflow run cancelled during review.";
@@ -797,6 +798,34 @@ public partial class NativeSimulationView : UserControl
         }
 
         return _graphProvider.GetAccessTokenAsync(correlationId, cancellationToken);
+    }
+
+    private async Task<Dictionary<string, string>> ResolveWorkflowGraphIdentityAsync(
+        WorkflowDefinition definition,
+        Dictionary<string, string> variables)
+    {
+        var needsGraphIdentity = definition.Actions.Any(action =>
+            action.Inputs.Values.Any(value =>
+                value.Contains("{{GraphUserIdentity}}", StringComparison.OrdinalIgnoreCase) ||
+                value.Contains("{{GraphUserPrincipalName}}", StringComparison.OrdinalIgnoreCase)));
+        if (!needsGraphIdentity || _graphRead is null || string.IsNullOrWhiteSpace(Get(variables, "UserIdentity")))
+        {
+            return variables;
+        }
+
+        var result = await _graphRead.GetGraphProfileAsync(Get(variables, "UserIdentity"), CorrelationId.New()).ConfigureAwait(true);
+        if (result.Succeeded && result.Value is not null)
+        {
+            variables["GraphUserIdentity"] = FirstNonEmpty(result.Value.ObjectId, result.Value.UserPrincipalName, Get(variables, "UserIdentity"));
+            variables["GraphUserPrincipalName"] = FirstNonEmpty(result.Value.UserPrincipalName, Get(variables, "UserIdentity"));
+        }
+        else
+        {
+            variables["GraphUserIdentity"] = Get(variables, "UserIdentity");
+            variables["GraphUserPrincipalName"] = Get(variables, "UserIdentity");
+        }
+
+        return variables;
     }
 
     private Dictionary<string, string>? ShowWorkflowForm(WorkflowDefinition definition)
@@ -1083,7 +1112,7 @@ public partial class NativeSimulationView : UserControl
         return values;
     }
 
-    private static Dictionary<string, string> ResolveComputedWorkflowVariables(
+    private Dictionary<string, string> ResolveComputedWorkflowVariables(
         WorkflowDefinition definition,
         IReadOnlyDictionary<string, string> variables)
     {
@@ -1098,6 +1127,7 @@ public partial class NativeSimulationView : UserControl
                 "OfficePhone12OrNA" => Get(values, computed.Value).Length == 12 ? Get(values, computed.Value) : "NA",
                 "CurrentDateTime" => DateTimeOffset.Now.ToString(string.IsNullOrWhiteSpace(computed.Value) ? "yyyy-MM-dd HH:mm:ss" : computed.Value),
                 "CurrentUser" => Environment.UserName,
+                "GraphBaseUrl" => GraphBaseUrlForCloud(_profile.CloudEnvironment),
                 "StripNumberPrefix" => Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty),
                 "LegacyDepartmentDisplay" => Regex.Replace(Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty), @"^Dept\s*(\d+)\s*-.*$", "$1"),
                 "Map" => computed.Map.TryGetValue(ExpandWorkflowTemplate(computed.Value, values), out var mapped) ? mapped : computed.Fallback,
@@ -1106,6 +1136,23 @@ public partial class NativeSimulationView : UserControl
         }
 
         return values;
+    }
+
+    private static string GraphBaseUrlForCloud(string cloudEnvironment)
+    {
+        var cloud = cloudEnvironment ?? string.Empty;
+        if (cloud.Contains("DoD", StringComparison.OrdinalIgnoreCase))
+        {
+            return "https://dod-graph.microsoft.us/v1.0";
+        }
+
+        if (cloud.Contains("GCC High", StringComparison.OrdinalIgnoreCase) ||
+            cloud.Contains("GCCHigh", StringComparison.OrdinalIgnoreCase))
+        {
+            return "https://graph.microsoft.us/v1.0";
+        }
+
+        return "https://graph.microsoft.com/v1.0";
     }
 
     private static string ComputeSam(IReadOnlyDictionary<string, string> values)

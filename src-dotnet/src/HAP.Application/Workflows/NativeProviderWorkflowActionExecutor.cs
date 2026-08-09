@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
 using System.Text;
+using System.Text.Json;
 using HAP.Contracts;
 using HAP.Providers.Abstractions;
 
@@ -191,9 +192,18 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
     private static string Expand(string value, IReadOnlyDictionary<string, string> variables)
     {
         var expanded = value;
-        foreach (var variable in variables)
+        for (var pass = 0; pass < 4; pass++)
         {
-            expanded = expanded.Replace($"{{{{{variable.Key}}}}}", variable.Value, StringComparison.OrdinalIgnoreCase);
+            var before = expanded;
+            foreach (var variable in variables)
+            {
+                expanded = expanded.Replace($"{{{{{variable.Key}}}}}", variable.Value, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (string.Equals(before, expanded, StringComparison.Ordinal))
+            {
+                break;
+            }
         }
 
         return expanded;
@@ -328,6 +338,7 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
             using var response = await client.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
             var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var ok = ExpectedStatusCodes(inputs).Contains((int)response.StatusCode);
+            var outputs = ok ? ExtractOutputs(action.Outputs, response, responseText) : new Dictionary<string, string>();
             return new WorkflowActionResult
             {
                 ActionId = action.Id,
@@ -337,7 +348,8 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
                 Succeeded = ok,
                 Changed = ok && !string.Equals(Optional(inputs, "Method", "GET"), "GET", StringComparison.OrdinalIgnoreCase),
                 Status = $"{(int)response.StatusCode} {response.StatusCode}",
-                Message = string.IsNullOrWhiteSpace(responseText) ? "REST request completed." : TrimForResult(responseText)
+                Message = string.IsNullOrWhiteSpace(responseText) ? "REST request completed." : TrimForResult(responseText),
+                Outputs = outputs
             };
         }
         catch (Exception ex)
@@ -414,6 +426,68 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
     private static WorkflowActionResult Completed(WorkflowActionDefinition action, bool changed, string message)
     {
         return new WorkflowActionResult { ActionId = action.Id, ActionName = action.Name, ActionType = action.Type, ProviderId = action.ProviderId, Succeeded = true, Changed = changed, Status = "Completed", Message = message };
+    }
+
+    private static IReadOnlyDictionary<string, string> ExtractOutputs(
+        IReadOnlyDictionary<string, string> mappings,
+        HttpResponseMessage response,
+        string responseText)
+    {
+        if (mappings.Count == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        var outputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var document = string.IsNullOrWhiteSpace(responseText) ? null : JsonDocument.Parse(responseText);
+        foreach (var mapping in mappings)
+        {
+            var source = mapping.Value ?? string.Empty;
+            var value = source.StartsWith("header:", StringComparison.OrdinalIgnoreCase)
+                ? HeaderValue(response, source["header:".Length..])
+                : JsonValue(document?.RootElement, source.StartsWith("json:", StringComparison.OrdinalIgnoreCase) ? source["json:".Length..] : source);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                outputs[mapping.Key] = value;
+            }
+        }
+
+        return outputs;
+    }
+
+    private static string HeaderValue(HttpResponseMessage response, string name)
+    {
+        return response.Headers.TryGetValues(name, out var values)
+            ? values.FirstOrDefault() ?? string.Empty
+            : response.Content.Headers.TryGetValues(name, out var contentValues)
+                ? contentValues.FirstOrDefault() ?? string.Empty
+                : string.Empty;
+    }
+
+    private static string JsonValue(JsonElement? root, string path)
+    {
+        if (root is null || string.IsNullOrWhiteSpace(path))
+        {
+            return string.Empty;
+        }
+
+        var current = root.Value;
+        foreach (var part in path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(part, out current))
+            {
+                return string.Empty;
+            }
+        }
+
+        return current.ValueKind switch
+        {
+            JsonValueKind.String => current.GetString() ?? string.Empty,
+            JsonValueKind.Number => current.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => current.GetRawText()
+        };
     }
 
     private static int Int(IReadOnlyDictionary<string, string> inputs, string key, int fallback)

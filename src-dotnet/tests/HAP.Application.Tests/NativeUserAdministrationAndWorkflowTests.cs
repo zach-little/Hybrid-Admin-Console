@@ -321,6 +321,76 @@ public sealed class NativeUserAdministrationAndWorkflowTests
         Assert.Contains("Token unavailable in test.", result.Message);
     }
 
+    [Fact]
+    public async Task WorkflowEngine_CarriesActionOutputsIntoLaterActions()
+    {
+        var definition = WorkflowDefinition.FromJson(
+            """
+            {
+              "Id": "output-flow",
+              "Name": "Output Flow",
+              "Actions": [
+                {
+                  "Id": "create-case",
+                  "Name": "Create Case",
+                  "Type": "InvokeRestApi",
+                  "Outputs": {
+                    "CaseId": "id"
+                  }
+                },
+                {
+                  "Id": "use-case",
+                  "Name": "Use Case",
+                  "Type": "Approval",
+                  "Inputs": {
+                    "Approved": "{{CaseId}} == case-1"
+                  }
+                }
+              ]
+            }
+            """);
+        var engine = new WorkflowExecutionEngine(new OutputExecutor());
+
+        var result = await engine.ExecuteAsync(new WorkflowExecutionRequest { Definition = definition }, CorrelationId.From("workflow-output"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("case-1", result.Value!.Actions[0].Outputs["CaseId"]);
+        Assert.True(result.Value.Actions[1].Succeeded);
+    }
+
+    private sealed class OutputExecutor : IWorkflowActionExecutor
+    {
+        public Task<WorkflowActionResult> ExecuteAsync(
+            WorkflowActionDefinition action,
+            WorkflowExecutionRequest request,
+            CorrelationId correlationId,
+            CancellationToken cancellationToken = default)
+        {
+            if (action.Id == "create-case")
+            {
+                return Task.FromResult(new WorkflowActionResult
+                {
+                    ActionId = action.Id,
+                    ActionName = action.Name,
+                    ActionType = action.Type,
+                    Succeeded = true,
+                    Changed = true,
+                    Status = "Created",
+                    Outputs = new Dictionary<string, string> { ["CaseId"] = "case-1" }
+                });
+            }
+
+            return Task.FromResult(new WorkflowActionResult
+            {
+                ActionId = action.Id,
+                ActionName = action.Name,
+                ActionType = action.Type,
+                Succeeded = request.Variables.TryGetValue("CaseId", out var caseId) && caseId == "case-1",
+                Status = "Completed"
+            });
+        }
+    }
+
     private sealed class FakeWriter : ISimulatorWriteCapability
     {
         public string Operation { get; private set; } = string.Empty;
