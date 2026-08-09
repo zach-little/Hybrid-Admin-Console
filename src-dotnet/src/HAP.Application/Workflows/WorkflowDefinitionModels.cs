@@ -12,6 +12,10 @@ public sealed record WorkflowDefinition
 
     public string Category { get; init; } = string.Empty;
 
+    public WorkflowFormDefinition Form { get; init; } = new();
+
+    public IReadOnlyList<WorkflowComputedVariableDefinition> ComputedVariables { get; init; } = Array.Empty<WorkflowComputedVariableDefinition>();
+
     public IReadOnlyList<WorkflowActionDefinition> Actions { get; init; } = Array.Empty<WorkflowActionDefinition>();
 
     public static WorkflowDefinition FromJson(string json)
@@ -43,7 +47,57 @@ public sealed record WorkflowActionDefinition
 
     public bool ContinueOnError { get; init; }
 
+    public string RunWhen { get; init; } = string.Empty;
+
     public IReadOnlyDictionary<string, string> Inputs { get; init; } = new Dictionary<string, string>();
+}
+
+public sealed record WorkflowFormDefinition
+{
+    public string Title { get; init; } = string.Empty;
+
+    public string SubmitText { get; init; } = "Run";
+
+    public IReadOnlyList<WorkflowFormFieldDefinition> Fields { get; init; } = Array.Empty<WorkflowFormFieldDefinition>();
+}
+
+public sealed record WorkflowFormFieldDefinition
+{
+    public string Key { get; init; } = string.Empty;
+
+    public string Label { get; init; } = string.Empty;
+
+    public string Control { get; init; } = "TextBox";
+
+    public bool Required { get; init; }
+
+    public string DefaultValue { get; init; } = string.Empty;
+
+    public string ValidationRegex { get; init; } = string.Empty;
+
+    public string ValidationMessage { get; init; } = string.Empty;
+
+    public IReadOnlyList<WorkflowFormOptionDefinition> Options { get; init; } = Array.Empty<WorkflowFormOptionDefinition>();
+}
+
+public sealed record WorkflowFormOptionDefinition
+{
+    public string Label { get; init; } = string.Empty;
+
+    public string Value { get; init; } = string.Empty;
+}
+
+public sealed record WorkflowComputedVariableDefinition
+{
+    public string Key { get; init; } = string.Empty;
+
+    public string Type { get; init; } = string.Empty;
+
+    public string Value { get; init; } = string.Empty;
+
+    public string Fallback { get; init; } = string.Empty;
+
+    public IReadOnlyDictionary<string, string> Map { get; init; } = new Dictionary<string, string>();
 }
 
 public static class WorkflowActionTypes

@@ -14,4 +14,7 @@
     <ProjectReference Include="..\HAP.Providers.Graph\HAP.Providers.Graph.csproj" />
     <ProjectReference Include="..\HAP.Providers.Simulator\HAP.Providers.Simulator.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Workflows\*.json" CopyToOutputDirectory="PreserveNewest" TargetPath="workflows\%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

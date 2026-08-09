@@ -1,0 +1,381 @@
+{
+  "SchemaVersion": "1.0",
+  "Id": "legacy-new-user-onboarding",
+  "Name": "Legacy New User Onboarding",
+  "Category": "Onboarding",
+  "Form": {
+    "Title": "Legacy New User Onboarding",
+    "SubmitText": "Create User",
+    "Fields": [
+      {
+        "Key": "FirstName",
+        "Label": "First Name",
+        "Control": "TextBox",
+        "Required": true,
+        "ValidationRegex": "^[A-Za-z][A-Za-z' -]*$",
+        "ValidationMessage": "First name is required and must start with a letter."
+      },
+      {
+        "Key": "MiddleInitial",
+        "Label": "Middle Initial",
+        "Control": "TextBox",
+        "ValidationRegex": "^[A-Za-z]?$",
+        "ValidationMessage": "Middle initial must be one letter."
+      },
+      {
+        "Key": "IncludeMiddleInitial",
+        "Label": "Include Middle Initial in SAM",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      },
+      {
+        "Key": "LastName",
+        "Label": "Last Name",
+        "Control": "TextBox",
+        "Required": true,
+        "ValidationRegex": "^[A-Za-z][A-Za-z' -]*$",
+        "ValidationMessage": "Last name is required and must start with a letter."
+      },
+      {
+        "Key": "JobTitle",
+        "Label": "Job Title",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "ManagerSamAccountName",
+        "Label": "Manager SAM Account",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "LocationNumber",
+        "Label": "Work Location",
+        "Control": "ComboBox",
+        "Required": true,
+        "Options": [
+          { "Label": "1. Rivers", "Value": "1" },
+          { "Label": "2. Remount", "Value": "2" },
+          { "Label": "3. Virginia Beach", "Value": "3" },
+          { "Label": "4. San Diego", "Value": "4" },
+          { "Label": "5. Alexandria", "Value": "5" },
+          { "Label": "6. Lexington", "Value": "6" }
+        ]
+      },
+      {
+        "Key": "DepartmentNumber",
+        "Label": "Department",
+        "Control": "ComboBox",
+        "Required": true,
+        "Options": [
+          { "Label": "1. Dept 00 - Accounting", "Value": "1" },
+          { "Label": "2. Dept 00 - Information Technology", "Value": "2" },
+          { "Label": "3. Dept 00 - Executive", "Value": "3" },
+          { "Label": "4. Dept 00 - Human Resources", "Value": "4" },
+          { "Label": "5. Dept 01 - Contracts", "Value": "5" },
+          { "Label": "6. Dept 01 - Operations", "Value": "6" },
+          { "Label": "7. Dept 02 - DC/PAX/Charleston Division", "Value": "7" },
+          { "Label": "8. Dept 03 - VABeach Division", "Value": "8" },
+          { "Label": "9. Dept 04 - San Diego Division", "Value": "9" },
+          { "Label": "10. Service Account", "Value": "10" }
+        ]
+      },
+      {
+        "Key": "HomeOrganizationNumber",
+        "Label": "Home Organization",
+        "Control": "ComboBox",
+        "Required": true,
+        "Options": [
+          { "Label": "1. Draco Team", "Value": "1" },
+          { "Label": "2. Pavo Team", "Value": "2" },
+          { "Label": "3. Corvus Team", "Value": "3" }
+        ]
+      },
+      {
+        "Key": "EmployeeId",
+        "Label": "Employee ID #",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "BadgeId",
+        "Label": "Encoded Badge Number #",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "OfficePhone",
+        "Label": "Office Phone",
+        "Control": "TextBox",
+        "ValidationRegex": "^$|^.{12}$",
+        "ValidationMessage": "Office phone must be blank or exactly 12 characters, matching the legacy script rule."
+      },
+      {
+        "Key": "MobilePhone",
+        "Label": "Mobile Phone",
+        "Control": "TextBox"
+      },
+      {
+        "Key": "CreateMailbox",
+        "Label": "Create Microsoft 365 / cloud mailbox",
+        "Control": "CheckBox",
+        "DefaultValue": "true"
+      },
+      {
+        "Key": "CacRequired",
+        "Label": "CAC Required",
+        "Control": "CheckBox",
+        "DefaultValue": "false"
+      }
+    ]
+  },
+  "ComputedVariables": [
+    { "Key": "SamAccountName", "Type": "SamAccountName" },
+    { "Key": "DisplayName", "Type": "DisplayName" },
+    { "Key": "UserPrincipalName", "Type": "UserPrincipalName", "Value": "atlas-tech.com" },
+    { "Key": "OfficePhoneNormalized", "Type": "OfficePhone12OrNA", "Value": "OfficePhone" },
+    { "Key": "OfficeDisplay", "Type": "StripNumberPrefix", "Value": "LocationNumberText" },
+    { "Key": "DepartmentDisplay", "Type": "LegacyDepartmentDisplay", "Value": "DepartmentNumberText" },
+    {
+      "Key": "AssignStandardGroups",
+      "Type": "Map",
+      "Value": "{{DepartmentNumber}}",
+      "Fallback": "true",
+      "Map": {
+        "10": "false"
+      }
+    },
+    {
+      "Key": "TargetOu",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}:{{DepartmentNumber}}",
+      "Fallback": "CN=Users,DC=atlas-tech,DC=com",
+      "Map": {
+        "1:1": "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:2": "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:3": "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:4": "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:5": "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:6": "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:7": "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:1": "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:2": "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:3": "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:4": "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:5": "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:6": "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:7": "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "3:8": "OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "4:9": "OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "5:7": "OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "6:7": "OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "1:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "2:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "3:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "4:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "5:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
+        "6:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com"
+      }
+    },
+    {
+      "Key": "City",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}",
+      "Fallback": "Not Entered",
+      "Map": {
+        "1": "North Charleston",
+        "2": "North Charleston",
+        "3": "Virginia Beach",
+        "4": "San Diego",
+        "5": "Alexandria",
+        "6": "Lexington"
+      }
+    },
+    {
+      "Key": "StreetAddress",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}",
+      "Fallback": "Not Entered",
+      "Map": {
+        "1": "5416-A Rivers Avenue - Suite 105",
+        "2": "1101 Remount Rd, Suite 800",
+        "3": "168 Business Park Drive, Suite 103",
+        "4": "4250 Pacific Highway, 105",
+        "5": "5911 Kingstowne Village Parkway Suite 310",
+        "6": "Not Available"
+      }
+    },
+    {
+      "Key": "State",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}",
+      "Fallback": "NA",
+      "Map": {
+        "1": "SC",
+        "2": "SC",
+        "3": "VA",
+        "4": "CA",
+        "5": "VA",
+        "6": "MD"
+      }
+    },
+    {
+      "Key": "PostalCode",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}",
+      "Fallback": "Not Available",
+      "Map": {
+        "1": "29406",
+        "2": "29406",
+        "3": "23462",
+        "4": "92110",
+        "5": "22315",
+        "6": "Not Available"
+      }
+    },
+    {
+      "Key": "LocationGroup",
+      "Type": "Map",
+      "Value": "{{LocationNumber}}",
+      "Fallback": "Atlas-Charleston",
+      "Map": {
+        "1": "Atlas-Charleston",
+        "2": "Atlas-Charleston",
+        "3": "Atlas-VABeach",
+        "4": "Atlas-SD",
+        "5": "Atlas-DC",
+        "6": "Atlas-MD"
+      }
+    },
+    {
+      "Key": "HomeOrganizationGroup",
+      "Type": "Map",
+      "Value": "{{HomeOrganizationNumber}}",
+      "Fallback": "NA",
+      "Map": {
+        "1": "Draco.Team",
+        "2": "Pavo.Team",
+        "3": "Corvus.Team"
+      }
+    },
+    {
+      "Key": "HomeOrganizationDisplayGroup",
+      "Type": "Map",
+      "Value": "{{HomeOrganizationNumber}}",
+      "Fallback": "",
+      "Map": {
+        "1": "Draco Team",
+        "2": "Pavo Team",
+        "3": "Corvus Team"
+      }
+    }
+  ],
+  "Actions": [
+    {
+      "Id": "create-ad-user",
+      "Name": "Create AD user",
+      "Type": "CreateAdUser",
+      "ProviderId": "ActiveDirectory",
+      "Inputs": {
+        "GivenName": "{{FirstName}}",
+        "Surname": "{{LastName}}",
+        "SamAccountName": "{{SamAccountName}}",
+        "Department": "{{DepartmentDisplay}}",
+        "Title": "{{JobTitle}}",
+        "ManagerSamAccountName": "{{ManagerSamAccountName}}",
+        "Office": "{{OfficeDisplay}}",
+        "DisplayName": "{{DisplayName}}",
+        "UserPrincipalName": "{{UserPrincipalName}}",
+        "TargetOu": "{{TargetOu}}",
+        "Company": "Atlas Technologies, Inc.",
+        "EmployeeId": "{{EmployeeId}}",
+        "BadgeId": "{{BadgeId}}",
+        "OfficePhone": "{{OfficePhoneNormalized}}",
+        "MobilePhone": "{{MobilePhone}}",
+        "City": "{{City}}",
+        "StreetAddress": "{{StreetAddress}}",
+        "State": "{{State}}",
+        "PostalCode": "{{PostalCode}}",
+        "Attribute:title": "{{JobTitle}}",
+        "Attribute:badgeID": "{{BadgeId}}",
+        "Attribute:ipPhone": "{{OfficePhoneNormalized}}"
+      }
+    },
+    {
+      "Id": "add-sc-cgusers",
+      "Name": "Add SC_CGUsers",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "SC_CGUsers" }
+    },
+    {
+      "Id": "add-sd-cgusers",
+      "Name": "Add SD_CGUsers",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "SD_CGUsers" }
+    },
+    {
+      "Id": "add-va-cgusers",
+      "Name": "Add VABeach_CGUsers",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "VABeach_CGUsers" }
+    },
+    {
+      "Id": "add-location-group",
+      "Name": "Add location group",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{LocationGroup}}" }
+    },
+    {
+      "Id": "add-home-organization-display-group",
+      "Name": "Add home organization display group",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{HomeOrganizationDisplayGroup}}" }
+    },
+    {
+      "Id": "add-home-organization-group",
+      "Name": "Add home organization group",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{HomeOrganizationGroup}}" }
+    },
+    {
+      "Id": "add-cac-group",
+      "Name": "Add CAC holders group",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true && {{CacRequired}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "CAC_Holders" }
+    },
+    {
+      "Id": "add-teentry",
+      "Name": "Add TEEntry",
+      "Type": "AddGroup",
+      "ProviderId": "ActiveDirectory",
+      "RunWhen": "{{AssignStandardGroups}} == true",
+      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "TEEntry" }
+    },
+    {
+      "Id": "enable-remote-mailbox",
+      "Name": "Enable remote mailbox",
+      "Type": "EnableRemoteMailbox",
+      "ProviderId": "ExchangeOnPremises",
+      "RunWhen": "{{CreateMailbox}} == true",
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "PrimarySmtpAddress": "{{UserPrincipalName}}",
+        "RemoteRoutingAddress": "{{SamAccountName}}@atlastechcloud.mail.onmicrosoft.com"
+      }
+    }
+  ]
+}

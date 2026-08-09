@@ -42,6 +42,12 @@ public sealed class WorkflowExecutionEngine
                 continue;
             }
 
+            if (!ShouldRun(action.RunWhen, request.Variables))
+            {
+                results.Add(Result(action, skipped: true, status: "Skipped", message: "Run condition was not met."));
+                continue;
+            }
+
             var result = await _executor.ExecuteAsync(action, request, correlationId, cancellationToken).ConfigureAwait(false);
             results.Add(result);
             if (!result.Succeeded && !result.Skipped && !action.ContinueOnError)
@@ -78,5 +84,52 @@ public sealed class WorkflowExecutionEngine
             Status = status,
             Message = message
         };
+    }
+
+    private static bool ShouldRun(string condition, IReadOnlyDictionary<string, string> variables)
+    {
+        if (string.IsNullOrWhiteSpace(condition))
+        {
+            return true;
+        }
+
+        var andParts = condition.Split("&&", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (andParts.Length > 1)
+        {
+            return andParts.All(part => ShouldRun(part, variables));
+        }
+
+        foreach (var op in new[] { "==", "!=" })
+        {
+            var index = condition.IndexOf(op, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            var left = Clean(Expand(condition[..index], variables));
+            var right = Clean(Expand(condition[(index + op.Length)..], variables));
+            var equal = string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+            return op == "==" ? equal : !equal;
+        }
+
+        var expanded = Clean(Expand(condition, variables));
+        return bool.TryParse(expanded, out var parsed) ? parsed : !string.IsNullOrWhiteSpace(expanded);
+    }
+
+    private static string Expand(string value, IReadOnlyDictionary<string, string> variables)
+    {
+        var expanded = value;
+        foreach (var variable in variables)
+        {
+            expanded = expanded.Replace($"{{{{{variable.Key}}}}}", variable.Value, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return expanded;
+    }
+
+    private static string Clean(string value)
+    {
+        return value.Trim().Trim('"').Trim('\'');
     }
 }

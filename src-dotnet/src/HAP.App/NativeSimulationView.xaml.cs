@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -714,6 +715,15 @@ public partial class NativeSimulationView : UserControl
         try
         {
             var definition = WorkflowDefinition.FromJson(WorkflowJsonTextBox.Text);
+            var variables = ShowWorkflowForm(definition);
+            if (variables is null)
+            {
+                WorkflowStatusText.Text = "Workflow run cancelled.";
+                StatusText.Text = WorkflowStatusText.Text;
+                return;
+            }
+
+            variables = ResolveComputedWorkflowVariables(definition, variables);
             var providers = new Dictionary<string, ISimulatorWriteCapability>(StringComparer.OrdinalIgnoreCase)
             {
                 ["DirectorySimulator"] = _writer,
@@ -724,7 +734,7 @@ public partial class NativeSimulationView : UserControl
             };
             var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(providers));
             var result = await engine.ExecuteAsync(
-                new WorkflowExecutionRequest { Definition = definition },
+                new WorkflowExecutionRequest { Definition = definition, Variables = variables },
                 CorrelationId.New()).ConfigureAwait(true);
 
             WorkflowResultGrid.ItemsSource = result.Value?.Actions ?? Array.Empty<WorkflowActionResult>();
@@ -743,6 +753,219 @@ public partial class NativeSimulationView : UserControl
         {
             SetBusy(false);
         }
+    }
+
+    private Dictionary<string, string>? ShowWorkflowForm(WorkflowDefinition definition)
+    {
+        if (definition.Form.Fields.Count == 0)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var window = new Window
+        {
+            Title = string.IsNullOrWhiteSpace(definition.Form.Title) ? definition.Name : definition.Form.Title,
+            Width = 760,
+            Height = 720,
+            MinWidth = 620,
+            MinHeight = 520,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = System.Windows.Application.Current.MainWindow,
+            Background = BrushResource("HapBackgroundBrush"),
+            Foreground = BrushResource("HapInkBrush")
+        };
+
+        var root = new Grid { Margin = new Thickness(18) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.Children.Add(new TextBlock
+        {
+            Text = window.Title,
+            FontSize = 24,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = BrushResource("HapInkBrush"),
+            Margin = new Thickness(0, 0, 0, 14)
+        });
+
+        var stack = new StackPanel();
+        var scroll = new ScrollViewer { Content = stack, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Grid.SetRow(scroll, 1);
+        root.Children.Add(scroll);
+
+        var controls = new Dictionary<string, Control>(StringComparer.OrdinalIgnoreCase);
+        foreach (var field in definition.Form.Fields)
+        {
+            var isCheckBox = field.Control.Equals("CheckBox", StringComparison.OrdinalIgnoreCase);
+            if (!isCheckBox)
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = field.Required ? $"{field.Label} *" : field.Label,
+                    Foreground = BrushResource("HapMutedBrush"),
+                    Margin = new Thickness(0, 0, 0, 4)
+                });
+            }
+
+            Control control;
+            if (isCheckBox)
+            {
+                control = new CheckBox { Content = field.Label, IsChecked = bool.TryParse(field.DefaultValue, out var value) && value, Margin = new Thickness(0, 0, 0, 12) };
+            }
+            else if (field.Control.Equals("ComboBox", StringComparison.OrdinalIgnoreCase))
+            {
+                var combo = new ComboBox
+                {
+                    IsEditable = false,
+                    ItemsSource = field.Options,
+                    DisplayMemberPath = nameof(WorkflowFormOptionDefinition.Label),
+                    SelectedValuePath = nameof(WorkflowFormOptionDefinition.Value),
+                    Height = 34,
+                    Margin = new Thickness(0, 0, 0, 12)
+                };
+                if (!string.IsNullOrWhiteSpace(field.DefaultValue))
+                {
+                    combo.SelectedValue = field.DefaultValue;
+                }
+                else if (field.Options.Count > 0)
+                {
+                    combo.SelectedIndex = 0;
+                }
+
+                control = combo;
+            }
+            else
+            {
+                control = new TextBox { Text = field.DefaultValue, Height = 34, Margin = new Thickness(0, 0, 0, 12) };
+            }
+
+            controls[field.Key] = control;
+            stack.Children.Add(control);
+        }
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
+        var run = new Button { Content = string.IsNullOrWhiteSpace(definition.Form.SubmitText) ? "Run" : definition.Form.SubmitText, MinWidth = 110, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new Button { Content = "Cancel", MinWidth = 110, IsCancel = true };
+        buttons.Children.Add(run);
+        buttons.Children.Add(cancel);
+        Grid.SetRow(buttons, 2);
+        root.Children.Add(buttons);
+        window.Content = root;
+
+        Dictionary<string, string>? values = null;
+        run.Click += (_, _) =>
+        {
+            var collected = CollectWorkflowFormValues(definition, controls, out var validationMessage);
+            if (collected is null)
+            {
+                ShowThemedNotice("Workflow Validation", validationMessage, isDestructive: true);
+                return;
+            }
+
+            values = collected;
+            window.DialogResult = true;
+            window.Close();
+        };
+
+        return window.ShowDialog() == true ? values : null;
+    }
+
+    private static Dictionary<string, string>? CollectWorkflowFormValues(
+        WorkflowDefinition definition,
+        IReadOnlyDictionary<string, Control> controls,
+        out string validationMessage)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var field in definition.Form.Fields)
+        {
+            var value = controls[field.Key] switch
+            {
+                TextBox textBox => textBox.Text.Trim(),
+                ComboBox comboBox => comboBox.SelectedValue?.ToString()?.Trim() ?? comboBox.Text.Trim(),
+                CheckBox checkBox => (checkBox.IsChecked == true).ToString().ToLowerInvariant(),
+                _ => string.Empty
+            };
+
+            values[field.Key] = value;
+            if (controls[field.Key] is ComboBox combo && combo.SelectedItem is WorkflowFormOptionDefinition option)
+            {
+                values[$"{field.Key}Text"] = option.Label;
+            }
+
+            if (field.Required && string.IsNullOrWhiteSpace(value))
+            {
+                validationMessage = $"{field.Label} is required.";
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(value) &&
+                !string.IsNullOrWhiteSpace(field.ValidationRegex) &&
+                !Regex.IsMatch(value, field.ValidationRegex))
+            {
+                validationMessage = string.IsNullOrWhiteSpace(field.ValidationMessage)
+                    ? $"{field.Label} is not valid."
+                    : field.ValidationMessage;
+                return null;
+            }
+        }
+
+        validationMessage = string.Empty;
+        return values;
+    }
+
+    private static Dictionary<string, string> ResolveComputedWorkflowVariables(
+        WorkflowDefinition definition,
+        IReadOnlyDictionary<string, string> variables)
+    {
+        var values = new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase);
+        foreach (var computed in definition.ComputedVariables)
+        {
+            values[computed.Key] = computed.Type switch
+            {
+                "SamAccountName" => ComputeSam(values),
+                "DisplayName" => $"{Get(values, "FirstName")} {Get(values, "LastName")}".Trim(),
+                "UserPrincipalName" => $"{Get(values, "SamAccountName")}@{computed.Value}".Trim('@'),
+                "OfficePhone12OrNA" => Get(values, computed.Value).Length == 12 ? Get(values, computed.Value) : "NA",
+                "StripNumberPrefix" => Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty),
+                "LegacyDepartmentDisplay" => Regex.Replace(Regex.Replace(Get(values, computed.Value), @"^\d+\.\s*", string.Empty), @"^Dept\s*(\d+)\s*-.*$", "$1"),
+                "Map" => computed.Map.TryGetValue(ExpandWorkflowTemplate(computed.Value, values), out var mapped) ? mapped : computed.Fallback,
+                _ => ExpandWorkflowTemplate(computed.Value, values)
+            };
+        }
+
+        return values;
+    }
+
+    private static string ComputeSam(IReadOnlyDictionary<string, string> values)
+    {
+        var first = Regex.Replace(Get(values, "FirstName"), "[^A-Za-z0-9]", string.Empty);
+        var last = Regex.Replace(Get(values, "LastName"), "[^A-Za-z0-9]", string.Empty);
+        var middle = Regex.Replace(Get(values, "MiddleInitial"), "[^A-Za-z0-9]", string.Empty);
+        var includeMiddle = bool.TryParse(Get(values, "IncludeMiddleInitial"), out var include) && include;
+        if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(last))
+        {
+            return string.Empty;
+        }
+
+        return (includeMiddle && !string.IsNullOrWhiteSpace(middle)
+            ? $"{first[0]}{middle[0]}{last}"
+            : $"{first[0]}{last}").ToLowerInvariant();
+    }
+
+    private static string ExpandWorkflowTemplate(string template, IReadOnlyDictionary<string, string> values)
+    {
+        var expanded = template;
+        foreach (var variable in values)
+        {
+            expanded = expanded.Replace($"{{{{{variable.Key}}}}}", variable.Value, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return expanded;
+    }
+
+    private static string Get(IReadOnlyDictionary<string, string> values, string key)
+    {
+        return values.TryGetValue(key, out var value) ? value : string.Empty;
     }
 
     private static string CreateWorkflowTemplate()
