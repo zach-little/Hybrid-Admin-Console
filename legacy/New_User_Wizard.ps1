@@ -1,4 +1,4 @@
-﻿<#
+<#
 ================================================================================
 Atlas-Tech New User Wizard
 Author: Zach Little
@@ -2120,14 +2120,14 @@ $XamlPage3 = @'
 									   Style="{DynamicResource FieldLabel}"/>
 							<TextBox x:Name="NotificationRecipientBox"
 									 Style="{DynamicResource GlassInput}"
-									 Text="ITSupport@atlas-tech.com"/>
+									 Text="ITSupport@littleinnovation.tech"/>
 
 							<TextBlock Text="Notification Sender"
 									   Style="{DynamicResource FieldLabel}"
 									   Margin="0,18,0,6"/>
 							<TextBox x:Name="NotificationSenderBox"
 									 Style="{DynamicResource GlassInput}"
-									 Text="NEW-HIRE-INFO@atlas-tech.com"/>
+									 Text="NEW-HIRE-INFO@littleinnovation.tech"/>
 						</StackPanel>
 					</Border>
 					
@@ -3205,7 +3205,7 @@ function Start-Checks {
         else {
             $SessionEX = New-PSSession `
                 -ConfigurationName Microsoft.Exchange `
-                -ConnectionUri "http://congo.atlas-tech.com/PowerShell/" `
+                -ConnectionUri "http://congo.littleinnovation.tech/PowerShell/" `
                 -Authentication Kerberos `
                 -ErrorAction Stop
 
@@ -3489,7 +3489,7 @@ Continue?",
         Start-Process `
             -FilePath $ChromePath `
             -Credential $Cred `
-            -ArgumentList "-incognito https://axisng.atlas-tech.com/Main.aspx?ScreenId=DH000100&SilentLogin=Federation" `
+            -ArgumentList "-incognito https://axisng.littleinnovation.tech/Main.aspx?ScreenId=DH000100&SilentLogin=Federation" `
             -WorkingDirectory "C:\" `
             -Wait
 
@@ -3540,7 +3540,7 @@ function Invoke-NewUserCreation {
     }
 
     $DisplayName = "$FirstName $LastName"
-    $UserPrincipalName = "$SamAccountName@atlas-tech.com"
+    $UserPrincipalName = "$SamAccountName@littleinnovation.tech"
 
     $StartDate   = $Page3.FindName("StartDatePicker").SelectedDate
     $Title       = $Page3.FindName("JobTitleBox").Text.Trim()
@@ -3674,7 +3674,7 @@ function Invoke-NewUserCreation {
 		State             = $StateField
 		PostalCode        = $PostalCode
 						  
-		Server            = "tanana.atlas-tech.com"
+		Server            = "tanana.littleinnovation.tech"
 		OtherAttributes   = @{
 			title   = $Title
 			badgeID = $Bdgeid
@@ -3704,7 +3704,7 @@ function Invoke-NewUserCreation {
 	for ($i = 1; $i -le 10; $i++) {
 		try {
 			Write-DebugLog "Querying AD for new user... Attempt #$i" "INFO"
-			$UserObj = Get-ADUser -Identity $SamAccountName -Server tanana.atlas-tech.com -ErrorAction Stop
+			$UserObj = Get-ADUser -Identity $SamAccountName -Server tanana.littleinnovation.tech -ErrorAction Stop
 			break
 		}
 		catch {
@@ -3809,11 +3809,11 @@ function Invoke-NewUserCreation {
         $to = $Page3.FindName("NotificationRecipientBox").Text.Trim()
 
         if ([string]::IsNullOrWhiteSpace($from)) {
-            $from = "New Hire Onboarding Notice <NEW-HIRE-INFO@atlas-tech.com>"
+            $from = "New Hire Onboarding Notice <NEW-HIRE-INFO@littleinnovation.tech>"
         }
 
         if ([string]::IsNullOrWhiteSpace($to)) {
-            $to = "ITSupport <ITSupport@atlas-tech.com>"
+            $to = "ITSupport <ITSupport@littleinnovation.tech>"
         }
 		
 		

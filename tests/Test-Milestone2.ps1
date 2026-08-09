@@ -41,12 +41,12 @@ $firstUser = @($allUsers)[0]
 Assert-True ($firstUser.PSObject.TypeNames -contains 'Hybrid.User') 'Search returns Hybrid.User models'
 
 # Retrieve a fully hydrated user
-$alex = Get-HybridUser -Identity "amorgan@atlas-tech.com"
+$alex = Get-HybridUser -Identity "amorgan@littleinnovation.tech"
 
 Assert-True ($null -ne $alex) 'Get-HybridUser returns Alex Morgan'
 Assert-True ($alex.DisplayName -eq 'Alex Morgan') 'Display name populated'
 Assert-True ($alex.SamAccountName -eq 'amorgan') 'SAM account populated'
-Assert-True ($alex.UserPrincipalName -eq 'amorgan@atlas-tech.com') 'UPN populated'
+Assert-True ($alex.UserPrincipalName -eq 'amorgan@littleinnovation.tech') 'UPN populated'
 
 # User model
 Assert-True ($alex.PSObject.TypeNames -contains 'Hybrid.User') 'Returned object is Hybrid.User'

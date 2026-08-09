@@ -203,13 +203,13 @@ Assert-Pass -Condition (Test-HybridCloudEnvironment -Environment $custom -Requir
 Assert-Pass -Condition ((Get-HybridCloudEnvironmentEndpoint -Name 'CustomAlias' -EndpointName 'Graph') -eq 'https://graph.contoso.example') -Message 'Custom cloud alias resolves and trims trailing slash'
 Assert-Pass -Condition (-not (Test-HybridCloudEnvironment -Environment $custom -RequiredEndpoints @('Graph', 'Login', 'Portal'))) -Message 'Invalid environment fails validation when Portal endpoint is missing'
 
-$tenant = New-HybridTenantContext -TenantId '11111111-1111-1111-1111-111111111111' -TenantName 'Atlas Tech' -CloudEnvironment $gccHigh -VerifiedDomains @('atlas-tech.com', 'atlas.onmicrosoft.us') -DefaultDomain 'atlas-tech.com'
+$tenant = New-HybridTenantContext -TenantId '11111111-1111-1111-1111-111111111111' -TenantName 'Atlas Tech' -CloudEnvironment $gccHigh -VerifiedDomains @('littleinnovation.tech', 'atlas.onmicrosoft.us') -DefaultDomain 'littleinnovation.tech'
 Assert-Pass -Condition ($tenant.PSTypeNames -contains 'Hybrid.TenantContext') -Message 'Tenant context has provider-specific type name'
 Assert-Pass -Condition ($tenant.TenantId -eq '11111111-1111-1111-1111-111111111111') -Message 'Tenant context preserves tenant id'
 Assert-Pass -Condition ($tenant.TenantName -eq 'Atlas Tech') -Message 'Tenant context preserves tenant name'
 Assert-Pass -Condition ($tenant.CloudEnvironment.Name -eq 'GccHigh') -Message 'Tenant context attaches cloud environment'
-Assert-Pass -Condition ($tenant.VerifiedDomains -contains 'atlas-tech.com') -Message 'Tenant context stores verified domains'
-Assert-Pass -Condition ((Get-HybridTenantDefaultDomain -TenantContext $tenant) -eq 'atlas-tech.com') -Message 'Tenant default domain resolves'
+Assert-Pass -Condition ($tenant.VerifiedDomains -contains 'littleinnovation.tech') -Message 'Tenant context stores verified domains'
+Assert-Pass -Condition ((Get-HybridTenantDefaultDomain -TenantContext $tenant) -eq 'littleinnovation.tech') -Message 'Tenant default domain resolves'
 Assert-Pass -Condition ((Get-HybridTenantCloudEnvironment -TenantContext $tenant).Name -eq 'GccHigh') -Message 'Tenant cloud environment resolves'
 Assert-Pass -Condition (Test-HybridTenantContext -TenantContext $tenant) -Message 'Tenant context validates'
 
@@ -441,7 +441,7 @@ $graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSessi
         return [pscustomobject]@{
             StatusCode = 200
             Headers = @{ 'request-id' = 'graph-users' }
-            Body = @{ value = @([pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@atlas-tech.com'; mail = 'amorgan@atlas-tech.com' }) }
+            Body = @{ value = @([pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@littleinnovation.tech'; mail = 'amorgan@littleinnovation.tech' }) }
         }
     }
 
@@ -449,7 +449,7 @@ $graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSessi
         return [pscustomobject]@{
             StatusCode = 200
             Headers = @{ 'request-id' = 'graph-user' }
-            Body = [pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@atlas-tech.com'; mail = 'amorgan@atlas-tech.com' }
+            Body = [pscustomobject]@{ id = 'user-1'; displayName = 'Alex Morgan'; userPrincipalName = 'amorgan@littleinnovation.tech'; mail = 'amorgan@littleinnovation.tech' }
         }
     }
 
@@ -457,7 +457,7 @@ $graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSessi
         return [pscustomobject]@{
             StatusCode = 200
             Headers = @{ 'request-id' = 'graph-groups' }
-            Body = @{ value = @([pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@atlas-tech.com' }) }
+            Body = @{ value = @([pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@littleinnovation.tech' }) }
         }
     }
 
@@ -465,7 +465,7 @@ $graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSessi
         return [pscustomobject]@{
             StatusCode = 200
             Headers = @{ 'request-id' = 'graph-group' }
-            Body = [pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@atlas-tech.com' }
+            Body = [pscustomobject]@{ id = 'group-1'; displayName = 'Service Desk'; mail = 'servicedesk@littleinnovation.tech' }
         }
     }
 
@@ -473,7 +473,7 @@ $graphClient = New-HybridGraphClient -TenantContext $tenant -AuthenticationSessi
         return [pscustomobject]@{
             StatusCode = 200
             Headers = @{ 'request-id' = 'graph-org' }
-            Body = @{ value = @([pscustomobject]@{ id = 'org-1'; displayName = 'Atlas Technologies'; verifiedDomains = @('atlas-tech.com') }) }
+            Body = @{ value = @([pscustomobject]@{ id = 'org-1'; displayName = 'Atlas Technologies'; verifiedDomains = @('littleinnovation.tech') }) }
         }
     }
 
@@ -578,7 +578,7 @@ Assert-Pass -Condition ($graphProviderState.Authenticated -eq $true) -Message 'G
 
 $mapper = New-HybridGraphMapper
 Assert-Pass -Condition ($mapper.PSTypeNames -contains 'Hybrid.GraphMapper') -Message 'Graph mapper has platform type name'
-$mappedUser = Invoke-HybridGraphMapper -Mapper $mapper -TypeName 'User' -InputObject ([pscustomobject]@{ id = 'user-2'; displayName = 'Jordan Lee'; userPrincipalName = 'jlee@atlas-tech.com'; mail = 'jlee@atlas-tech.com' })
+$mappedUser = Invoke-HybridGraphMapper -Mapper $mapper -TypeName 'User' -InputObject ([pscustomobject]@{ id = 'user-2'; displayName = 'Jordan Lee'; userPrincipalName = 'jlee@littleinnovation.tech'; mail = 'jlee@littleinnovation.tech' })
 Assert-Pass -Condition ($mappedUser.PSTypeNames -contains 'Hybrid.User') -Message 'Graph mapper converts users'
 
 $batchRequest = New-HybridGraphBatchRequest -BatchId 'batch-1'

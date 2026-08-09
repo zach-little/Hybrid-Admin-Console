@@ -743,7 +743,7 @@ public sealed class DirectorySimulatorProvider :
                 Company = ValueOrExisting(request.Attributes, "Company", user.Company),
                 Office = ValueOrExisting(request.Attributes, "Office", user.Office),
                 EmployeeId = ValueOrExisting(request.Attributes, "EmployeeId", user.EmployeeId),
-                DistinguishedName = ValueOrExisting(request.Attributes, "DistinguishedName", user.DistinguishedName),
+                DistinguishedName = MoveDnOrExisting(user, request.Attributes),
                 ManagerSamAccountName = ValueOrExisting(request.Attributes, "ManagerSamAccountName", user.ManagerSamAccountName),
                 DirectReportSamAccountNames = ListOrExisting(request.Attributes, "DirectReportSamAccountNames", user.DirectReportSamAccountNames),
                 Groups = ListOrExisting(request.Attributes, "Groups", user.Groups),
@@ -1212,6 +1212,24 @@ public sealed class DirectorySimulatorProvider :
     private static bool BoolOrExisting(IReadOnlyDictionary<string, string> values, string key, bool existing)
     {
         return values.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) ? parsed : existing;
+    }
+
+    private static string MoveDnOrExisting(SimulatorUserSummary user, IReadOnlyDictionary<string, string> values)
+    {
+        var explicitDn = ValueOrExisting(values, "DistinguishedName", string.Empty);
+        if (!string.IsNullOrWhiteSpace(explicitDn))
+        {
+            return explicitDn;
+        }
+
+        var targetOu = ValueOrExisting(values, "TargetOu", ValueOrExisting(values, "MoveToOu", string.Empty));
+        if (string.IsNullOrWhiteSpace(targetOu))
+        {
+            return user.DistinguishedName;
+        }
+
+        var cn = string.IsNullOrWhiteSpace(user.DisplayName) ? user.SamAccountName : user.DisplayName;
+        return $"CN={cn},{targetOu.Trim()}";
     }
 
     private static IReadOnlyList<string> ListOrExisting(IReadOnlyDictionary<string, string> values, string key, IReadOnlyList<string> existing)

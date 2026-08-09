@@ -51,11 +51,11 @@ function Initialize-HybridDirectorySimulatorGraphVertical {
     param()
 
     $profiles = @(
-        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'amorgan' -DisplayName 'Alex Morgan' -UserPrincipalName 'amorgan@atlas-tech.com' -AuthenticationMethods @('password','microsoftAuthenticatorPush','softwareOath') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 1 -PasswordDaysAgo 34
-        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'jlee' -DisplayName 'Jordan Lee' -UserPrincipalName 'jlee@atlas-tech.com' -AuthenticationMethods @('password','sms') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 2 -PasswordDaysAgo 52
-        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'tsmith' -DisplayName 'Taylor Smith' -UserPrincipalName 'tsmith@atlas-tech.com' -AuthenticationMethods @('password','fido2') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 4 -PasswordDaysAgo 18
-        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'mrivera' -DisplayName 'Morgan Rivera' -UserPrincipalName 'mrivera@atlas-tech.com' -AuthenticationMethods @('password','microsoftAuthenticatorPush','fido2') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 1 -PasswordDaysAgo 27
-        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'dsample' -DisplayName 'Disabled Sample' -UserPrincipalName 'dsample@atlas-tech.com' -AuthenticationMethods @('password') -MfaRegistered:$false -MfaCapable:$false -RiskState 'dismissed' -SignInDaysAgo 120 -PasswordDaysAgo 180
+        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'amorgan' -DisplayName 'Alex Morgan' -UserPrincipalName 'amorgan@littleinnovation.tech' -AuthenticationMethods @('password','microsoftAuthenticatorPush','softwareOath') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 1 -PasswordDaysAgo 34
+        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'jlee' -DisplayName 'Jordan Lee' -UserPrincipalName 'jlee@littleinnovation.tech' -AuthenticationMethods @('password','sms') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 2 -PasswordDaysAgo 52
+        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'tsmith' -DisplayName 'Taylor Smith' -UserPrincipalName 'tsmith@littleinnovation.tech' -AuthenticationMethods @('password','fido2') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 4 -PasswordDaysAgo 18
+        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'mrivera' -DisplayName 'Morgan Rivera' -UserPrincipalName 'mrivera@littleinnovation.tech' -AuthenticationMethods @('password','microsoftAuthenticatorPush','fido2') -MfaRegistered:$true -MfaCapable:$true -RiskState 'none' -SignInDaysAgo 1 -PasswordDaysAgo 27
+        New-HybridDirectorySimulatorGraphProfile -SamAccountName 'dsample' -DisplayName 'Disabled Sample' -UserPrincipalName 'dsample@littleinnovation.tech' -AuthenticationMethods @('password') -MfaRegistered:$false -MfaCapable:$false -RiskState 'dismissed' -SignInDaysAgo 120 -PasswordDaysAgo 180
     )
 
     $script:HybridDirectorySimulatorGraphProfiles.Clear()

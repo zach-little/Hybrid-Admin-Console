@@ -22,7 +22,7 @@ function New-HybridDirectorySimulatorAuthenticationProfile {
 
     $seed = Resolve-HybridAuthenticationProfileSeed -Identity $Identity
     $hash = [Math]::Abs($seed.GetHashCode())
-    $upn = if ($Identity -like '*@*') { $Identity.ToLowerInvariant() } else { "$seed@atlas-tech.com" }
+    $upn = if ($Identity -like '*@*') { $Identity.ToLowerInvariant() } else { "$seed@littleinnovation.tech" }
     $displayName = switch -Regex ($seed) {
         'amorgan|alex' { 'Alex Morgan'; break }
         'treed|taylor' { 'Taylor Reed'; break }

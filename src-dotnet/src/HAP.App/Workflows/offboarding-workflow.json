@@ -1,0 +1,224 @@
+{
+  "SchemaVersion": "1.0",
+  "Id": "offboarding-workflow",
+  "Name": "Offboarding Workflow",
+  "Category": "Offboarding",
+  "Form": {
+    "Title": "Offboarding Workflow",
+    "SubmitText": "Start Offboarding",
+    "Fields": [
+      {
+        "Key": "UserIdentity",
+        "Label": "User SAM Account or E-mail Address",
+        "Control": "TextBox",
+        "Required": true,
+        "ValidationRegex": "^[A-Za-z0-9._%+@'-]+$",
+        "ValidationMessage": "Enter a SAM account, UPN, or e-mail address."
+      },
+      {
+        "Key": "GraphUserIdentity",
+        "Label": "Graph User ID or UPN",
+        "Control": "TextBox",
+        "Required": true,
+        "ValidationMessage": "Enter the Graph-resolvable user ID, UPN, or e-mail address. For UPN/e-mail this can match the first field."
+      },
+      {
+        "Key": "GraphBaseUrl",
+        "Label": "Graph Base URL",
+        "Control": "ComboBox",
+        "Required": true,
+        "DefaultValue": "https://graph.microsoft.us/v1.0",
+        "Options": [
+          { "Label": "Commercial - https://graph.microsoft.com/v1.0", "Value": "https://graph.microsoft.com/v1.0" },
+          { "Label": "GCC High - https://graph.microsoft.us/v1.0", "Value": "https://graph.microsoft.us/v1.0" },
+          { "Label": "DoD - https://dod-graph.microsoft.us/v1.0", "Value": "https://dod-graph.microsoft.us/v1.0" }
+        ]
+      },
+      {
+        "Key": "AuditLookbackDays",
+        "Label": "Audit Lookback Days",
+        "Control": "TextBox",
+        "DefaultValue": "30",
+        "Required": true,
+        "ValidationRegex": "^[1-9][0-9]{0,2}$",
+        "ValidationMessage": "Audit lookback days must be a number between 1 and 999."
+      },
+      {
+        "Key": "PurviewCaseId",
+        "Label": "Purview eDiscovery Case ID",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "PurviewCustodianId",
+        "Label": "Purview Custodian ID",
+        "Control": "TextBox",
+        "Required": true
+      },
+      {
+        "Key": "DisabledUsersOu",
+        "Label": "Disabled Users OU Distinguished Name",
+        "Control": "TextBox",
+        "DefaultValue": "OU=Disabled Users,DC=littleinnovation,DC=tech",
+        "Required": true
+      },
+      {
+        "Key": "SmtpServer",
+        "Label": "SMTP Server",
+        "Control": "TextBox",
+        "DefaultValue": "littleinnovation-tech.mail.protection.office365.us",
+        "Required": true
+      },
+      {
+        "Key": "NotificationSender",
+        "Label": "Notification Sender",
+        "Control": "TextBox",
+        "DefaultValue": "HAP Offboarding <noreply@littleinnovation.tech>",
+        "Required": true
+      },
+      {
+        "Key": "NotificationRecipient",
+        "Label": "Notification Recipient",
+        "Control": "TextBox",
+        "DefaultValue": "itsupport@littleinnovation.tech",
+        "Required": true
+      },
+      {
+        "Key": "Confirmed",
+        "Label": "I confirm this offboarding workflow should disable access and apply hold",
+        "Control": "CheckBox",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ]
+  },
+  "ComputedVariables": [
+    {
+      "Key": "RunDate",
+      "Type": "CurrentDateTime",
+      "Value": "yyyy-MM-dd HH:mm:ss"
+    },
+    {
+      "Key": "RunBy",
+      "Type": "CurrentUser"
+    },
+    {
+      "Key": "AuditStartUtc",
+      "Type": "CurrentDateTime",
+      "Value": "yyyy-MM-ddT00:00:00Z"
+    }
+  ],
+  "Actions": [
+    {
+      "Id": "approval",
+      "Name": "Confirm offboarding approval",
+      "Type": "Approval",
+      "Inputs": {
+        "Approved": "{{Confirmed}}",
+        "Prompt": "Offboarding was not confirmed. Check the confirmation box to continue.",
+        "Message": "Offboarding confirmed by {{RunBy}}."
+      }
+    },
+    {
+      "Id": "identity-branch",
+      "Name": "Evaluate identity input",
+      "Type": "ConditionalBranch",
+      "Inputs": {
+        "Condition": "{{UserIdentity}} != '' && {{GraphUserIdentity}} != ''",
+        "TrueMessage": "Required identities were supplied.",
+        "FalseMessage": "Both local AD and Graph identities are required."
+      }
+    },
+    {
+      "Id": "audit-user-lookup",
+      "Name": "Audit user identity through Graph",
+      "Type": "InvokeRestApi",
+      "ProviderId": "MicrosoftGraph",
+      "Inputs": {
+        "Method": "GET",
+        "Url": "{{GraphBaseUrl}}/users?$filter=userPrincipalName%20eq%20'{{UserIdentity}}'%20or%20mail%20eq%20'{{UserIdentity}}'%20or%20onPremisesSamAccountName%20eq%20'{{UserIdentity}}'&$select=id,displayName,userPrincipalName,mail,onPremisesSamAccountName,accountEnabled",
+        "ExpectedStatusCodes": "200"
+      }
+    },
+    {
+      "Id": "audit-signins",
+      "Name": "Run Graph sign-in audit",
+      "Type": "InvokeRestApi",
+      "ProviderId": "MicrosoftGraph",
+      "Inputs": {
+        "Method": "GET",
+        "Url": "{{GraphBaseUrl}}/auditLogs/signIns?$filter=userPrincipalName%20eq%20'{{GraphUserIdentity}}'&$top=50",
+        "ExpectedStatusCodes": "200"
+      }
+    },
+    {
+      "Id": "apply-purview-hold",
+      "Name": "Apply Purview eDiscovery hold to custodian",
+      "Type": "InvokeRestApi",
+      "ProviderId": "MicrosoftGraph",
+      "Inputs": {
+        "Method": "POST",
+        "Url": "{{GraphBaseUrl}}/security/cases/ediscoveryCases/{{PurviewCaseId}}/custodians/applyHold",
+        "ContentType": "application/json",
+        "Body": "{\"ids\":[\"{{PurviewCustodianId}}\"]}",
+        "ExpectedStatusCodes": "200,202"
+      }
+    },
+    {
+      "Id": "revoke-active-sessions",
+      "Name": "Revoke active Graph sessions",
+      "Type": "InvokeRestApi",
+      "ProviderId": "MicrosoftGraph",
+      "Inputs": {
+        "Method": "POST",
+        "Url": "{{GraphBaseUrl}}/users/{{GraphUserIdentity}}/revokeSignInSessions",
+        "ExpectedStatusCodes": "200,204"
+      }
+    },
+    {
+      "Id": "disable-entra-account",
+      "Name": "Disable Entra ID account",
+      "Type": "InvokeRestApi",
+      "ProviderId": "MicrosoftGraph",
+      "Inputs": {
+        "Method": "PATCH",
+        "Url": "{{GraphBaseUrl}}/users/{{GraphUserIdentity}}",
+        "ContentType": "application/json",
+        "Body": "{\"accountEnabled\":false}",
+        "ExpectedStatusCodes": "200,204"
+      }
+    },
+    {
+      "Id": "settle-graph",
+      "Name": "Allow cloud access changes to settle",
+      "Type": "Delay",
+      "Inputs": {
+        "Seconds": "5"
+      }
+    },
+    {
+      "Id": "disable-and-move-ad",
+      "Name": "Disable and move Active Directory account",
+      "Type": "UpdateAdAttributes",
+      "ProviderId": "ActiveDirectory",
+      "Inputs": {
+        "Identity": "{{UserIdentity}}",
+        "Attribute:Enabled": "false",
+        "Attribute:TargetOu": "{{DisabledUsersOu}}"
+      }
+    },
+    {
+      "Id": "notify-it",
+      "Name": "Notify IT Support",
+      "Type": "SendEmail",
+      "Inputs": {
+        "SmtpServer": "{{SmtpServer}}",
+        "To": "{{NotificationRecipient}}",
+        "From": "{{NotificationSender}}",
+        "Subject": "HAP offboarding completed for {{UserIdentity}}",
+        "IsBodyHtml": "true",
+        "Body": "<div style='font-family:Arial;font-size:14px;'><p>HAP completed the offboarding workflow for <b>{{UserIdentity}}</b>.</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Action</th><th align='left'>Status</th></tr><tr><td>Graph user audit</td><td>Requested</td></tr><tr><td>Graph sign-in audit</td><td>Requested</td></tr><tr><td>Purview eDiscovery hold</td><td>Requested for custodian {{PurviewCustodianId}}</td></tr><tr><td>Active sessions</td><td>Revocation requested</td></tr><tr><td>Entra ID account</td><td>Disable requested</td></tr><tr><td>Active Directory account</td><td>Disabled and moved to {{DisabledUsersOu}}</td></tr></table><p>Run by {{RunBy}} on {{RunDate}}.</p></div>"
+      }
+    }
+  ]
+}

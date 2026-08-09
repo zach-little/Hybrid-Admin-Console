@@ -81,6 +81,30 @@ public sealed class MicrosoftGraphProvider :
             status: "Connected");
     }
 
+    public async Task<OperationResult<string>> GetAccessTokenAsync(CorrelationId correlationId, CancellationToken cancellationToken = default)
+    {
+        var errors = ValidateSession();
+        if (errors.Count > 0)
+        {
+            return OperationResult<string>.Failure(correlationId, errors, status: "Failed");
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.TenantId) || string.IsNullOrWhiteSpace(_options.ClientId))
+        {
+            return OperationResult<string>.Failure(correlationId, new[] { HapOperationError.Create("Graph.ProfileMissing", "Tenant ID and Client ID are required for live Microsoft Graph.") }, status: "Failed");
+        }
+
+        try
+        {
+            var token = await CreateCredential().GetTokenAsync(new TokenRequestContext(GetScopes()), cancellationToken).ConfigureAwait(false);
+            return OperationResult<string>.Success(token.Token, correlationId, status: "Loaded");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<string>.Failure(correlationId, new[] { HapOperationError.Create("Graph.TokenAcquireFailed", $"Microsoft Graph token acquisition failed: {FriendlyError(ex)}") }, status: "Failed");
+        }
+    }
+
     public async Task<OperationResult<IReadOnlyList<SimulatorUserSummary>>> SearchUsersAsync(string query, CorrelationId correlationId, CancellationToken cancellationToken = default)
     {
         var errors = ValidateSession();

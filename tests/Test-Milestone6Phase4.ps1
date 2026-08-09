@@ -46,7 +46,7 @@ Clear-HybridAuthenticationSessionCache
 $tenant = [pscustomobject]@{
     PSTypeName = 'Hybrid.TenantContext'
     TenantId = '00000000-0000-0000-0000-000000000000'
-    PrimaryDomain = 'atlas-tech.com'
+    PrimaryDomain = 'littleinnovation.tech'
 }
 
 $cloud = [pscustomobject]@{
@@ -59,8 +59,8 @@ $cloud = [pscustomobject]@{
 $mailboxes = @(
     [pscustomobject]@{
         Id = 'alex.morgan'
-        UserPrincipalName = 'alex.morgan@atlas-tech.com'
-        PrimarySmtpAddress = 'alex.morgan@atlas-tech.com'
+        UserPrincipalName = 'alex.morgan@littleinnovation.tech'
+        PrimarySmtpAddress = 'alex.morgan@littleinnovation.tech'
         DisplayName = 'Alex Morgan'
         MailboxType = 'UserMailbox'
         ExchangeGuid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
@@ -68,8 +68,8 @@ $mailboxes = @(
     },
     [pscustomobject]@{
         Id = 'shared.helpdesk'
-        UserPrincipalName = 'shared.helpdesk@atlas-tech.com'
-        PrimarySmtpAddress = 'helpdesk@atlas-tech.com'
+        UserPrincipalName = 'shared.helpdesk@littleinnovation.tech'
+        PrimarySmtpAddress = 'helpdesk@littleinnovation.tech'
         DisplayName = 'Helpdesk Shared Mailbox'
         MailboxType = 'SharedMailbox'
         ExchangeGuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
@@ -105,14 +105,14 @@ $searchResults = @(Search-HybridExchangeOnlineMailbox -Query 'Alex' -Service $se
 Assert-Pass -Condition ($searchResults.Count -eq 1) -Message 'Exchange Online provider search returns matching mailbox'
 Assert-Pass -Condition ($searchResults[0].PSObject.TypeNames -contains 'Hybrid.ExchangeOnline.Mailbox') -Message 'Exchange Online search returns mailbox model'
 Assert-Pass -Condition ($searchResults[0].Source -eq 'ExchangeOnline') -Message 'Exchange Online mailbox model records ExchangeOnline source'
-Assert-Pass -Condition ($searchResults[0].PrimarySmtpAddress -eq 'alex.morgan@atlas-tech.com') -Message 'Exchange Online mailbox model preserves primary SMTP address'
+Assert-Pass -Condition ($searchResults[0].PrimarySmtpAddress -eq 'alex.morgan@littleinnovation.tech') -Message 'Exchange Online mailbox model preserves primary SMTP address'
 
-$mailbox = @(Get-HybridExchangeOnlineMailbox -Identity 'helpdesk@atlas-tech.com' -Service $service)[0]
+$mailbox = @(Get-HybridExchangeOnlineMailbox -Identity 'helpdesk@littleinnovation.tech' -Service $service)[0]
 Assert-Pass -Condition ($null -ne $mailbox) -Message 'Exchange Online provider get returns a mailbox result'
 Assert-Pass -Condition ($mailbox.PSObject.TypeNames -contains 'Hybrid.ExchangeOnline.Mailbox') -Message 'Exchange Online provider get returns mailbox model'
 Assert-Pass -Condition ($mailbox.MailboxType -eq 'SharedMailbox') -Message 'Exchange Online provider get returns expected mailbox type'
 
-$mailboxAgain = @(Get-HybridExchangeOnlineMailbox -Identity 'helpdesk@atlas-tech.com' -Service $service)[0]
+$mailboxAgain = @(Get-HybridExchangeOnlineMailbox -Identity 'helpdesk@littleinnovation.tech' -Service $service)[0]
 Assert-Pass -Condition ($mailboxAgain.PrimarySmtpAddress -eq $mailbox.PrimarySmtpAddress) -Message 'Exchange Online provider returns stable cached mailbox result'
 
 $health = @(Get-HybridExchangeOnlineProviderHealth -Service $service)[0]

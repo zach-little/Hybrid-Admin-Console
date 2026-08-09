@@ -268,8 +268,8 @@ $rawAdUser = New-TestADUser `
     -GivenName 'Alex' `
     -Surname 'Morgan' `
     -SamAccountName 'amorgan' `
-    -UserPrincipalName 'amorgan@atlas-tech.com' `
-    -Mail 'amorgan@atlas-tech.com' `
+    -UserPrincipalName 'amorgan@littleinnovation.tech' `
+    -Mail 'amorgan@littleinnovation.tech' `
     -EmployeeID '10001' `
     -EmployeeNumber 'A1001' `
     -Department 'Information Technology' `
@@ -283,7 +283,7 @@ Assert-True ($hybridUser.PSObject.TypeNames -contains 'Hybrid.User') 'AD user co
 Assert-True ($hybridUser.Source -eq 'ActiveDirectory') 'Converted user source is ActiveDirectory'
 Assert-True ($hybridUser.DisplayName -eq 'Alex Morgan') 'Display name mapped'
 Assert-True ($hybridUser.SamAccountName -eq 'amorgan') 'SAM account mapped'
-Assert-True ($hybridUser.UserPrincipalName -eq 'amorgan@atlas-tech.com') 'UPN mapped'
+Assert-True ($hybridUser.UserPrincipalName -eq 'amorgan@littleinnovation.tech') 'UPN mapped'
 Assert-True ($hybridUser.EmployeeId -eq '10001') 'Employee ID mapped'
 Assert-True ($hybridUser.BadgeId -eq 'A1001') 'Badge ID mapped'
 Assert-True ($hybridUser.Attributes.DistinguishedName -eq 'CN=Alex Morgan,OU=Users,DC=atlas-tech,DC=com') 'Distinguished name preserved in attributes'
@@ -297,8 +297,8 @@ Import-Module ActiveDirectory -Force
 $global:HybridADTestOperations = @()
 $global:HybridADTestUsers = @(
     $rawAdUser,
-    (New-TestADUser -Name 'Morgan Rivera' -GivenName 'Morgan' -Surname 'Rivera' -SamAccountName 'mrivera' -UserPrincipalName 'mrivera@atlas-tech.com' -Mail 'mrivera@atlas-tech.com' -EmployeeID '10000' -EmployeeNumber 'A1000' -Department 'Information Technology' -Title 'IT Manager' -Manager '' -DistinguishedName 'CN=Morgan Rivera,OU=Users,DC=atlas-tech,DC=com'),
-    (New-TestADUser -Name 'Taylor Smith' -GivenName 'Taylor' -Surname 'Smith' -SamAccountName 'tsmith' -UserPrincipalName 'tsmith@atlas-tech.com' -Mail 'tsmith@atlas-tech.com' -EmployeeID '10002' -EmployeeNumber 'A1002' -Department 'Information Technology' -Title 'Technician' -Manager 'CN=Alex Morgan,OU=Users,DC=atlas-tech,DC=com' -DistinguishedName 'CN=Taylor Smith,OU=Users,DC=atlas-tech,DC=com')
+    (New-TestADUser -Name 'Morgan Rivera' -GivenName 'Morgan' -Surname 'Rivera' -SamAccountName 'mrivera' -UserPrincipalName 'mrivera@littleinnovation.tech' -Mail 'mrivera@littleinnovation.tech' -EmployeeID '10000' -EmployeeNumber 'A1000' -Department 'Information Technology' -Title 'IT Manager' -Manager '' -DistinguishedName 'CN=Morgan Rivera,OU=Users,DC=atlas-tech,DC=com'),
+    (New-TestADUser -Name 'Taylor Smith' -GivenName 'Taylor' -Surname 'Smith' -SamAccountName 'tsmith' -UserPrincipalName 'tsmith@littleinnovation.tech' -Mail 'tsmith@littleinnovation.tech' -EmployeeID '10002' -EmployeeNumber 'A1002' -Department 'Information Technology' -Title 'Technician' -Manager 'CN=Alex Morgan,OU=Users,DC=atlas-tech,DC=com' -DistinguishedName 'CN=Taylor Smith,OU=Users,DC=atlas-tech,DC=com')
 )
 $global:HybridADTestGroups = @{
     amorgan = @(

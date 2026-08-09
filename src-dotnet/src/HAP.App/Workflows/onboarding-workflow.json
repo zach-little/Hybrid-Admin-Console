@@ -1,10 +1,10 @@
 {
   "SchemaVersion": "1.0",
-  "Id": "legacy-new-user-onboarding",
-  "Name": "Legacy New User Onboarding",
+  "Id": "onboarding-workflow",
+  "Name": "Onboarding Workflow",
   "Category": "Onboarding",
   "Form": {
-    "Title": "Legacy New User Onboarding",
+    "Title": "Onboarding Workflow",
     "SubmitText": "Create User",
     "Fields": [
       {
@@ -151,13 +151,13 @@
         "Key": "NotificationSender",
         "Label": "Notification Sender",
         "Control": "TextBox",
-        "DefaultValue": "New Hire Onboarding Notice <NEW-HIRE-INFO@atlas-tech.com>"
+        "DefaultValue": "New Hire Onboarding Notice <NEW-HIRE-INFO@littleinnovation.tech>"
       },
       {
         "Key": "NotificationRecipient",
         "Label": "Notification Recipient",
         "Control": "TextBox",
-        "DefaultValue": "ITSupport <ITSupport@atlas-tech.com>"
+        "DefaultValue": "ITSupport <ITSupport@littleinnovation.tech>"
       },
       {
         "Key": "SmtpServer",
@@ -242,7 +242,7 @@
   "ComputedVariables": [
     { "Key": "SamAccountName", "Type": "SamAccountName" },
     { "Key": "DisplayName", "Type": "DisplayName" },
-    { "Key": "UserPrincipalName", "Type": "UserPrincipalName", "Value": "atlas-tech.com" },
+    { "Key": "UserPrincipalName", "Type": "UserPrincipalName", "Value": "littleinnovation.tech" },
     { "Key": "OfficePhoneNormalized", "Type": "OfficePhone12OrNA", "Value": "OfficePhone" },
     { "Key": "RunDate", "Type": "CurrentDateTime", "Value": "yyyy-MM-dd HH:mm:ss" },
     { "Key": "RunBy", "Type": "CurrentUser" },
@@ -511,7 +511,7 @@
       "RunWhen": "{{AssignStandardGroups}} == true && {{JamisClaimSetup}} == true",
       "Inputs": {
         "Browser": "Chrome",
-        "Url": "https://axisng.atlas-tech.com/Main.aspx?ScreenId=DH000100&SilentLogin=Federation"
+        "Url": "https://axisng.littleinnovation.tech/Main.aspx?ScreenId=DH000100&SilentLogin=Federation"
       }
     }
   ]

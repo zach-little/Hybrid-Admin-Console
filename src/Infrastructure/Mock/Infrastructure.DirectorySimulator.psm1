@@ -60,8 +60,8 @@ function New-HybridSimulatorUser {
         GivenName = $FirstName
         Surname = $LastName
         SamAccountName = $SamAccountName
-        UserPrincipalName = "$SamAccountName@atlas-tech.com"
-        Mail = "$SamAccountName@atlas-tech.com"
+        UserPrincipalName = "$SamAccountName@littleinnovation.tech"
+        Mail = "$SamAccountName@littleinnovation.tech"
         Department = $Department
         Title = $Title
         JobTitle = $Title
@@ -94,18 +94,18 @@ function Initialize-HybridDirectorySimulatorRecords {
 
     $script:HybridDirectorySimulatorState.Devices.Clear()
     $script:HybridDirectorySimulatorState.Devices['rwilliams'] = @(
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-rwilliams-01' -Name 'SIM-RWILLIAMS-PAW' -PrimaryUser 'rwilliams@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 3
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-rwilliams-01' -Name 'SIM-RWILLIAMS-PAW' -PrimaryUser 'rwilliams@littleinnovation.tech' -ComplianceState 'Compliant' -LastCheckInHoursAgo 3
     )
     $script:HybridDirectorySimulatorState.Devices['treed'] = @(
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-01' -Name 'SIM-TREED-LT01' -PrimaryUser 'treed@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 6
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-02' -Name 'SIM-TREED-TAB01' -PrimaryUser 'treed@atlas-tech.com' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Unknown' -LastCheckInHoursAgo 36
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-01' -Name 'SIM-TREED-LT01' -PrimaryUser 'treed@littleinnovation.tech' -ComplianceState 'Compliant' -LastCheckInHoursAgo 6
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-treed-02' -Name 'SIM-TREED-TAB01' -PrimaryUser 'treed@littleinnovation.tech' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Unknown' -LastCheckInHoursAgo 36
     )
     $script:HybridDirectorySimulatorState.Devices['amorgan'] = @(
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-01' -Name 'SIM-AMORGAN-LT01' -PrimaryUser 'amorgan@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 2
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-02' -Name 'SIM-AMORGAN-PAW01' -PrimaryUser 'amorgan@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 5
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-01' -Name 'SIM-AMORGAN-LT01' -PrimaryUser 'amorgan@littleinnovation.tech' -ComplianceState 'Compliant' -LastCheckInHoursAgo 2
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-amorgan-02' -Name 'SIM-AMORGAN-PAW01' -PrimaryUser 'amorgan@littleinnovation.tech' -ComplianceState 'Compliant' -LastCheckInHoursAgo 5
     )
     $script:HybridDirectorySimulatorState.Devices['jlee'] = @(
-        New-HybridDirectorySimulatorDevice -Id 'sim-device-jlee-01' -Name 'SIM-JLEE-LT01' -PrimaryUser 'jlee@atlas-tech.com' -ComplianceState 'Compliant' -LastCheckInHoursAgo 8
+        New-HybridDirectorySimulatorDevice -Id 'sim-device-jlee-01' -Name 'SIM-JLEE-LT01' -PrimaryUser 'jlee@littleinnovation.tech' -ComplianceState 'Compliant' -LastCheckInHoursAgo 8
     )
 
 }

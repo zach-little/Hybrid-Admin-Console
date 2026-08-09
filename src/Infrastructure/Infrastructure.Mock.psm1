@@ -32,7 +32,7 @@ function New-MockHybridUserRecord {
         [bool]$LockedOut = $false
     )
 
-    $upn = '{0}@atlas-tech.com' -f $SamAccountName
+    $upn = '{0}@littleinnovation.tech' -f $SamAccountName
 
     New-HybridUser `
         -Id ([guid]::NewGuid().ToString()) `
@@ -127,22 +127,22 @@ function Get-DefaultHybridMockData {
     }
 
     $mailboxes = @{
-        amorgan = New-HybridMailbox -Identity 'amorgan' -PrimarySmtpAddress 'amorgan@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('alex.morgan@atlas-tech.com') -FullAccess @('IT Admins') -Source 'Mock'
-        jlee    = New-HybridMailbox -Identity 'jlee' -PrimarySmtpAddress 'jlee@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('jordan.lee@atlas-tech.com') -Source 'Mock'
-        tsmith  = New-HybridMailbox -Identity 'tsmith' -PrimarySmtpAddress 'tsmith@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('taylor.smith@atlas-tech.com') -Source 'Mock'
-        mrivera = New-HybridMailbox -Identity 'mrivera' -PrimarySmtpAddress 'mrivera@atlas-tech.com' -RecipientType 'UserMailbox' -Aliases @('morgan.rivera@atlas-tech.com') -Source 'Mock'
-        dsample = New-HybridMailbox -Identity 'dsample' -PrimarySmtpAddress 'dsample@atlas-tech.com' -RecipientType 'UserMailbox' -HiddenFromAddressLists:$true -Exists:$true -Source 'Mock'
+        amorgan = New-HybridMailbox -Identity 'amorgan' -PrimarySmtpAddress 'amorgan@littleinnovation.tech' -RecipientType 'UserMailbox' -Aliases @('alex.morgan@littleinnovation.tech') -FullAccess @('IT Admins') -Source 'Mock'
+        jlee    = New-HybridMailbox -Identity 'jlee' -PrimarySmtpAddress 'jlee@littleinnovation.tech' -RecipientType 'UserMailbox' -Aliases @('jordan.lee@littleinnovation.tech') -Source 'Mock'
+        tsmith  = New-HybridMailbox -Identity 'tsmith' -PrimarySmtpAddress 'tsmith@littleinnovation.tech' -RecipientType 'UserMailbox' -Aliases @('taylor.smith@littleinnovation.tech') -Source 'Mock'
+        mrivera = New-HybridMailbox -Identity 'mrivera' -PrimarySmtpAddress 'mrivera@littleinnovation.tech' -RecipientType 'UserMailbox' -Aliases @('morgan.rivera@littleinnovation.tech') -Source 'Mock'
+        dsample = New-HybridMailbox -Identity 'dsample' -PrimarySmtpAddress 'dsample@littleinnovation.tech' -RecipientType 'UserMailbox' -HiddenFromAddressLists:$true -Exists:$true -Source 'Mock'
     }
 
     $devices = @{
         amorgan = @(
-            New-HybridDevice -Id 'mock-device-001' -Name 'GOV-100-ADMIN' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Compliant' -PrimaryUser 'amorgan@atlas-tech.com' -LastCheckInUtc ([datetime]::UtcNow.AddHours(-2)) -Source 'Mock'
+            New-HybridDevice -Id 'mock-device-001' -Name 'GOV-100-ADMIN' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Compliant' -PrimaryUser 'amorgan@littleinnovation.tech' -LastCheckInUtc ([datetime]::UtcNow.AddHours(-2)) -Source 'Mock'
         )
         jlee = @(
-            New-HybridDevice -Id 'mock-device-002' -Name 'GOV-101-PM' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Compliant' -PrimaryUser 'jlee@atlas-tech.com' -LastCheckInUtc ([datetime]::UtcNow.AddHours(-5)) -Source 'Mock'
+            New-HybridDevice -Id 'mock-device-002' -Name 'GOV-101-PM' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'Compliant' -PrimaryUser 'jlee@littleinnovation.tech' -LastCheckInUtc ([datetime]::UtcNow.AddHours(-5)) -Source 'Mock'
         )
         tsmith = @(
-            New-HybridDevice -Id 'mock-device-003' -Name 'GOV-102-SEC' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'NonCompliant' -PrimaryUser 'tsmith@atlas-tech.com' -LastCheckInUtc ([datetime]::UtcNow.AddDays(-3)) -Source 'Mock'
+            New-HybridDevice -Id 'mock-device-003' -Name 'GOV-102-SEC' -OperatingSystem 'Windows 11 Enterprise' -ComplianceState 'NonCompliant' -PrimaryUser 'tsmith@littleinnovation.tech' -LastCheckInUtc ([datetime]::UtcNow.AddDays(-3)) -Source 'Mock'
         )
         mrivera = @()
         dsample = @()

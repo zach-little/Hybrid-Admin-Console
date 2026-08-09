@@ -220,6 +220,107 @@ public sealed class NativeUserAdministrationAndWorkflowTests
         Assert.Equal("Temp123456", writer.LastCreateUser?.TemporaryPassword);
     }
 
+    [Fact]
+    public async Task WorkflowEngine_ExecutesPreviouslyDeferredControlActions()
+    {
+        var definition = WorkflowDefinition.FromJson(
+            """
+            {
+              "Id": "control-flow",
+              "Name": "Control Flow",
+              "Actions": [
+                {
+                  "Id": "approval",
+                  "Name": "Approval",
+                  "Type": "Approval",
+                  "Inputs": {
+                    "Approved": "{{Approved}}"
+                  }
+                },
+                {
+                  "Id": "branch",
+                  "Name": "Branch",
+                  "Type": "ConditionalBranch",
+                  "Inputs": {
+                    "Condition": "{{Department}} == IT"
+                  }
+                },
+                {
+                  "Id": "delay",
+                  "Name": "Delay",
+                  "Type": "Delay",
+                  "Inputs": {
+                    "Milliseconds": "1"
+                  }
+                }
+              ]
+            }
+            """);
+        var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(new Dictionary<string, ISimulatorWriteCapability>()));
+
+        var result = await engine.ExecuteAsync(
+            new WorkflowExecutionRequest
+            {
+                Definition = definition,
+                Variables = new Dictionary<string, string>
+                {
+                    ["Approved"] = "true",
+                    ["Department"] = "IT"
+                }
+            },
+            CorrelationId.From("workflow-control"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(3, result.Value!.Actions.Count);
+        Assert.All(result.Value.Actions, action => Assert.True(action.Succeeded));
+        Assert.Equal(new[] { "Approval", "ConditionalBranch", "Delay" }, result.Value.Actions.Select(action => action.ActionType));
+    }
+
+    [Fact]
+    public async Task WorkflowRestAction_UsesTokenResolverWhenBearerTokenIsOmitted()
+    {
+        var definition = WorkflowDefinition.FromJson(
+            """
+            {
+              "Id": "rest-token",
+              "Name": "REST Token",
+              "Actions": [
+                {
+                  "Id": "graph-rest",
+                  "Name": "Graph REST",
+                  "Type": "InvokeRestApi",
+                  "ProviderId": "MicrosoftGraph",
+                  "Inputs": {
+                    "Method": "GET",
+                    "Url": "http://127.0.0.1:1/never-called"
+                  }
+                }
+              ]
+            }
+            """);
+        var resolverCalled = false;
+        var executor = new NativeProviderWorkflowActionExecutor(
+            new Dictionary<string, ISimulatorWriteCapability>(),
+            bearerTokenResolver: (provider, correlationId, cancellationToken) =>
+            {
+                resolverCalled = true;
+                Assert.Equal("MicrosoftGraph", provider);
+                return Task.FromResult(OperationResult<string>.Failure(
+                    correlationId,
+                    new[] { OperationError.Create("Test.TokenUnavailable", "Token unavailable in test.") },
+                    status: "Failed"));
+            });
+
+        var result = await executor.ExecuteAsync(
+            definition.Actions[0],
+            new WorkflowExecutionRequest { Definition = definition },
+            CorrelationId.From("workflow-rest-token"));
+
+        Assert.True(resolverCalled);
+        Assert.False(result.Succeeded);
+        Assert.Contains("Token unavailable in test.", result.Message);
+    }
+
     private sealed class FakeWriter : ISimulatorWriteCapability
     {
         public string Operation { get; private set; } = string.Empty;

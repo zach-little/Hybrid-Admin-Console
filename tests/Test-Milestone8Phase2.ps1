@@ -58,7 +58,7 @@ foreach ($serviceName in @('HybridUser','GraphProfile','AuthenticationProfile','
 
 $alex = Search-HybridUser -Query 'Alex'
 Assert-Pass -Condition (@($alex).Count -ge 1) -Message 'Runtime initialized service layer can search simulator users'
-$aggregate = Get-HybridUserAggregateProfile -Identity 'amorgan@atlas-tech.com'
+$aggregate = Get-HybridUserAggregateProfile -Identity 'amorgan@littleinnovation.tech'
 Assert-Pass -Condition ($aggregate.PSTypeName -eq 'Hybrid.UserAggregateProfile') -Message 'Runtime initialized aggregation service returns aggregate profile'
 Assert-Pass -Condition ($aggregate.Complete -eq $true) -Message 'Runtime aggregation profile is complete in simulation mode'
 

@@ -37,7 +37,7 @@ Assert-True (($loaded | Where-Object { $_.Name -eq 'Application.UserService' } |
 Assert-True (Test-HybridService -Name 'Directory') 'Directory service registered'
 Assert-True (Test-HybridService -Name 'User') 'User service registered'
 
-$plainAlex = Get-HybridUser -Identity 'amorgan@atlas-tech.com'
+$plainAlex = Get-HybridUser -Identity 'amorgan@littleinnovation.tech'
 Assert-True ($null -ne $plainAlex) 'Plain user lookup returns Alex Morgan'
 Assert-True ($plainAlex.PSObject.TypeNames -contains 'Hybrid.User') 'Plain user is Hybrid.User'
 Assert-True ($plainAlex.Groups.Count -eq 0) 'Plain user is not group-hydrated'
@@ -48,7 +48,7 @@ Assert-True ($null -eq $plainAlex.ManagerUser) 'Plain user is not manager-hydrat
 Assert-True ($plainAlex.DirectReports.Count -eq 0) 'Plain user is not direct-report-hydrated'
 Assert-True (-not [bool]$plainAlex.Hydration.Groups) 'Plain user hydration metadata tracks groups as false'
 
-$hydratedAlex = Get-HybridUser -Identity 'amorgan@atlas-tech.com' -IncludeRelated
+$hydratedAlex = Get-HybridUser -Identity 'amorgan@littleinnovation.tech' -IncludeRelated
 Assert-True ($null -ne $hydratedAlex) 'Hydrated user lookup returns Alex Morgan'
 Assert-True ($hydratedAlex.Groups.Count -ge 4) 'Hydrated user has groups'
 Assert-True ($null -ne $hydratedAlex.Mailbox) 'Hydrated user has mailbox'
@@ -63,7 +63,7 @@ Assert-True ([bool]$hydratedAlex.Hydration.Licenses) 'Hydrated user metadata tra
 Assert-True ([bool]$hydratedAlex.Hydration.Manager) 'Hydrated user metadata tracks manager as true'
 Assert-True ([bool]$hydratedAlex.Hydration.DirectReports) 'Hydrated user metadata tracks direct reports as true'
 
-$plainAlexAgain = Get-HybridUser -Identity 'amorgan@atlas-tech.com'
+$plainAlexAgain = Get-HybridUser -Identity 'amorgan@littleinnovation.tech'
 Assert-True ($plainAlexAgain.Groups.Count -eq 0) 'Hydration does not mutate stored mock user groups'
 Assert-True ($null -eq $plainAlexAgain.Mailbox) 'Hydration does not mutate stored mock user mailbox'
 Assert-True ($plainAlexAgain.Devices.Count -eq 0) 'Hydration does not mutate stored mock user devices'
@@ -71,10 +71,10 @@ Assert-True ($plainAlexAgain.Licenses.Count -eq 0) 'Hydration does not mutate st
 Assert-True ($null -eq $plainAlexAgain.ManagerUser) 'Hydration does not mutate stored mock user manager'
 Assert-True ($plainAlexAgain.DirectReports.Count -eq 0) 'Hydration does not mutate stored mock user direct reports'
 
-$cachedAlex = Get-HybridUser -Identity 'amorgan@atlas-tech.com' -IncludeRelated
+$cachedAlex = Get-HybridUser -Identity 'amorgan@littleinnovation.tech' -IncludeRelated
 Assert-True ($cachedAlex.Hydration.CacheSource -eq 'Hit') 'Hydrated user is returned from cache on repeat lookup'
 
-$overview = Get-HybridUserOverview -Identity 'amorgan@atlas-tech.com'
+$overview = Get-HybridUserOverview -Identity 'amorgan@littleinnovation.tech'
 Assert-True ($null -ne $overview) 'User overview returns a model'
 Assert-True ($overview.PSObject.TypeNames -contains 'Hybrid.UserOverview') 'Overview is Hybrid.UserOverview'
 Assert-True ($overview.User.PSObject.TypeNames -contains 'Hybrid.User') 'Overview contains Hybrid.User'

@@ -33,8 +33,8 @@ Remove-Module Infrastructure.DirectorySimulator -Force -ErrorAction SilentlyCont
 Import-Module $simPath -Force
 $providers = New-HybridDirectorySimulatorProviders
 Assert-Pass -Condition ($providers.MicrosoftGraph.PSObject.Properties.Name -contains 'GetGraphProfile') -Message 'Graph provider object exposes GetGraphProfile'
-$alex = & $providers.MicrosoftGraph.GetGraphProfile 'amorgan@atlas-tech.com'
-$jordan = & $providers.MicrosoftGraph.GetGraphProfile 'jlee@atlas-tech.com'
+$alex = & $providers.MicrosoftGraph.GetGraphProfile 'amorgan@littleinnovation.tech'
+$jordan = & $providers.MicrosoftGraph.GetGraphProfile 'jlee@littleinnovation.tech'
 Assert-Pass -Condition ($null -ne $alex) -Message 'Graph provider returns Alex profile'
 Assert-Pass -Condition ($null -ne $jordan) -Message 'Graph provider returns Jordan profile'
 Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($alex.ObjectId)) -Message 'Alex Graph object ID populated'

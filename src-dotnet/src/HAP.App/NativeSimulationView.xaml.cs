@@ -34,6 +34,7 @@ public partial class NativeSimulationView : UserControl
     private readonly IDirectoryAttributeReadCapability _directoryAttributeRead;
     private readonly IDirectoryGroupLookupCapability _directoryGroupLookup;
     private readonly IDirectoryManagerLookupCapability _directoryManagerLookup;
+    private readonly MicrosoftGraphProvider? _graphProvider;
     private readonly IGraphReadCapability? _graphRead;
     private readonly IExchangeReadCapability? _exchangeRead;
     private readonly ISimulatorWriteCapability _writer;
@@ -53,6 +54,7 @@ public partial class NativeSimulationView : UserControl
         _directoryAttributeRead = providers.DirectoryAttributeRead;
         _directoryGroupLookup = providers.DirectoryGroupLookup;
         _directoryManagerLookup = providers.DirectoryManagerLookup;
+        _graphProvider = providers.GraphProvider;
         _graphRead = providers.GraphRead;
         _exchangeRead = providers.ExchangeRead;
         _writer = providers.Writer;
@@ -78,6 +80,7 @@ public partial class NativeSimulationView : UserControl
                 simulator,
                 simulator,
                 simulator,
+                null,
                 simulator,
                 simulator,
                 simulator,
@@ -198,6 +201,7 @@ public partial class NativeSimulationView : UserControl
             directoryAttributes,
             groupLookup,
             managerLookup,
+            graph,
             graphRead,
             exchangeRead,
             writer,
@@ -615,10 +619,10 @@ public partial class NativeSimulationView : UserControl
             "LaunchBrowser",
             "SendEmail",
             "ExecutePowerShell",
-            "InvokeRestApi (future)",
-            "Delay (future)",
-            "Approval (future)",
-            "ConditionalBranch (future)"
+            "InvokeRestApi",
+            "Delay",
+            "Approval",
+            "ConditionalBranch"
         };
         LoadWorkflowList();
     }
@@ -746,7 +750,9 @@ public partial class NativeSimulationView : UserControl
                 ["ExchangeOnPremises"] = _exchangeWriter,
                 ["ExchangeOnline"] = _exchangeWriter
             };
-            var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(providers));
+            var engine = new WorkflowExecutionEngine(new NativeProviderWorkflowActionExecutor(
+                providers,
+                bearerTokenResolver: ResolveWorkflowBearerTokenAsync));
             var result = await engine.ExecuteAsync(
                 new WorkflowExecutionRequest { Definition = definition, Variables = variables },
                 CorrelationId.New()).ConfigureAwait(true);
@@ -767,6 +773,30 @@ public partial class NativeSimulationView : UserControl
         {
             SetBusy(false);
         }
+    }
+
+    private Task<OperationResult<string>> ResolveWorkflowBearerTokenAsync(
+        string tokenProvider,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken)
+    {
+        if (!tokenProvider.Equals("MicrosoftGraph", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(OperationResult<string>.Failure(
+                correlationId,
+                new[] { OperationError.Create("Workflow.TokenProvider.Unsupported", $"Workflow token provider '{tokenProvider}' is not supported.") },
+                status: "Unsupported"));
+        }
+
+        if (_graphProvider is null)
+        {
+            return Task.FromResult(OperationResult<string>.Failure(
+                correlationId,
+                new[] { OperationError.Create("Workflow.GraphToken.ProviderUnavailable", "Microsoft Graph is not enabled for this runtime profile.") },
+                status: "ProviderUnavailable"));
+        }
+
+        return _graphProvider.GetAccessTokenAsync(correlationId, cancellationToken);
     }
 
     private Dictionary<string, string>? ShowWorkflowForm(WorkflowDefinition definition)
@@ -2224,6 +2254,7 @@ public partial class NativeSimulationView : UserControl
         IDirectoryAttributeReadCapability DirectoryAttributeRead,
         IDirectoryGroupLookupCapability DirectoryGroupLookup,
         IDirectoryManagerLookupCapability DirectoryManagerLookup,
+        MicrosoftGraphProvider? GraphProvider,
         IGraphReadCapability? GraphRead,
         IExchangeReadCapability? ExchangeRead,
         ISimulatorWriteCapability Writer,

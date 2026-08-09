@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.Mail;
+using System.Text;
 using HAP.Contracts;
 using HAP.Providers.Abstractions;
 
@@ -19,13 +21,16 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
 {
     private readonly IReadOnlyDictionary<string, ISimulatorWriteCapability> _providers;
     private readonly IPowerShellWorkflowActionRunner? _powerShellRunner;
+    private readonly Func<string, CorrelationId, CancellationToken, Task<OperationResult<string>>>? _bearerTokenResolver;
 
     public NativeProviderWorkflowActionExecutor(
         IReadOnlyDictionary<string, ISimulatorWriteCapability> providers,
-        IPowerShellWorkflowActionRunner? powerShellRunner = null)
+        IPowerShellWorkflowActionRunner? powerShellRunner = null,
+        Func<string, CorrelationId, CancellationToken, Task<OperationResult<string>>>? bearerTokenResolver = null)
     {
         _providers = providers;
         _powerShellRunner = powerShellRunner;
+        _bearerTokenResolver = bearerTokenResolver;
     }
 
     public async Task<WorkflowActionResult> ExecuteAsync(
@@ -49,9 +54,24 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
             return await ExecuteSendEmailAsync(action, request, cancellationToken).ConfigureAwait(false);
         }
 
-        if (IsFutureAction(action.Type))
+        if (action.Type.Equals(WorkflowActionTypes.InvokeRestApi, StringComparison.OrdinalIgnoreCase))
         {
-            return Skipped(action, "Deferred", $"{action.Type} is reserved for a future workflow capability.");
+            return await ExecuteRestApiAsync(action, request, correlationId, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (action.Type.Equals(WorkflowActionTypes.Delay, StringComparison.OrdinalIgnoreCase))
+        {
+            return await ExecuteDelayAsync(action, request, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (action.Type.Equals(WorkflowActionTypes.Approval, StringComparison.OrdinalIgnoreCase))
+        {
+            return ExecuteApproval(action, request);
+        }
+
+        if (action.Type.Equals(WorkflowActionTypes.ConditionalBranch, StringComparison.OrdinalIgnoreCase))
+        {
+            return ExecuteConditionalBranch(action, request);
         }
 
         if (!_providers.TryGetValue(action.ProviderId, out var provider))
@@ -200,14 +220,6 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
         return inputs.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) && parsed;
     }
 
-    private static bool IsFutureAction(string actionType)
-    {
-        return actionType.Equals(WorkflowActionTypes.InvokeRestApi, StringComparison.OrdinalIgnoreCase) ||
-               actionType.Equals(WorkflowActionTypes.Delay, StringComparison.OrdinalIgnoreCase) ||
-               actionType.Equals(WorkflowActionTypes.Approval, StringComparison.OrdinalIgnoreCase) ||
-               actionType.Equals(WorkflowActionTypes.ConditionalBranch, StringComparison.OrdinalIgnoreCase);
-    }
-
     private static WorkflowActionResult ExecuteLaunchBrowser(WorkflowActionDefinition action, WorkflowExecutionRequest request)
     {
         try
@@ -280,9 +292,197 @@ public sealed class NativeProviderWorkflowActionExecutor : IWorkflowActionExecut
         }
     }
 
+    private async Task<WorkflowActionResult> ExecuteRestApiAsync(
+        WorkflowActionDefinition action,
+        WorkflowExecutionRequest request,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var inputs = ExpandInputs(action.Inputs, request.Variables);
+            using var httpRequest = new HttpRequestMessage(new HttpMethod(Optional(inputs, "Method", "GET")), Required(inputs, "Url"));
+            var bearer = Optional(inputs, "BearerToken");
+            if (string.IsNullOrWhiteSpace(bearer))
+            {
+                bearer = await ResolveBearerTokenAsync(action, inputs, correlationId, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (!string.IsNullOrWhiteSpace(bearer))
+            {
+                httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearer);
+            }
+
+            foreach (var header in inputs.Where(pair => pair.Key.StartsWith("Header:", StringComparison.OrdinalIgnoreCase)))
+            {
+                httpRequest.Headers.TryAddWithoutValidation(header.Key["Header:".Length..], header.Value);
+            }
+
+            var body = Optional(inputs, "Body");
+            if (!string.IsNullOrWhiteSpace(body))
+            {
+                httpRequest.Content = new StringContent(body, Encoding.UTF8, Optional(inputs, "ContentType", "application/json"));
+            }
+
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(Int(inputs, "TimeoutSeconds", 100)) };
+            using var response = await client.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+            var responseText = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            var ok = ExpectedStatusCodes(inputs).Contains((int)response.StatusCode);
+            return new WorkflowActionResult
+            {
+                ActionId = action.Id,
+                ActionName = action.Name,
+                ActionType = action.Type,
+                ProviderId = action.ProviderId,
+                Succeeded = ok,
+                Changed = ok && !string.Equals(Optional(inputs, "Method", "GET"), "GET", StringComparison.OrdinalIgnoreCase),
+                Status = $"{(int)response.StatusCode} {response.StatusCode}",
+                Message = string.IsNullOrWhiteSpace(responseText) ? "REST request completed." : TrimForResult(responseText)
+            };
+        }
+        catch (Exception ex)
+        {
+            return Failed(action, "Failed", $"REST request failed: {ex.Message}");
+        }
+    }
+
+    private async Task<string> ResolveBearerTokenAsync(
+        WorkflowActionDefinition action,
+        IReadOnlyDictionary<string, string> inputs,
+        CorrelationId correlationId,
+        CancellationToken cancellationToken)
+    {
+        var tokenProvider = Optional(inputs, "TokenProvider", action.ProviderId);
+        if (string.IsNullOrWhiteSpace(tokenProvider) || _bearerTokenResolver is null)
+        {
+            return string.Empty;
+        }
+
+        var result = await _bearerTokenResolver(tokenProvider, correlationId, cancellationToken).ConfigureAwait(false);
+        if (!result.Succeeded || string.IsNullOrWhiteSpace(result.Value))
+        {
+            throw new InvalidOperationException(result.Errors.Count == 0
+                ? $"Token provider '{tokenProvider}' did not return a bearer token."
+                : string.Join("; ", result.Errors.Select(error => error.Message)));
+        }
+
+        return result.Value;
+    }
+
+    private static async Task<WorkflowActionResult> ExecuteDelayAsync(
+        WorkflowActionDefinition action,
+        WorkflowExecutionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var inputs = ExpandInputs(action.Inputs, request.Variables);
+        var milliseconds = Int(inputs, "Milliseconds", 0);
+        if (milliseconds <= 0)
+        {
+            milliseconds = Int(inputs, "Seconds", 0) * 1000;
+        }
+
+        if (milliseconds <= 0)
+        {
+            return Failed(action, "InvalidInput", "Delay requires Milliseconds or Seconds greater than zero.");
+        }
+
+        await Task.Delay(milliseconds, cancellationToken).ConfigureAwait(false);
+        return Completed(action, false, $"Delayed workflow for {milliseconds} ms.");
+    }
+
+    private static WorkflowActionResult ExecuteApproval(WorkflowActionDefinition action, WorkflowExecutionRequest request)
+    {
+        var inputs = ExpandInputs(action.Inputs, request.Variables);
+        if (!Bool(inputs, "Approved"))
+        {
+            return Failed(action, "ApprovalRequired", Optional(inputs, "Prompt", "Workflow approval is required before continuing."));
+        }
+
+        return Completed(action, false, Optional(inputs, "Message", "Workflow approval confirmed."));
+    }
+
+    private static WorkflowActionResult ExecuteConditionalBranch(WorkflowActionDefinition action, WorkflowExecutionRequest request)
+    {
+        var inputs = ExpandInputs(action.Inputs, request.Variables);
+        var condition = Required(inputs, "Condition");
+        var matched = EvaluateCondition(condition, request.Variables);
+        return matched
+            ? Completed(action, false, Optional(inputs, "TrueMessage", "Condition evaluated to true."))
+            : Skipped(action, "ConditionFalse", Optional(inputs, "FalseMessage", "Condition evaluated to false."));
+    }
+
     private static WorkflowActionResult Completed(WorkflowActionDefinition action, bool changed, string message)
     {
         return new WorkflowActionResult { ActionId = action.Id, ActionName = action.Name, ActionType = action.Type, ProviderId = action.ProviderId, Succeeded = true, Changed = changed, Status = "Completed", Message = message };
+    }
+
+    private static int Int(IReadOnlyDictionary<string, string> inputs, string key, int fallback)
+    {
+        return inputs.TryGetValue(key, out var value) && int.TryParse(value, out var parsed) ? parsed : fallback;
+    }
+
+    private static IReadOnlySet<int> ExpectedStatusCodes(IReadOnlyDictionary<string, string> inputs)
+    {
+        var configured = Optional(inputs, "ExpectedStatusCodes");
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return new HashSet<int>(Enumerable.Range(200, 100));
+        }
+
+        return configured
+            .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => int.TryParse(value, out var parsed) ? parsed : 0)
+            .Where(value => value > 0)
+            .ToHashSet();
+    }
+
+    private static bool EvaluateCondition(string condition, IReadOnlyDictionary<string, string> variables)
+    {
+        if (string.IsNullOrWhiteSpace(condition))
+        {
+            return true;
+        }
+
+        var andParts = condition.Split("&&", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (andParts.Length > 1)
+        {
+            return andParts.All(part => EvaluateCondition(part, variables));
+        }
+
+        var orParts = condition.Split("||", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (orParts.Length > 1)
+        {
+            return orParts.Any(part => EvaluateCondition(part, variables));
+        }
+
+        foreach (var op in new[] { "==", "!=" })
+        {
+            var index = condition.IndexOf(op, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                continue;
+            }
+
+            var left = Clean(Expand(condition[..index], variables));
+            var right = Clean(Expand(condition[(index + op.Length)..], variables));
+            var equal = string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+            return op == "==" ? equal : !equal;
+        }
+
+        var expanded = Clean(Expand(condition, variables));
+        return bool.TryParse(expanded, out var parsed) ? parsed : !string.IsNullOrWhiteSpace(expanded);
+    }
+
+    private static string Clean(string value)
+    {
+        return value.Trim().Trim('"').Trim('\'');
+    }
+
+    private static string TrimForResult(string value)
+    {
+        const int max = 1200;
+        var clean = value.Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal).Trim();
+        return clean.Length <= max ? clean : $"{clean[..max]}...";
     }
 
     private static string ChromePath()

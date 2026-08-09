@@ -4,6 +4,6 @@
   "ProviderMode": "Mock",
   "TenantCloud": "USGov",
   "GraphBaseUri": "https://graph.microsoft.us",
-  "DefaultDomain": "atlas-tech.com",
+  "DefaultDomain": "littleinnovation.tech",
   "SafeMode": true
 }

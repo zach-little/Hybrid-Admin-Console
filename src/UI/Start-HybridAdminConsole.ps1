@@ -93,8 +93,8 @@ function New-HybridMockUserRecord {
         DisplayName = "$first $last"
         Name = "$first $last"
         SamAccountName = $sam
-        UserPrincipalName = "$sam@atlas-tech.com"
-        Mail = "$sam@atlas-tech.com"
+        UserPrincipalName = "$sam@littleinnovation.tech"
+        Mail = "$sam@littleinnovation.tech"
         Department = $dept
         Title = $title
         JobTitle = $title
@@ -3286,8 +3286,8 @@ function Reset-HybridRuntimeProfileWizardFields {
     $controls.WizardProfileNameTextBox.Text = ''
     $controls.WizardOrganizationTextBox.Text = ''
     $controls.WizardTenantIdTextBox.Text = ''
-    $controls.WizardNewUserNotificationRecipientTextBox.Text = 'ITSupport@atlas-tech.com'
-    $controls.WizardNewUserNotificationSenderTextBox.Text = 'NEW-HIRE-INFO@atlas-tech.com'
+    $controls.WizardNewUserNotificationRecipientTextBox.Text = 'ITSupport@littleinnovation.tech'
+    $controls.WizardNewUserNotificationSenderTextBox.Text = 'NEW-HIRE-INFO@littleinnovation.tech'
     Set-HybridWizardComboValue -ComboBox $controls.WizardCloudComboBox -Value 'Commercial'
     Set-HybridWizardComboValue -ComboBox $controls.WizardModeComboBox -Value 'Simulation'
     $controls.WizardDirectorySimulatorEnabledCheckBox.IsChecked = $true
@@ -3334,8 +3334,8 @@ function Load-HybridRuntimeProfileIntoWizard {
         $tenantId = Get-HybridRuntimeDisplayValue -InputObject $profile -Names @('TenantId','TenantID','Tenant') -Default ''
         $newUserWizard = Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserWizard','NewUserDefaults','NewUser') -Default $null
         $script:HybridRuntimeProfileWizardNewUserConfiguration = $newUserWizard
-        $notificationRecipient = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationRecipient','Recipient') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default 'ITSupport@atlas-tech.com')
-        $notificationSender = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationSender','Sender') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default 'NEW-HIRE-INFO@atlas-tech.com')
+        $notificationRecipient = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationRecipient','Recipient') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationRecipient','NotificationRecipient') -Default 'ITSupport@littleinnovation.tech')
+        $notificationSender = Get-HapProfileObjectValue -InputObject $newUserWizard -Names @('NotificationSender','Sender') -Default (Get-HapProfileObjectValue -InputObject $profile -Names @('NewUserNotificationSender','NotificationSender') -Default 'NEW-HIRE-INFO@littleinnovation.tech')
 
         $controls.WizardProfileNameTextBox.Text = $profileName
         $controls.WizardOrganizationTextBox.Text = $organization

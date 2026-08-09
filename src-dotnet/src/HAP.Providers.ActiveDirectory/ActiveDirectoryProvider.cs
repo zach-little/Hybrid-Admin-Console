@@ -636,12 +636,6 @@ public sealed class ActiveDirectoryProvider :
 
     private bool ApplyUserAttribute(DirectoryEntry user, string requestedName, string value)
     {
-        var name = NormalizeWritableAttributeName(requestedName);
-        if (string.IsNullOrWhiteSpace(name) || IsReadOnlyAttribute(name) || !IsWritableAttribute(name))
-        {
-            return false;
-        }
-
         if (requestedName.Equals("Enabled", StringComparison.OrdinalIgnoreCase))
         {
             return SetEnabled(user, value);
@@ -654,6 +648,18 @@ public sealed class ActiveDirectoryProvider :
                 return SetProperty(user, "lockoutTime", "0");
             }
 
+            return false;
+        }
+
+        if (requestedName.Equals("TargetOu", StringComparison.OrdinalIgnoreCase) ||
+            requestedName.Equals("MoveToOu", StringComparison.OrdinalIgnoreCase))
+        {
+            return MoveUserToOu(user, value);
+        }
+
+        var name = NormalizeWritableAttributeName(requestedName);
+        if (string.IsNullOrWhiteSpace(name) || IsReadOnlyAttribute(name) || !IsWritableAttribute(name))
+        {
             return false;
         }
 
@@ -821,6 +827,24 @@ public sealed class ActiveDirectoryProvider :
         }
 
         user.Properties["userAccountControl"].Value = next;
+        return true;
+    }
+
+    private bool MoveUserToOu(DirectoryEntry user, string targetOu)
+    {
+        if (string.IsNullOrWhiteSpace(targetOu))
+        {
+            return false;
+        }
+
+        var currentDn = user.Properties["distinguishedName"].Value?.ToString() ?? string.Empty;
+        if (currentDn.Contains($",{targetOu.Trim()}", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        using var container = new DirectoryEntry($"LDAP://{BuildServerPrefix()}{targetOu.Trim()}", null, null, AuthenticationTypes.Secure);
+        user.MoveTo(container);
         return true;
     }
 

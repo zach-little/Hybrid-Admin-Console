@@ -32,10 +32,10 @@ Assert-Pass -Condition ($directoryGraph.Initialized -eq $true) -Message 'Directo
 $service = Initialize-HybridGraphProfileService -MicrosoftGraphProvider $directoryGraph
 Assert-Pass -Condition ($service.PSObject.TypeNames -contains 'Hybrid.GraphProfileService') -Message 'Graph profile service has platform type name'
 
-$profile = Get-HybridGraphProfile -Identity 'amorgan@atlas-tech.com'
+$profile = Get-HybridGraphProfile -Identity 'amorgan@littleinnovation.tech'
 Assert-Pass -Condition ($null -ne $profile) -Message 'Graph profile returned for Alex Morgan'
 Assert-Pass -Condition ($profile.PSObject.TypeNames -contains 'Hybrid.GraphProfile') -Message 'Graph profile has canonical type name'
-Assert-Pass -Condition ($profile.UserPrincipalName -eq 'amorgan@atlas-tech.com') -Message 'Graph profile preserves UPN'
+Assert-Pass -Condition ($profile.UserPrincipalName -eq 'amorgan@littleinnovation.tech') -Message 'Graph profile preserves UPN'
 Assert-Pass -Condition ($profile.MfaRegistered -eq $true) -Message 'Graph profile reports MFA registration'
 Assert-Pass -Condition (@($profile.AuthenticationMethods).Count -ge 2) -Message 'Graph profile includes authentication methods'
 

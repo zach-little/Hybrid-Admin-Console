@@ -51,8 +51,8 @@
             "givenName": "Alex",
             "surname": "Morgan",
             "samAccountName": "amorgan",
-            "userPrincipalName": "amorgan@atlas-tech.com",
-            "mail": "amorgan@atlas-tech.com",
+            "userPrincipalName": "amorgan@littleinnovation.tech",
+            "mail": "amorgan@littleinnovation.tech",
             "department": "Information Technology",
             "title": "Systems Administrator",
             "company": "Atlas",
@@ -79,7 +79,7 @@
     },
     "userLookup.success.seededUpn": {
       "request": {
-        "query": "jlee@atlas-tech.com"
+        "query": "jlee@littleinnovation.tech"
       },
       "expected": {
         "succeeded": true,
@@ -87,7 +87,7 @@
           {
             "displayName": "Jordan Lee",
             "samAccountName": "jlee",
-            "userPrincipalName": "jlee@atlas-tech.com",
+            "userPrincipalName": "jlee@littleinnovation.tech",
             "department": "Operations",
             "managerSamAccountName": "treed",
             "source": "DirectorySimulator"
@@ -107,7 +107,7 @@
           {
             "displayName": "Sample User",
             "samAccountName": "suser",
-            "userPrincipalName": "suser@atlas-tech.com",
+            "userPrincipalName": "suser@littleinnovation.tech",
             "source": "DirectorySimulator"
           }
         ],

@@ -5,10 +5,10 @@ $script:HybridNewUserWizardState = @{
     ActiveDirectory = $null
     ExchangeOnline = $null
     LastError = $null
-    DefaultUpnSuffix = 'atlas-tech.com'
+    DefaultUpnSuffix = 'littleinnovation.tech'
     RemoteRoutingDomain = 'atlastechcloud.mail.onmicrosoft.com'
-    NotificationRecipient = 'ITSupport@atlas-tech.com'
-    NotificationSender = 'NEW-HIRE-INFO@atlas-tech.com'
+    NotificationRecipient = 'ITSupport@littleinnovation.tech'
+    NotificationSender = 'NEW-HIRE-INFO@littleinnovation.tech'
     Configuration = $null
 }
 
@@ -53,7 +53,7 @@ function Initialize-HybridNewUserWizardService {
     param(
         [AllowNull()][object]$ActiveDirectoryProvider,
         [AllowNull()][object]$ExchangeOnlineProvider,
-        [string]$DefaultUpnSuffix = 'atlas-tech.com',
+        [string]$DefaultUpnSuffix = 'littleinnovation.tech',
         [string]$RemoteRoutingDomain = 'atlastechcloud.mail.onmicrosoft.com',
         [AllowNull()][string]$NotificationRecipient,
         [AllowNull()][string]$NotificationSender,
@@ -63,7 +63,7 @@ function Initialize-HybridNewUserWizardService {
     $script:HybridNewUserWizardState.ActiveDirectory = $ActiveDirectoryProvider
     $script:HybridNewUserWizardState.ExchangeOnline = $ExchangeOnlineProvider
     $script:HybridNewUserWizardState.Configuration = Resolve-HybridNewUserWizardConfiguration -Configuration $Configuration
-    $script:HybridNewUserWizardState.DefaultUpnSuffix = if ([string]::IsNullOrWhiteSpace($DefaultUpnSuffix)) { 'atlas-tech.com' } else { $DefaultUpnSuffix }
+    $script:HybridNewUserWizardState.DefaultUpnSuffix = if ([string]::IsNullOrWhiteSpace($DefaultUpnSuffix)) { 'littleinnovation.tech' } else { $DefaultUpnSuffix }
     $script:HybridNewUserWizardState.RemoteRoutingDomain = if ([string]::IsNullOrWhiteSpace($RemoteRoutingDomain)) { 'atlastechcloud.mail.onmicrosoft.com' } else { $RemoteRoutingDomain }
     $script:HybridNewUserWizardState.NotificationRecipient = if ([string]::IsNullOrWhiteSpace($NotificationRecipient)) { [string]$script:HybridNewUserWizardState.Configuration.NotificationRecipient } else { $NotificationRecipient.Trim() }
     $script:HybridNewUserWizardState.NotificationSender = if ([string]::IsNullOrWhiteSpace($NotificationSender)) { [string]$script:HybridNewUserWizardState.Configuration.NotificationSender } else { $NotificationSender.Trim() }

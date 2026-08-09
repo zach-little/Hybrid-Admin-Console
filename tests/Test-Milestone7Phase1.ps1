@@ -31,8 +31,8 @@ $mockAd = [pscustomobject]@{
             PSTypeName = 'Hybrid.User'
             DisplayName = 'Alex Morgan'
             SamAccountName = 'amorgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail = 'amorgan@littleinnovation.tech'
             Department = 'Information Technology'
             Title = 'Systems Administrator'
             Manager = 'CN=Taylor Reed,OU=Users,DC=atlas-tech,DC=com'
@@ -44,8 +44,8 @@ $mockAd = [pscustomobject]@{
             PSTypeName = 'Hybrid.User'
             DisplayName = 'Alex Morgan'
             SamAccountName = 'amorgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail = 'amorgan@littleinnovation.tech'
             Department = 'Information Technology'
             Title = 'Systems Administrator'
             Manager = 'CN=Taylor Reed,OU=Users,DC=atlas-tech,DC=com'
@@ -59,8 +59,8 @@ $mockGraph = [pscustomobject]@{
         @([pscustomobject]@{
             PSTypeName = 'Hybrid.User'
             DisplayName = 'Alex Morgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail = 'amorgan@littleinnovation.tech'
             Department = 'Information Technology'
             JobTitle = 'Systems Administrator'
             Source = 'MicrosoftGraph'
@@ -70,8 +70,8 @@ $mockGraph = [pscustomobject]@{
         [pscustomobject]@{
             PSTypeName = 'Hybrid.User'
             DisplayName = 'Alex Morgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail = 'amorgan@littleinnovation.tech'
             Department = 'Information Technology'
             JobTitle = 'Systems Administrator'
             Source = 'MicrosoftGraph'
@@ -84,7 +84,7 @@ $mockExchange = [pscustomobject]@{
         [pscustomobject]@{
             PSTypeName = 'Hybrid.Mailbox'
             DisplayName = 'Alex Morgan'
-            PrimarySmtpAddress = 'amorgan@atlas-tech.com'
+            PrimarySmtpAddress = 'amorgan@littleinnovation.tech'
             RecipientTypeDetails = 'UserMailbox'
             Source = 'ExchangeOnline'
         }
@@ -105,12 +105,12 @@ $user = $results[0]
 Assert-Pass -Condition ($user.PSObject.TypeNames -contains 'Hybrid.User.VerticalSlice') -Message 'Hybrid user result has vertical slice type name'
 Assert-Pass -Condition ($user.PSObject.TypeNames -contains 'Hybrid.User') -Message 'Hybrid user result preserves canonical Hybrid.User type'
 Assert-Pass -Condition ($user.DisplayName -eq 'Alex Morgan') -Message 'Hybrid user result preserves display name'
-Assert-Pass -Condition ($user.UserPrincipalName -eq 'amorgan@atlas-tech.com') -Message 'Hybrid user result preserves UPN'
+Assert-Pass -Condition ($user.UserPrincipalName -eq 'amorgan@littleinnovation.tech') -Message 'Hybrid user result preserves UPN'
 Assert-Pass -Condition ($user.SamAccountName -eq 'amorgan') -Message 'Hybrid user result includes AD SAM account'
-Assert-Pass -Condition ($user.Mailbox.PrimarySmtpAddress -eq 'amorgan@atlas-tech.com') -Message 'Hybrid user result includes Exchange mailbox'
+Assert-Pass -Condition ($user.Mailbox.PrimarySmtpAddress -eq 'amorgan@littleinnovation.tech') -Message 'Hybrid user result includes Exchange mailbox'
 Assert-Pass -Condition (@($user.Sources).Count -eq 3) -Message 'Hybrid user result records three provider sources'
 
-$cached = Get-HybridUser -Identity 'amorgan@atlas-tech.com'
+$cached = Get-HybridUser -Identity 'amorgan@littleinnovation.tech'
 Assert-Pass -Condition ([object]::ReferenceEquals($user, $cached)) -Message 'Hybrid user service returns stable cached user result'
 
 $health = Get-HybridUserServiceHealth

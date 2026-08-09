@@ -33,7 +33,7 @@ Assert-Pass -Condition ($service.PSObject.TypeNames -contains 'Hybrid.Authentica
 $alexAuth = Get-HybridAuthenticationProfile -Identity 'Alex Morgan'
 Assert-Pass -Condition ($null -ne $alexAuth) -Message 'Authentication profile returned for Alex Morgan'
 Assert-Pass -Condition ($alexAuth.PSObject.TypeNames -contains 'Hybrid.AuthenticationProfile') -Message 'Authentication profile has canonical type name'
-Assert-Pass -Condition ($alexAuth.UserPrincipalName -like '*@atlas-tech.com') -Message 'Authentication profile preserves UPN'
+Assert-Pass -Condition ($alexAuth.UserPrincipalName -like '*@littleinnovation.tech') -Message 'Authentication profile preserves UPN'
 Assert-Pass -Condition (@($alexAuth.AuthenticationMethods).Count -gt 0) -Message 'Authentication profile includes authentication methods'
 Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($alexAuth.AuthenticationStrength)) -Message 'Authentication strength populated'
 Assert-Pass -Condition (-not [string]::IsNullOrWhiteSpace($alexAuth.ConditionalAccessState)) -Message 'Conditional Access state populated'

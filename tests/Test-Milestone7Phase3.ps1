@@ -18,8 +18,8 @@ $mockAd = [pscustomobject]@{
         @([pscustomobject]@{
             DisplayName       = 'Alex Morgan'
             SamAccountName    = 'amorgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail              = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail              = 'amorgan@littleinnovation.tech'
             Department        = 'Information Technology'
             Title             = 'Systems Administrator'
             Manager           = 'CN=Taylor Reed,OU=Managers,OU=Users,DC=atlas-tech,DC=com'
@@ -32,8 +32,8 @@ $mockAd = [pscustomobject]@{
         [pscustomobject]@{
             DisplayName       = 'Alex Morgan'
             SamAccountName    = 'amorgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail              = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail              = 'amorgan@littleinnovation.tech'
             Department        = 'Information Technology'
             Title             = 'Systems Administrator'
             Manager           = 'CN=Taylor Reed,OU=Managers,OU=Users,DC=atlas-tech,DC=com'
@@ -60,8 +60,8 @@ $mockGraph = [pscustomobject]@{
     SearchUser = { param([string]$Query)
         @([pscustomobject]@{
             DisplayName       = 'Alex Morgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail              = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail              = 'amorgan@littleinnovation.tech'
             Department        = 'Information Technology'
             JobTitle          = 'Systems Administrator'
         })
@@ -69,8 +69,8 @@ $mockGraph = [pscustomobject]@{
     GetUser = { param([string]$Identity)
         [pscustomobject]@{
             DisplayName       = 'Alex Morgan'
-            UserPrincipalName = 'amorgan@atlas-tech.com'
-            Mail              = 'amorgan@atlas-tech.com'
+            UserPrincipalName = 'amorgan@littleinnovation.tech'
+            Mail              = 'amorgan@littleinnovation.tech'
             Department        = 'Information Technology'
             JobTitle          = 'Systems Administrator'
         }
@@ -79,7 +79,7 @@ $mockGraph = [pscustomobject]@{
 
 $mockExchange = [pscustomobject]@{
     GetMailbox = { param([string]$Identity)
-        [pscustomobject]@{ PrimarySmtpAddress = 'amorgan@atlas-tech.com'; RecipientTypeDetails = 'UserMailbox' }
+        [pscustomobject]@{ PrimarySmtpAddress = 'amorgan@littleinnovation.tech'; RecipientTypeDetails = 'UserMailbox' }
     }.GetNewClosure()
 }
 
@@ -95,7 +95,7 @@ Assert-True ($user.OrganizationalUnit -eq 'Users / Service Desk') 'OU is derived
 Assert-True ($user.PSObject.Properties.Name -contains 'Enabled') 'Composite user includes Enabled state'
 Assert-True ($user.PSObject.Properties.Name -contains 'LockedOut') 'Composite user includes LockedOut state'
 
-$detailedUser = Get-HybridUserDetails -Identity 'amorgan@atlas-tech.com'
+$detailedUser = Get-HybridUserDetails -Identity 'amorgan@littleinnovation.tech'
 Assert-True ($detailedUser.DetailsLoaded -eq $true) 'DetailsLoaded set after detail lookup'
 Assert-True ($detailedUser.ManagerDisplayName -eq 'Taylor Reed') 'Manager display name enriched from provider'
 Assert-True (@($detailedUser.Groups).Count -eq 2) 'Groups loaded through service layer'

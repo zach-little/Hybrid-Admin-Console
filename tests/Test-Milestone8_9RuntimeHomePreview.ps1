@@ -55,7 +55,7 @@ $liveProfile = [pscustomobject]@{
     ProfileName = 'Live - GCC High'
     Mode = 'Live'
     Cloud = 'GCCHigh'
-    Domain = 'atlas-tech.com'
+    Domain = 'littleinnovation.tech'
     Authentication = [pscustomobject]@{
         Cloud = 'GCCHigh'
         AppOnly = [pscustomobject]@{
@@ -73,10 +73,10 @@ $liveProfile = [pscustomobject]@{
         }
     }
     Providers = [pscustomobject]@{
-        ActiveDirectory = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'Integrated'; Domain = 'atlas-tech.com' }
+        ActiveDirectory = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'Integrated'; Domain = 'littleinnovation.tech' }
         MicrosoftGraph = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'AppOnly' }
         ExchangeOnline = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'AppOnly' }
-        ExchangeOnPremises = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'Kerberos'; Server = 'exchange01.atlas-tech.com'; ConnectionUri = '' }
+        ExchangeOnPremises = [pscustomobject]@{ Enabled = $true; Mode = 'Live'; Authentication = 'Kerberos'; Server = 'exchange01.littleinnovation.tech'; ConnectionUri = '' }
     }
 }
 

@@ -43,7 +43,7 @@ Assert-True ($managerReportNames -contains 'Alex Morgan') 'Directory simulator k
 $mailboxUser = Get-HybridUserMailboxDetails -Identity $user.UserPrincipalName
 Assert-True ($mailboxUser.ExchangeLoaded -eq $true) 'Exchange detail lookup marks user exchange data loaded'
 Assert-True ($null -ne $mailboxUser.MailboxDetails) 'Exchange detail lookup attaches MailboxDetails'
-Assert-Equal -Actual $mailboxUser.MailboxDetails.PrimarySmtpAddress -Expected 'amorgan@atlas-tech.com' -Message 'Mailbox primary SMTP is populated'
+Assert-Equal -Actual $mailboxUser.MailboxDetails.PrimarySmtpAddress -Expected 'amorgan@littleinnovation.tech' -Message 'Mailbox primary SMTP is populated'
 Assert-Equal -Actual $mailboxUser.MailboxDetails.RecipientTypeDetails -Expected 'UserMailbox' -Message 'Recipient type is populated'
 Assert-True (@($mailboxUser.MailboxDetails.Delegations).Count -gt 0) 'Mailbox delegation list is populated through Exchange provider'
 Assert-True (@($mailboxUser.MailboxDetails.DistributionGroups).Count -gt 0) 'Distribution group list is populated through Exchange provider'

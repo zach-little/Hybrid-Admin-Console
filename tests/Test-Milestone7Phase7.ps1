@@ -27,11 +27,11 @@ Initialize-HybridUserService -ActiveDirectoryProvider $providers.ActiveDirectory
 $aggregationService = Initialize-HybridUserAggregationService
 Assert-Pass -Condition ($aggregationService.PSTypeName -eq 'Hybrid.UserAggregationService') -Message 'Aggregation service has platform type name'
 
-$alex = Get-HybridUserAggregateProfile -Identity 'amorgan@atlas-tech.com'
+$alex = Get-HybridUserAggregateProfile -Identity 'amorgan@littleinnovation.tech'
 Assert-Pass -Condition ($null -ne $alex) -Message 'Aggregate profile returned for Alex Morgan'
 Assert-Pass -Condition ($alex.PSTypeName -eq 'Hybrid.UserAggregateProfile') -Message 'Aggregate profile has canonical type name'
 Assert-Pass -Condition ($alex.PSObject.TypeNames -contains 'Hybrid.UserAggregateProfile.Milestone7Phase7') -Message 'Aggregate profile has phase type name'
-Assert-Pass -Condition ($alex.UserPrincipalName -eq 'amorgan@atlas-tech.com') -Message 'Aggregate profile preserves UPN'
+Assert-Pass -Condition ($alex.UserPrincipalName -eq 'amorgan@littleinnovation.tech') -Message 'Aggregate profile preserves UPN'
 Assert-Pass -Condition ($null -ne $alex.User) -Message 'Aggregate includes base/detail user'
 Assert-Pass -Condition ($null -ne $alex.MailboxDetails) -Message 'Aggregate includes Exchange mailbox details'
 Assert-Pass -Condition ($null -ne $alex.GraphProfile) -Message 'Aggregate includes Microsoft Graph profile'
@@ -47,13 +47,13 @@ Assert-Pass -Condition ($verticalNames -contains 'ExchangeMailbox') -Message 'Ag
 Assert-Pass -Condition ($verticalNames -contains 'MicrosoftGraph') -Message 'Aggregate tracks Graph vertical'
 Assert-Pass -Condition ($verticalNames -contains 'AuthenticationPosture') -Message 'Aggregate tracks authentication vertical'
 
-$cached = Get-HybridUserAggregateProfile -Identity 'amorgan@atlas-tech.com'
+$cached = Get-HybridUserAggregateProfile -Identity 'amorgan@littleinnovation.tech'
 Assert-Pass -Condition ([object]::ReferenceEquals($alex, $cached)) -Message 'Aggregate profile returns stable cached result'
 
 $health = Get-HybridUserAggregationServiceHealth
 Assert-Pass -Condition ($health.Initialized -eq $true) -Message 'Aggregation service health reports initialized'
 Assert-Pass -Condition ($health.CacheEntries -ge 1) -Message 'Aggregation service health reports cache entries'
-Assert-Pass -Condition ($health.LastIdentity -eq 'amorgan@atlas-tech.com') -Message 'Aggregation service health tracks last identity'
+Assert-Pass -Condition ($health.LastIdentity -eq 'amorgan@littleinnovation.tech') -Message 'Aggregation service health tracks last identity'
 
 $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -LiteralPath $uiPath -Raw), [ref]$null)
 Assert-Pass -Condition $true -Message 'UI script parses successfully'
