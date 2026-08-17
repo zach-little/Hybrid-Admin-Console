@@ -4,7 +4,7 @@
 
 ### Roadmap Context
 
-Milestone 7 delivers the first end-to-end Hybrid Admin Console vertical slice.
+Milestone 7 delivers the first end-to-end HILOP Console vertical slice.
 
 - Phase 1: Vertical Slice Foundation - complete
 - Phase 2: Live Active Directory - this deliverable

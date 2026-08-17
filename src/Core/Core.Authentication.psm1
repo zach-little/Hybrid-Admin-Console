@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.Authentication
-# Purpose: Authentication framework contracts and session shell for Hybrid Admin Console.
+# Purpose: Authentication framework contracts and session shell for HILOP Console.
 # Dependencies: Core.CloudEnvironment, Core.TenantContext
 # Exports: New-HybridAuthenticationPolicy, Get-HybridAuthenticationPolicy,
 #          Set-HybridAuthenticationPolicy, Register-HybridAuthenticationMethod,

@@ -1,8 +1,8 @@
 New contributors and future development sessions should begin with ENGINEERING_GUIDE.md
 
-# Hybrid Administration Platform
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
-Hybrid Administration Platform is a modular PowerShell-based enterprise administration framework for hybrid Microsoft environments.
+Hybrid Identity Lifecycle & Operations Platform (HILOP) is a modular PowerShell-based enterprise administration framework for hybrid Microsoft environments.
 
 Atlas is the first deployment profile. The core framework is intended to remain profile-driven and provider-agnostic.
 

@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.Paths
-# Purpose: Centralized path discovery and folder validation for Hybrid Administration Platform.
+# Purpose: Centralized path discovery and folder validation for Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: None
 # Exports: Initialize-HybridPaths, Get-HybridPath, Test-HybridStructure, New-HybridHostContext
 #endregion

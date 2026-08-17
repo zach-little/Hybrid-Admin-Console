@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Primary launcher for the Hybrid Administration Platform runtime/profile UI.
+Primary launcher for the Hybrid Identity Lifecycle & Operations Platform (HILOP) runtime/profile UI.
 #>
 [CmdletBinding()]
 param(

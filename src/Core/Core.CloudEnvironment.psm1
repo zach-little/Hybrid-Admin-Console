@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.CloudEnvironment
-# Purpose: Cloud environment and endpoint resolution for Hybrid Admin Console.
+# Purpose: Cloud environment and endpoint resolution for HILOP Console.
 # Dependencies: None.
 # Exports: New-HybridCloudEnvironment, Register-HybridCloudEnvironment,
 #          Get-HybridCloudEnvironment, Get-HybridCloudEnvironmentNames,

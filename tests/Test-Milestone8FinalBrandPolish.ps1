@@ -11,9 +11,9 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $uiPath = Join-Path $repoRoot 'src\UI\Start-HybridAdminConsole.ps1'
 $iconPath = Join-Path $repoRoot 'assets\icons\HAP_Icon.png'
 
-Assert-Pass -Condition (Test-Path -LiteralPath $uiPath) -Message 'Hybrid Admin Console UI script exists'
-Assert-Pass -Condition (Test-Path -LiteralPath $iconPath) -Message 'HAP application icon exists'
-Assert-Pass -Condition ((Get-Item -LiteralPath $iconPath).Length -gt 0) -Message 'HAP application icon is not empty'
+Assert-Pass -Condition (Test-Path -LiteralPath $uiPath) -Message 'HILOP Console UI script exists'
+Assert-Pass -Condition (Test-Path -LiteralPath $iconPath) -Message 'HILOP application icon exists'
+Assert-Pass -Condition ((Get-Item -LiteralPath $iconPath).Length -gt 0) -Message 'HILOP application icon is not empty'
 
 $ui = Get-Content -LiteralPath $uiPath -Raw
 
@@ -25,7 +25,7 @@ Assert-Pass -Condition ($ui.Contains('Set-HybridBrandIcons')) -Message 'Runtime 
 Assert-Pass -Condition ($ui.Contains('StartupBrandIcon')) -Message 'Startup header uses application icon'
 Assert-Pass -Condition ($ui.Contains('ConsoleBrandIcon')) -Message 'Console header uses application icon'
 Assert-Pass -Condition ($ui.Contains('SummaryBrandIcon')) -Message 'Runtime summary uses application icon'
-Assert-Pass -Condition ($ui.Contains('assets/icons/HAP_Icon.png')) -Message 'UI references HAP icon asset'
+Assert-Pass -Condition ($ui.Contains('assets/icons/HAP_Icon.png')) -Message 'UI references HILOP icon asset'
 
 Assert-Pass -Condition ($ui.Contains('Set-HybridLaunchButtonLabel')) -Message 'Launch button label updater exists'
 Assert-Pass -Condition ($ui.Contains('Launch $label')) -Message 'Launch button includes selected profile name'

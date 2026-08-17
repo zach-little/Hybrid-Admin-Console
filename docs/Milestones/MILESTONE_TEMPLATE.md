@@ -1,4 +1,4 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 **Document**
 Milestone
@@ -161,4 +161,4 @@ Why is it important?
 
 # Completion Summary
 
-Describe what this milestone accomplished and how it advances the Hybrid Administration Platform.
+Describe what this milestone accomplished and how it advances the Hybrid Identity Lifecycle & Operations Platform (HILOP).

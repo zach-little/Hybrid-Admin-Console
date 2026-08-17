@@ -6,7 +6,7 @@ In progress.
 
 ## Purpose
 
-Phase 2 introduces the Runtime Bootstrap Engine as the single startup orchestration boundary for the Hybrid Administration Platform.
+Phase 2 introduces the Runtime Bootstrap Engine as the single startup orchestration boundary for the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 
 The runtime engine loads a Runtime Profile, validates it through the existing Runtime Profile foundation, creates a bootstrap plan, initializes the provider registry, initializes the application service layer, and returns a single runtime context object for later UI and diagnostics phases.
 

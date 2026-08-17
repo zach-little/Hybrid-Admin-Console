@@ -1,4 +1,4 @@
-# Hybrid Administration Platform 0.5.0 Release Notes
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) 0.5.0 Release Notes
 
 ## Release
 

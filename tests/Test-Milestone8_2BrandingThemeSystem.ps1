@@ -69,7 +69,7 @@ Assert-Pass -Condition (Test-Path $package.ThemePath) -Message 'Brand package wr
 $theme = Resolve-HybridUiTheme -RepositoryRoot $testRoot -ProfileName 'Atlas'
 Assert-Pass -Condition ($theme.AccentColor -eq '#112233') -Message 'Runtime profile resolves brand package accent color'
 Assert-Pass -Condition ($theme.WindowTitle -eq 'Atlas HAP') -Message 'Runtime profile resolves brand package window title'
-$themedXaml = Set-HybridUiThemeToXaml -Xaml '<Window Title="Hybrid Admin Platform"><Border Background="#0B1220" BorderBrush="#38BDF8" /></Window>' -Theme $theme
+$themedXaml = Set-HybridUiThemeToXaml -Xaml '<Window Title="HILOP"><Border Background="#0B1220" BorderBrush="#38BDF8" /></Window>' -Theme $theme
 Assert-Pass -Condition ($themedXaml -match '#112233') -Message 'Theme token replacement applies brand package colors'
 Assert-Pass -Condition ($themedXaml -match 'Atlas HAP') -Message 'Theme token replacement applies window title'
 

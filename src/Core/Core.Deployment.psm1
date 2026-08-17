@@ -391,7 +391,7 @@ function New-HybridDeploymentPackage {
         if (Test-Path -LiteralPath $path) { $path }
     }
 
-    if ($PSCmdlet.ShouldProcess($resolvedOutput, 'Create Hybrid Admin Platform deployment package')) {
+    if ($PSCmdlet.ShouldProcess($resolvedOutput, 'Create HILOP deployment package')) {
         Compress-Archive -Path $existingItems -DestinationPath $resolvedOutput -Force
     }
 

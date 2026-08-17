@@ -109,6 +109,8 @@
                 <MenuItem Header="New Profile" Click="OnAddProfileClicked" />
                 <MenuItem Header="Import Profile" Click="OnImportExportClicked" />
                 <MenuItem Header="Export Selected Profile" Click="OnImportExportClicked" />
+                <Separator />
+                <MenuItem Header="Application Licensing" Click="OnLicensingClicked" />
             </MenuItem>
             <MenuItem Header="_Profile">
                 <MenuItem Header="Edit Selected Profile" Click="OnEditProfileClicked" />
@@ -277,6 +279,8 @@
                             </Grid>
                         </ScrollViewer>
                     </TabItem>
+
+
                 </TabControl>
             </Border>
         </Grid>

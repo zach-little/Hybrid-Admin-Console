@@ -15,5 +15,5 @@ if (-not $result.IsReady) {
     throw 'Deployment validation failed.'
 }
 
-Write-Host 'Hybrid Admin Platform deployment layout is ready.' -ForegroundColor Green
+Write-Host 'HILOP deployment layout is ready.' -ForegroundColor Green
 return $result

@@ -1,6 +1,6 @@
 {
-  "ProductName": "Hybrid Administration Platform",
-  "DeploymentName": "Atlas Hybrid Admin Console",
+  "ProductName": "Hybrid Identity Lifecycle & Operations Platform (HILOP)",
+  "DeploymentName": "Atlas HILOP Console",
   "ProviderMode": "Mock",
   "TenantCloud": "USGov",
   "GraphBaseUri": "https://graph.microsoft.us",

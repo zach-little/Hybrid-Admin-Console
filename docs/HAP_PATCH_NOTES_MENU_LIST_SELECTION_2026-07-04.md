@@ -4,7 +4,7 @@ Date: 2026-07-04
 
 ## Scope
 
-This is a UI-only drop-in patch for the Hybrid Admin Platform user selection console.
+This is a UI-only drop-in patch for the HILOP user selection console.
 
 ## Changes
 

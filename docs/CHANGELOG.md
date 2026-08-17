@@ -62,7 +62,7 @@
 
 ## v0.8.2 - Final Brand Polish
 
-- Added the HAP application icon asset and wired it into the Runtime Home, main console header, summary tile, and window icon.
+- Added the HILOP application icon asset and wired it into the Runtime Home, main console header, summary tile, and window icon.
 - Refined Runtime Home footer button sizing, selected profile highlighting, dynamic Launch profile labeling, and colorized runtime status values.
 
 ## Milestone 8 Final Icon Startup Fix

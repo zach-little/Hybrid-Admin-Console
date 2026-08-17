@@ -2,7 +2,7 @@ HAP PowerShell-to-.NET Migration Plan
 
 1. Purpose
 
-This document defines the approved migration strategy for converting the Hybrid Administration Platform (HAP) from a PowerShell/WPF application into a compiled C#/.NET desktop application while preserving PowerShell as an optional customer extension language.
+This document defines the approved migration strategy for converting the Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP) from a PowerShell/WPF application into a compiled C#/.NET desktop application while preserving PowerShell as an optional customer extension language.
 
 The migration must preserve the working business logic already implemented in PowerShell while progressively moving presentation, contracts, configuration, application services, and all first-party providers into .NET.
 
@@ -293,7 +293,7 @@ Must not reference System.Management.Automation.
 
 Must not directly execute PowerShell.
 
-Renders only HAP-owned UI, including declarative extension forms generated from approved schemas.
+Renders only HILOP-owned UI, including declarative extension forms generated from approved schemas.
 
 HAP.Application
 
@@ -784,7 +784,7 @@ HAP renders the form and sends validated values through the provider contract.
 
 9.7 Installation, registration, and approval
 
-PowerShell providers must be installed only into an HAP-controlled location such as:
+PowerShell providers must be installed only into an HILOP-controlled location such as:
 
 C:\ProgramData\HAP\Providers\
 
@@ -1376,7 +1376,7 @@ Recommended implementation order
 
 Freeze version 1.0 provider descriptors and capability contracts.
 
-Implement the extension registry and HAP-controlled provider directory.
+Implement the extension registry and HILOP-controlled provider directory.
 
 Implement manifest, schema, version, hash, and signature validation.
 
@@ -1388,7 +1388,7 @@ Implement HAP.PowerShellPluginHost with one-provider-per-process support.
 
 Implement the PowerShell SDK module, templates, and conformance tests.
 
-Implement HAP-owned declarative configuration and operation forms.
+Implement HILOP-owned declarative configuration and operation forms.
 
 Build a sample provider for a non-core vertical such as MobilePass or a safe mock equivalent.
 
@@ -1402,7 +1402,7 @@ Versioned capability and operation contracts.
 
 Extension registry and administrative approval workflow.
 
-HAP-controlled provider installation directory.
+HILOP-controlled provider installation directory.
 
 Permanent plugin protocol.
 
@@ -1850,7 +1850,7 @@ Create the extension manifest schema, compatibility rules, capability declaratio
 
 Task 15: Implement the extension registry
 
-Register only administrator-approved providers from HAP-controlled paths. Add hash, signature-state, enablement, and capability-grant tests.
+Register only administrator-approved providers from HILOP-controlled paths. Add hash, signature-state, enablement, and capability-grant tests.
 
 Task 16: Define HAP.Plugin.Protocol version 1.0
 
@@ -1870,7 +1870,7 @@ Add templates, SDK helpers, schemas, documentation, conformance tests, and a saf
 
 Task 20: Add declarative extension forms
 
-Render HAP-owned configuration and operation forms from approved schemas. Do not permit custom WPF injection.
+Render HILOP-owned configuration and operation forms from approved schemas. Do not permit custom WPF injection.
 
 Task 21: Prove the Extension Host Stays Dormant
 
@@ -2569,7 +2569,7 @@ Replace it with a supported Graph/AD/Exchange operation with documented behavior
 
 Expose only the generic capability contract so a customer-installed PowerShell provider may supply it.
 
-Do not ship a HAP-owned PowerShell module as a concealed continuation of the legacy provider unless product policy is explicitly changed and this migration document is revised.
+Do not ship a HILOP-owned PowerShell module as a concealed continuation of the legacy provider unless product policy is explicitly changed and this migration document is revised.
 
 Acceptance criteria:
 
@@ -3023,7 +3023,7 @@ Required work:
 
 Run every built-in workflow with no PowerShell extension enabled.
 
-Assert that HAP creates no pwsh.exe, powershell.exe, legacy worker, or plugin-host process during built-in-only execution.
+Assert that HILOP creates no pwsh.exe, powershell.exe, legacy worker, or plugin-host process during built-in-only execution.
 
 Assert that no built-in assembly references System.Management.Automation or loads .ps1, .psm1, or .psd1 files.
 
@@ -3049,7 +3049,7 @@ Suggested commit: test(migration): prove final no-PowerShell built-in operation
 
 Task 59: Build Production Packaging, Installer, Upgrade, and Diagnostics
 
-Objective: Produce the supported production deployment package for the native HAP application.
+Objective: Produce the supported production deployment package for the native HILOP application.
 
 Allowed scope: Publish profiles, installer/package project, configuration migration integration, optional extension-host feature selection, signing hooks, diagnostics collection, tests, and deployment documentation.
 

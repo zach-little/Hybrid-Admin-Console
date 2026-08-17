@@ -1,10 +1,10 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 **Document**
 Extensibility SDK
 
 **Purpose**
-Defines the contracts and architectural expectations for extending the Hybrid Administration Platform.
+Defines the contracts and architectural expectations for extending the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 
 **Scope**
 Applies to providers, workflows, plugins, services, and future platform extensions.
@@ -13,7 +13,7 @@ Applies to providers, workflows, plugins, services, and future platform extensio
 
 # 1. Introduction
 
-Hybrid Administration Platform is designed as an extensible platform.
+Hybrid Identity Lifecycle & Operations Platform (HILOP) is designed as an extensible platform.
 
 Extensions should integrate through established platform contracts rather than modifying the platform itself.
 

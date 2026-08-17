@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Infrastructure.ActiveDirectory
-# Purpose: Active Directory provider for the Hybrid Administration Platform.
+# Purpose: Active Directory provider for the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: Core.ProviderBase, Core.ServiceRegistry, Hybrid.Models, ActiveDirectory PowerShell module at runtime.
 # Exports: Initialize-HybridActiveDirectoryProvider, Initialize-HybridActiveDirectoryRuntime, Test-HybridActiveDirectoryProviderAvailable,
 #          Search-HybridADUser, Get-HybridADUser, Get-HybridADUserGroups,
@@ -208,7 +208,7 @@ function Initialize-HybridActiveDirectoryRuntime {
             $result.DomainAvailable = $true
         }
         catch {
-            throw "ActiveDirectory module is loaded, but the domain check failed in this HAP runtime session: $($_.Exception.Message)"
+            throw "ActiveDirectory module is loaded, but the domain check failed in this HILOP runtime session: $($_.Exception.Message)"
         }
 
         $result.Available = $true
@@ -283,7 +283,7 @@ function Assert-HybridADProviderAvailable {
     }
 
     if (-not $script:State.ProviderAvailable) {
-        throw 'Active Directory provider is not available in the current HAP runtime session. Install RSAT Active Directory tools, confirm the workstation can contact the domain, or review logs\ad-runtime-diagnostics.log.'
+        throw 'Active Directory provider is not available in the current HILOP runtime session. Install RSAT Active Directory tools, confirm the workstation can contact the domain, or review logs\ad-runtime-diagnostics.log.'
     }
 }
 

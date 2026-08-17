@@ -136,7 +136,7 @@ PowerShell providers are installed executable code. They should be treated as tr
 Required trust controls:
 
 - Administrative approval before enablement.
-- Exact-path loading from an HAP-controlled provider directory.
+- Exact-path loading from an HILOP-controlled provider directory.
 - No discovery from the general `PSModulePath`.
 - Manifest schema validation before any module code runs.
 - Hash validation before each launch.
@@ -175,7 +175,7 @@ Prohibited:
 |---|---|---|
 | Purpose | Preserve first-party PowerShell behavior during migration | Support administrator-approved customer providers after migration |
 | Lifetime | Deleted after native parity/cutover | Permanent optional platform feature |
-| Scope | Narrow HAP-owned bridge commands | Public provider contract and capability model |
+| Scope | Narrow HILOP-owned bridge commands | Public provider contract and capability model |
 | Module source | Existing HAP modules only | Exact approved customer provider package |
 | Protocol | `HAP.LegacyWorker.Protocol` | `HAP.Plugin.Protocol` |
 | Host | `HAP.LegacyPowerShellWorker` | `HAP.PowerShellPluginHost` |

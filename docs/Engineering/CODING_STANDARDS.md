@@ -2,7 +2,7 @@
 
 ## Directory Simulator Standard
 
-Mock data for the Hybrid Admin Console must be produced by the directory simulator when a feature requires realistic user, manager, group, mailbox, or provider data.
+Mock data for the HILOP Console must be produced by the directory simulator when a feature requires realistic user, manager, group, mailbox, or provider data.
 
 ### Rules
 

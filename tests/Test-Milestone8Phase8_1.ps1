@@ -48,7 +48,7 @@ Assert-Pass -Condition ($state.PSTypeName -eq 'Hybrid.RuntimeProfileManagerState
 Assert-Pass -Condition ($state.ProfileCount -eq $profiles.Count) -Message 'Runtime Profile Manager state includes profile count'
 Assert-Pass -Condition ($null -ne $state.SelectedProfile) -Message 'Runtime Profile Manager state includes selected profile'
 
-Assert-Pass -Condition (Test-Path $uiPath) -Message 'Hybrid Admin Console UI script exists'
+Assert-Pass -Condition (Test-Path $uiPath) -Message 'HILOP Console UI script exists'
 $ui = Get-Content -LiteralPath $uiPath -Raw
 Assert-Pass -Condition ($ui -match 'Application.RuntimeProfileManager.psm1') -Message 'Startup shell imports Runtime Profile Manager'
 Assert-Pass -Condition ($ui -match 'RuntimeProfileListBox') -Message 'Startup shell contains runtime profile list'

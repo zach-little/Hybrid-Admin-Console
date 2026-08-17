@@ -45,7 +45,7 @@ Initialize-HybridRuntime
         v
 Startup Shell View
         |
-        +-- Launch Hybrid Admin Console -> existing console view
+        +-- Launch HILOP Console -> existing console view
         +-- Edit Runtime Profile -> disabled until Phase 6
         +-- Exit
 ```
@@ -78,6 +78,6 @@ Expected UI behavior:
 - Startup screen appears first.
 - Runtime Profile, Cloud Environment, Runtime Mode, Version, Provider Summary, and Diagnostics Summary are populated.
 - `Edit Runtime Profile` is visible but disabled.
-- `Launch Hybrid Admin Console` reveals the existing console.
+- `Launch HILOP Console` reveals the existing console.
 - Initial query loads after launch.
 - Existing search/cards continue to work.

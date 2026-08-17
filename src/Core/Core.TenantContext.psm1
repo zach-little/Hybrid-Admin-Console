@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.TenantContext
-# Purpose: Tenant identity metadata for Hybrid Admin Console cloud operations.
+# Purpose: Tenant identity metadata for HILOP Console cloud operations.
 # Dependencies: Core.CloudEnvironment
 # Exports: New-HybridTenantContext, Test-HybridTenantContext,
 #          Get-HybridTenantDefaultDomain, Get-HybridTenantCloudEnvironment

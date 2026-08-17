@@ -22,7 +22,7 @@ v0.8.1
 
 ## Summary
 
-Milestone 8 transforms Hybrid Admin Platform into a runtime-profile-driven application platform.
+Milestone 8 transforms HILOP into a runtime-profile-driven application platform.
 
 The platform now supports:
 

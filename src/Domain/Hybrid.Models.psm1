@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Hybrid.Models
-# Purpose: Canonical domain model factory functions for Hybrid Administration Platform.
+# Purpose: Canonical domain model factory functions for Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: None
 # Exports: New-HybridResult, New-HybridUser, New-HybridGroup, New-HybridMailbox, New-HybridDevice, New-HybridLicense, New-HybridUserOverview, New-HybridWorkflow, ConvertTo-HybridResult
 #endregion

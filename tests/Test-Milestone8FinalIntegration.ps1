@@ -4,7 +4,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 function Assert-Pass { param([bool]$Condition,[string]$Message) if (-not $Condition) { throw "FAIL: $Message" } Write-Host "PASS: $Message" }
 $uiPath = Join-Path $repoRoot 'src\UI\Start-HybridAdminConsole.ps1'
 $managerPath = Join-Path $repoRoot 'src\Application\Application.RuntimeProfileManager.psm1'
-Assert-Pass (Test-Path $uiPath) 'Hybrid Admin Console UI script exists'
+Assert-Pass (Test-Path $uiPath) 'HILOP Console UI script exists'
 Assert-Pass (Test-Path $managerPath) 'Runtime Profile Manager module exists'
 Import-Module $managerPath -Force
 foreach ($command in @('Get-HybridRuntimeProfileSummary','Get-HybridRuntimeProfileSelection','Set-HybridRuntimeProfileSelection','Update-HybridRuntimeProfileManager','Copy-HybridRuntimeProfile','Remove-HybridRuntimeProfile','Set-HybridRuntimeProfileDefault','Export-HybridRuntimeProfile')) {

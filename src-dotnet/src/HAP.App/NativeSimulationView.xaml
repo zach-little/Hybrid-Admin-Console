@@ -166,7 +166,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Hybrid Admin Console" FontSize="30" FontWeight="SemiBold" />
+                    <TextBlock Text="HILOP Console" FontSize="30" FontWeight="SemiBold" />
                     <TextBlock Text="Dashboard layout foundation | Runtime Profile Wizard ready"
                                Foreground="{StaticResource AccentBrush}"
                                FontSize="13"

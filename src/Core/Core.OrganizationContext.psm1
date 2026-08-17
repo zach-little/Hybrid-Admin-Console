@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.OrganizationContext
-# Purpose: Organization-wide runtime context for Hybrid Admin Console.
+# Purpose: Organization-wide runtime context for HILOP Console.
 # Dependencies: Core.TenantContext
 # Exports: New-HybridOrganizationContext, Set-HybridOrganizationContext,
 #          Get-HybridOrganizationContext, Clear-HybridOrganizationContext,

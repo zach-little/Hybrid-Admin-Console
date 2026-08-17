@@ -19,7 +19,7 @@
         "Key": "EdiscoveryCaseName",
         "Label": "eDiscovery Case Name",
         "Control": "TextBox",
-        "DefaultValue": "HAP Offboarding - {{UserIdentity}}",
+        "DefaultValue": "HILOP Offboarding - {{UserIdentity}}",
         "Required": true
       },
       {
@@ -40,7 +40,7 @@
         "Key": "NotificationSender",
         "Label": "Notification Sender",
         "Control": "TextBox",
-        "DefaultValue": "HAP Offboarding <noreply@littleinnovation.tech>",
+        "DefaultValue": "HILOP Offboarding <noreply@littleinnovation.tech>",
         "Required": true
       },
       {
@@ -219,7 +219,7 @@
         "From": "{{NotificationSender}}",
         "Subject": "HAP offboarding completed for {{UserIdentity}}",
         "IsBodyHtml": "true",
-        "Body": "<div style='font-family:Arial;font-size:14px;'><p>HAP completed the offboarding workflow for <b>{{UserIdentity}}</b>.</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Action</th><th align='left'>Status</th></tr><tr><td>Purview eDiscovery case</td><td>Created: {{EdiscoveryCaseId}}</td></tr><tr><td>Purview custodian</td><td>Created: {{EdiscoveryCustodianId}}</td></tr><tr><td>Purview custodian source</td><td>Created: {{EdiscoveryUserSourceId}}</td></tr><tr><td>Purview eDiscovery hold</td><td>Apply hold requested</td></tr><tr><td>Active sessions</td><td>Revocation requested</td></tr><tr><td>Entra ID account</td><td>Disable requested</td></tr><tr><td>Active Directory account</td><td>Disabled and moved to {{DisabledUsersOu}}</td></tr></table><p>Run by {{RunBy}} on {{RunDate}}.</p></div>"
+        "Body": "<div style='font-family:Arial;font-size:14px;'><p>HILOP completed the offboarding workflow for <b>{{UserIdentity}}</b>.</p><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Action</th><th align='left'>Status</th></tr><tr><td>Purview eDiscovery case</td><td>Created: {{EdiscoveryCaseId}}</td></tr><tr><td>Purview custodian</td><td>Created: {{EdiscoveryCustodianId}}</td></tr><tr><td>Purview custodian source</td><td>Created: {{EdiscoveryUserSourceId}}</td></tr><tr><td>Purview eDiscovery hold</td><td>Apply hold requested</td></tr><tr><td>Active sessions</td><td>Revocation requested</td></tr><tr><td>Entra ID account</td><td>Disable requested</td></tr><tr><td>Active Directory account</td><td>Disabled and moved to {{DisabledUsersOu}}</td></tr></table><p>Run by {{RunBy}} on {{RunDate}}.</p></div>"
       }
     }
   ]

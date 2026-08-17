@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.Runtime
-# Purpose: Runtime bootstrap engine for profile-driven Hybrid Admin Console startup.
+# Purpose: Runtime bootstrap engine for profile-driven HILOP Console startup.
 # Dependencies: Core.RuntimeProfile, Core.ServiceRegistry, provider/application modules loaded on demand.
 # Exports: Initialize-HybridRuntime, Get-HybridRuntime, Reset-HybridRuntime, Get-HybridRuntimeProviderRegistration, Get-HybridRuntimeProviderModeSummary, Get-HybridRuntimeDiagnostics, Test-HybridRuntimeDiagnostics
 #endregion
@@ -474,7 +474,7 @@ function Initialize-HybridRuntimeLiveActiveDirectoryProvider {
         $message = 'Active Directory provider initialized, but live connectivity is unavailable. Review logs\ad-runtime-diagnostics.log.'
         if ($null -ne $health -and [bool]$health.Available -and [bool]$health.Connected) {
             $status = 'Connected'
-            $message = 'Active Directory provider connected using the current HAP runtime session.'
+            $message = 'Active Directory provider connected using the current HILOP runtime session.'
         }
         elseif ($null -ne $health -and $health.PSObject.Properties.Name -contains 'LastError' -and -not [string]::IsNullOrWhiteSpace([string]$health.LastError)) {
             $message = 'Active Directory provider unavailable: ' + [string]$health.LastError

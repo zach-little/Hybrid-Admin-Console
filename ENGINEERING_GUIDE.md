@@ -1,8 +1,8 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 # Engineering Guide
 
-Welcome to the Hybrid Administration Platform.
+Welcome to the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 
 This document serves as the engineering entry point for all development work.
 
@@ -247,7 +247,7 @@ A feature is complete only when:
 
 # Working With ChatGPT
 
-The Hybrid Administration Platform has been developed collaboratively with ChatGPT as a software engineering partner.
+The Hybrid Identity Lifecycle & Operations Platform (HILOP) has been developed collaboratively with ChatGPT as a software engineering partner.
 
 Future development sessions should begin by reviewing:
 
@@ -270,7 +270,7 @@ When architectural trade-offs exist, prefer the solution that best supports the 
 
 # Final Principle
 
-The Hybrid Administration Platform is not built milestone by milestone.
+The Hybrid Identity Lifecycle & Operations Platform (HILOP) is not built milestone by milestone.
 
 It is built capability by capability.
 

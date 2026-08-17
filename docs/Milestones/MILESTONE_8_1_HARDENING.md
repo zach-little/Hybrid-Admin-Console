@@ -10,7 +10,7 @@ Milestone 8.1 hardens the completed Runtime Platform before Milestone 9 begins. 
 
 ## Completed
 
-- Root launcher now enters the HAP runtime/profile WPF experience instead of the legacy shell path.
+- Root launcher now enters the HILOP runtime/profile WPF experience instead of the legacy shell path.
 - Runtime UI accepts an explicit `-Profile` parameter and still safely falls back to Simulation.
 - Runtime Home, profile manager, launch, wizard, dashboard, status bar, and theme helpers now have dedicated UI modules.
 - Launch button text wraps instead of truncating long profile names.
@@ -25,7 +25,7 @@ Milestone 8.1 hardens the completed Runtime Platform before Milestone 9 begins. 
 
 The UI theme resolver uses the following order:
 
-1. Built-in HAP Dark defaults.
+1. Built-in HILOP Dark defaults.
 2. Runtime profile `Branding` or `Theme` object, when present.
 3. Organization branding file at `profiles/<Organization>/branding.json`, when the selected runtime profile declares an organization.
 4. Optional repository override at `assets/themes/hap.theme.json`.

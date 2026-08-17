@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 using HAP.Application.RuntimeProfiles;
 using HAP.Presentation.Dialogs;
 
@@ -79,6 +81,11 @@ public partial class RuntimeProfileSelectorView : UserControl
     private void OnBrandingClicked(object sender, RoutedEventArgs e)
     {
         ProfileConfigurationTabs.SelectedIndex = 3;
+    }
+
+    private void OnLicensingClicked(object sender, RoutedEventArgs e)
+    {
+        ShowLicensingDialog();
     }
 
     private async void OnReloadProfileConfigurationClicked(object sender, RoutedEventArgs e)
@@ -205,5 +212,213 @@ public partial class RuntimeProfileSelectorView : UserControl
             .Where(Uri.IsHexDigit)
             .Select(char.ToUpperInvariant)
             .ToArray());
+    }
+
+    private void OnActivationKeyPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not null && sender is PasswordBox passwordBox)
+        {
+            ViewModel.ActivationKey = passwordBox.Password;
+        }
+    }
+
+    private async void OnActivateLicenseClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        await ViewModel.ActivateLicenseAsync().ConfigureAwait(true);
+    }
+
+    private async void OnRefreshLicenseClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not null)
+        {
+            await ViewModel.RefreshLicenseAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async void OnDeactivateLicenseClicked(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        var answer = HapDialog.Show(
+            Window.GetWindow(this),
+            "Deactivate Installation",
+            "Deactivate this HILOP installation? Configuration and cached license data are preserved.",
+            MessageBoxButton.YesNo,
+            isDestructive: true,
+            yesText: "Deactivate");
+        if (answer == MessageBoxResult.Yes)
+        {
+            await ViewModel.DeactivateLicenseAsync().ConfigureAwait(true);
+        }
+    }
+
+    private void ShowLicensingDialog()
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        _ = ViewModel.LoadLicensingStatusAsync();
+
+        var window = new Window
+        {
+            Title = "Application Licensing",
+            Width = 900,
+            Height = 620,
+            MinWidth = 780,
+            MinHeight = 520,
+            Owner = Window.GetWindow(this),
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = BrushFrom("#0B1220")
+        };
+
+        var root = new Grid { Margin = new Thickness(18) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var header = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
+        header.Children.Add(Text("HILOP Licensing", 24, FontWeights.SemiBold));
+        var message = Text(string.Empty, 13, FontWeights.Normal, "#94A3B8");
+        message.SetBinding(TextBlock.TextProperty, new Binding("LicensingStatus.Message"));
+        header.Children.Add(message);
+        root.Children.Add(header);
+
+        var body = new Grid();
+        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+        body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        Grid.SetRow(body, 1);
+
+        var statusPanel = Panel();
+        statusPanel.Children.Add(Text("License Status", 18, FontWeights.SemiBold));
+        AddBoundRow(statusPanel, "Status", "LicenseStateText");
+        AddBoundRow(statusPanel, "Organization", "LicenseOrganizationText");
+        AddBoundRow(statusPanel, "Edition", "LicenseEditionText");
+        AddBoundRow(statusPanel, "License Type", "LicenseTypeText");
+        AddBoundRow(statusPanel, "License Number", "LicenseNumberText");
+        AddBoundRow(statusPanel, "Expiration", "LicenseExpirationText");
+        AddBoundRow(statusPanel, "Grace Period", "LicenseGraceText");
+        AddBoundRow(statusPanel, "Last Validation", "LicenseValidatedText");
+        AddBoundRow(statusPanel, "Installation ID", "LicensingStatus.InstallationId");
+        AddBoundRow(statusPanel, "Signing Key ID", "LicenseSigningKeyText");
+        body.Children.Add(statusPanel);
+
+        var actionsPanel = Panel();
+        Grid.SetColumn(actionsPanel, 2);
+        actionsPanel.Children.Add(Text("Activation", 18, FontWeights.SemiBold));
+        actionsPanel.Children.Add(Text("Enter a Little Innovation Tech activation key. The key is exchanged for an installation credential and is not stored.", 13, FontWeights.Normal, "#94A3B8"));
+        actionsPanel.Children.Add(Label("Activation Key"));
+        var activationKeyBox = new PasswordBox
+        {
+            Height = 34,
+            Background = BrushFrom("#0B1220"),
+            Foreground = BrushFrom("#F8FAFC"),
+            BorderBrush = BrushFrom("#475569"),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        activationKeyBox.PasswordChanged += (_, _) => ViewModel.ActivationKey = activationKeyBox.Password;
+        actionsPanel.Children.Add(activationKeyBox);
+
+        var buttons = new WrapPanel { Margin = new Thickness(0, 0, 0, 18) };
+        buttons.Children.Add(Button("Activate License", async (_, _) =>
+        {
+            await ViewModel.ActivateLicenseAsync().ConfigureAwait(true);
+            activationKeyBox.Clear();
+        }));
+        buttons.Children.Add(Button("Refresh License", async (_, _) => await ViewModel.RefreshLicenseAsync().ConfigureAwait(true)));
+        buttons.Children.Add(Button("Deactivate Installation", async (_, _) =>
+        {
+            var answer = HapDialog.Show(window, "Deactivate Installation", "Deactivate this HILOP installation? Configuration and cached license data are preserved.", MessageBoxButton.YesNo, isDestructive: true, yesText: "Deactivate");
+            if (answer == MessageBoxResult.Yes)
+            {
+                await ViewModel.DeactivateLicenseAsync().ConfigureAwait(true);
+            }
+        }));
+        actionsPanel.Children.Add(buttons);
+
+        actionsPanel.Children.Add(Text("Entitlement Limits", 18, FontWeights.SemiBold));
+        AddBoundRow(actionsPanel, "Managed Identities", "ManagedIdentitiesText");
+        AddBoundRow(actionsPanel, "Administrators", "AdministratorsText");
+        AddBoundRow(actionsPanel, "Directories", "DirectoriesText");
+        body.Children.Add(actionsPanel);
+        root.Children.Add(body);
+
+        var closeButton = Button("Close", (_, _) => window.Close());
+        closeButton.HorizontalAlignment = HorizontalAlignment.Right;
+        Grid.SetRow(closeButton, 2);
+        root.Children.Add(closeButton);
+
+        window.Content = root;
+        window.DataContext = ViewModel;
+        window.ShowDialog();
+    }
+
+    private static StackPanel Panel()
+    {
+        return new StackPanel
+        {
+            Background = BrushFrom("#1E293B"),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+    }
+
+    private static void AddBoundRow(Panel parent, string label, string path)
+    {
+        parent.Children.Add(Label(label));
+        var value = Text(string.Empty, 14, FontWeights.SemiBold);
+        value.Margin = new Thickness(0, 0, 0, 10);
+        value.SetBinding(TextBlock.TextProperty, new Binding(path));
+        parent.Children.Add(value);
+    }
+
+    private static TextBlock Label(string text)
+    {
+        return Text(text, 12, FontWeights.Normal, "#94A3B8");
+    }
+
+    private static TextBlock Text(string text, double size, FontWeight weight, string color = "#F8FAFC")
+    {
+        return new TextBlock
+        {
+            Text = text,
+            FontSize = size,
+            FontWeight = weight,
+            Foreground = BrushFrom(color),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+    }
+
+    private static Button Button(string text, RoutedEventHandler handler)
+    {
+        var button = new Button
+        {
+            Content = text,
+            MinWidth = 118,
+            Height = 34,
+            Padding = new Thickness(14, 0, 14, 0),
+            Margin = new Thickness(0, 0, 8, 8),
+            Background = BrushFrom("#0F172A"),
+            Foreground = BrushFrom("#F8FAFC"),
+            BorderBrush = BrushFrom("#475569"),
+            FontWeight = FontWeights.SemiBold
+        };
+        button.Click += handler;
+        return button;
+    }
+
+    private static Brush BrushFrom(string color)
+    {
+        return (Brush)new BrushConverter().ConvertFromString(color)!;
     }
 }

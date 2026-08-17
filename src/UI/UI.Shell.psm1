@@ -11,7 +11,7 @@ Set-StrictMode -Version Latest
 function Show-HybridConsoleShell {
     param([object]$Context)
     Write-Host ''
-    Write-Host 'Hybrid Administration Platform' -ForegroundColor Cyan
+    Write-Host 'Hybrid Identity Lifecycle & Operations Platform (HILOP)' -ForegroundColor Cyan
     Write-Host ('Profile: {0}' -f $Context.ProfileName) -ForegroundColor Gray
     Write-Host ('Provider Mode: {0}' -f $Context.Configuration.Settings.ProviderMode) -ForegroundColor Gray
     Write-Host ''

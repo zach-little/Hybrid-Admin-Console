@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using HAP.Application.Licensing;
 using HAP.Application.RuntimeProfiles;
 using HAP.Contracts;
 
@@ -11,6 +12,7 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
     private readonly IRuntimeProfileCatalogService _catalogService;
     private readonly IRuntimeSessionService? _runtimeSessionService;
     private readonly IRuntimeProfileManagementService? _profileManagementService;
+    private readonly ILicensingService _licensingService;
     private CancellationTokenSource? _loadCancellation;
     private RuntimeProfileItemViewModel? _selectedProfile;
     private RuntimeProfileConfigurationDraft _profileConfiguration = new();
@@ -20,6 +22,8 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
     private string _progressMessage = "Ready";
     private string _errorMessage = string.Empty;
     private string _runtimeStatus = "Not started";
+    private LicensingStatus _licensingStatus = new() { Message = "Licensing status has not loaded." };
+    private string _activationKey = string.Empty;
 
     public RuntimeProfileSelectorViewModel(IRuntimeProfileCatalogService catalogService)
         : this(catalogService, runtimeSessionService: null)
@@ -29,11 +33,13 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
     public RuntimeProfileSelectorViewModel(
         IRuntimeProfileCatalogService catalogService,
         IRuntimeSessionService? runtimeSessionService,
-        IRuntimeProfileManagementService? profileManagementService = null)
+        IRuntimeProfileManagementService? profileManagementService = null,
+        ILicensingService? licensingService = null)
     {
         _catalogService = catalogService ?? throw new ArgumentNullException(nameof(catalogService));
         _runtimeSessionService = runtimeSessionService;
         _profileManagementService = profileManagementService;
+        _licensingService = licensingService ?? CreateDefaultLicensingService();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -122,6 +128,59 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
+    public LicensingStatus LicensingStatus
+    {
+        get => _licensingStatus;
+        private set
+        {
+            if (SetField(ref _licensingStatus, value))
+            {
+                OnPropertyChanged(nameof(LicenseStateText));
+                OnPropertyChanged(nameof(LicenseOrganizationText));
+                OnPropertyChanged(nameof(LicenseEditionText));
+                OnPropertyChanged(nameof(LicenseTypeText));
+                OnPropertyChanged(nameof(LicenseNumberText));
+                OnPropertyChanged(nameof(LicenseExpirationText));
+                OnPropertyChanged(nameof(LicenseGraceText));
+                OnPropertyChanged(nameof(LicenseValidatedText));
+                OnPropertyChanged(nameof(LicenseSigningKeyText));
+                OnPropertyChanged(nameof(ManagedIdentitiesText));
+                OnPropertyChanged(nameof(AdministratorsText));
+                OnPropertyChanged(nameof(DirectoriesText));
+            }
+        }
+    }
+
+    public string ActivationKey
+    {
+        get => _activationKey;
+        set => SetField(ref _activationKey, value);
+    }
+
+    public string LicenseStateText => LicensingStatus.State.ToString();
+
+    public string LicenseOrganizationText => LicensingStatus.License?.Payload.Organization ?? "-";
+
+    public string LicenseEditionText => LicensingStatus.License?.Payload.Edition ?? "-";
+
+    public string LicenseTypeText => LicensingStatus.License?.Payload.LicenseType ?? "-";
+
+    public string LicenseNumberText => LicensingStatus.License?.Payload.LicenseNumber ?? "-";
+
+    public string LicenseExpirationText => FormatDate(LicensingStatus.License?.Payload.ExpiresAt);
+
+    public string LicenseGraceText => FormatDate(LicensingStatus.License?.Payload.GraceUntil);
+
+    public string LicenseValidatedText => FormatDate(LicensingStatus.LastSuccessfulValidationUtc);
+
+    public string LicenseSigningKeyText => LicensingStatus.License?.Envelope.KeyId ?? "-";
+
+    public string ManagedIdentitiesText => FormatNumericEntitlement(HilopEntitlements.ManagedIdentities);
+
+    public string AdministratorsText => FormatNumericEntitlement(HilopEntitlements.Administrators);
+
+    public string DirectoriesText => FormatNumericEntitlement(HilopEntitlements.Directories);
+
     public async Task LoadAsync(string repositoryRoot, CancellationToken cancellationToken = default)
     {
         _repositoryRoot = repositoryRoot;
@@ -156,6 +215,7 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
                 ?? Profiles.FirstOrDefault(profile => profile.IsLastUsed)
                 ?? Profiles.FirstOrDefault(profile => profile.IsValid)
                 ?? Profiles.FirstOrDefault();
+            await LoadLicensingStatusAsync(cancellationToken).ConfigureAwait(true);
             ProgressMessage = Profiles.Count == 0 ? "No runtime profiles found." : $"Loaded {Profiles.Count} runtime profiles.";
         }
         catch (OperationCanceledException)
@@ -370,6 +430,68 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
         ErrorMessage = result.Succeeded ? string.Empty : string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
     }
 
+    public async Task LoadLicensingStatusAsync(CancellationToken cancellationToken = default)
+    {
+        LicensingStatus = await _licensingService.GetStatusAsync(cancellationToken).ConfigureAwait(true);
+    }
+
+    public async Task ActivateLicenseAsync(CancellationToken cancellationToken = default)
+    {
+        ErrorMessage = string.Empty;
+        ProgressMessage = "Activating HILOP license...";
+        var result = await _licensingService.ActivateAsync(
+            new LicenseActivationRequest(
+                ActivationKey,
+                Environment.MachineName,
+                typeof(RuntimeProfileSelectorViewModel).Assembly.GetName().Version?.ToString() ?? "1.0",
+                "HILOP"),
+            CorrelationId.New(),
+            cancellationToken).ConfigureAwait(true);
+
+        if (result.Succeeded && result.Value is not null)
+        {
+            ActivationKey = string.Empty;
+            LicensingStatus = result.Value;
+            ProgressMessage = "License activated.";
+            return;
+        }
+
+        ProgressMessage = "License activation failed.";
+        ErrorMessage = string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+    }
+
+    public async Task RefreshLicenseAsync(CancellationToken cancellationToken = default)
+    {
+        ErrorMessage = string.Empty;
+        ProgressMessage = "Refreshing HILOP license...";
+        var result = await _licensingService.RefreshAsync(CorrelationId.New(), cancellationToken).ConfigureAwait(true);
+        if (result.Succeeded && result.Value is not null)
+        {
+            LicensingStatus = result.Value;
+            ProgressMessage = "License refreshed.";
+            return;
+        }
+
+        ProgressMessage = "License refresh failed.";
+        ErrorMessage = string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+    }
+
+    public async Task DeactivateLicenseAsync(CancellationToken cancellationToken = default)
+    {
+        ErrorMessage = string.Empty;
+        ProgressMessage = "Deactivating HILOP installation...";
+        var result = await _licensingService.DeactivateAsync(CorrelationId.New(), cancellationToken).ConfigureAwait(true);
+        if (result.Succeeded && result.Value is not null)
+        {
+            LicensingStatus = result.Value;
+            ProgressMessage = "Installation deactivated.";
+            return;
+        }
+
+        ProgressMessage = "License deactivation failed.";
+        ErrorMessage = string.Join(Environment.NewLine, result.Errors.Select(error => error.Message));
+    }
+
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = "")
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
@@ -385,5 +507,26 @@ public sealed class RuntimeProfileSelectorViewModel : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private static ILicensingService CreateDefaultLicensingService()
+    {
+        var options = new LicensingOptions();
+        var store = new FileLocalLicenseStore(options.StorageDirectory);
+        var client = new LicensingApiClient(options);
+        return new LicensingService(options, store, client);
+    }
+
+    private string FormatNumericEntitlement(string entitlementKey)
+    {
+        var value = LicensingStatus.License is null
+            ? null
+            : LicenseEntitlementEvaluator.GetNumeric(LicensingStatus.License, entitlementKey);
+        return value.HasValue ? value.Value.ToString() : "-";
+    }
+
+    private static string FormatDate(DateTimeOffset? value)
+    {
+        return value.HasValue ? value.Value.UtcDateTime.ToString("u") : "-";
     }
 }

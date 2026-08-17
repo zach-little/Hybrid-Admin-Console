@@ -45,7 +45,7 @@ $mockAd = [pscustomobject]@{
     GetUserGroups = { param([string]$Identity)
         @(
             [pscustomobject]@{ Name = 'IT Helpdesk' }
-            [pscustomobject]@{ Name = 'Hybrid Admin Console Operators' }
+            [pscustomobject]@{ Name = 'HILOP Console Operators' }
         )
     }.GetNewClosure()
     GetUserDirectReports = { param([string]$Identity)

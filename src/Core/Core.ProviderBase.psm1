@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.ProviderBase
-# Purpose: Shared provider contract helpers for the Hybrid Administration Platform.
+# Purpose: Shared provider contract helpers for the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: None.
 # Exports: New-HybridProviderState, New-HybridProviderService, Get-HybridProviderCapabilities,
 #          Test-HybridProviderCapability, Get-HybridProviderHealth, Initialize-HybridProvider,

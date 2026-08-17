@@ -20,9 +20,9 @@ function Get-HybridUiThemeDefault {
 
     return New-HybridUiThemeObject -Properties @{
         PSTypeName              = 'Hybrid.UI.Theme'
-        Name                    = 'HAP Dark'
-        WindowTitle             = 'Hybrid Admin Platform'
-        OrganizationName        = 'Hybrid Admin Platform'
+        Name                    = 'HILOP Dark'
+        WindowTitle             = 'HILOP'
+        OrganizationName        = 'HILOP'
         BrandPackageName        = ''
         AccentColor             = '#38BDF8'
         AccentMutedColor        = '#0F2A44'
@@ -258,7 +258,7 @@ function Set-HybridUiThemeToXaml {
     foreach ($key in ($tokens.Keys | Sort-Object Length -Descending)) {
         if (-not [string]::IsNullOrWhiteSpace([string]$tokens[$key])) { $result = $result.Replace($key, [string]$tokens[$key]) }
     }
-    if (-not [string]::IsNullOrWhiteSpace([string]$Theme.WindowTitle)) { $result = $result.Replace('Title="Hybrid Admin Platform"', ('Title="{0}"' -f [System.Security.SecurityElement]::Escape([string]$Theme.WindowTitle))) }
+    if (-not [string]::IsNullOrWhiteSpace([string]$Theme.WindowTitle)) { $result = $result.Replace('Title="HILOP"', ('Title="{0}"' -f [System.Security.SecurityElement]::Escape([string]$Theme.WindowTitle))) }
     return $result
 }
 

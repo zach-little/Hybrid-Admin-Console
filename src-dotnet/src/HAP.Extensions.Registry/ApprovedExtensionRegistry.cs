@@ -59,7 +59,7 @@ public sealed class ApprovedExtensionRegistry
         var manifestPath = Path.GetFullPath(registration.ManifestPath);
         if (!IsUnderControlledRoot(manifestPath))
         {
-            return Failure(correlationId, "ExtensionRegistry.PathOutsideControlledRoot", "Extension manifest is not under a HAP-controlled root.", manifestPath);
+            return Failure(correlationId, "ExtensionRegistry.PathOutsideControlledRoot", "Extension manifest is not under a HILOP-controlled root.", manifestPath);
         }
 
         if (!File.Exists(manifestPath))

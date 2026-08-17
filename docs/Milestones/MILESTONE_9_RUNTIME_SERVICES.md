@@ -1,4 +1,4 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 **Document**
 Milestone

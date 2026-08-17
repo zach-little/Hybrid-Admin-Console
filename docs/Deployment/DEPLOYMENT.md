@@ -1,8 +1,8 @@
-# Hybrid Admin Platform Deployment
+# HILOP Deployment
 
 ## Overview
 
-Hybrid Admin Platform deployment is runtime-profile driven. A deployment can be validated and packaged without contacting Active Directory, Microsoft Graph, or Exchange Online.
+HILOP deployment is runtime-profile driven. A deployment can be validated and packaged without contacting Active Directory, Microsoft Graph, or Exchange Online.
 
 The recommended first-run profile is `profiles/Runtime/Simulation.json`. This keeps startup deterministic and allows the shell, diagnostics, dashboard, and runtime profile wizard to be validated offline.
 

@@ -9,7 +9,7 @@ function Assert-Pass {
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $uiPath = Join-Path $repoRoot 'src\UI\Start-HybridAdminConsole.ps1'
-Assert-Pass -Condition (Test-Path $uiPath) -Message 'Hybrid Admin Console UI script exists'
+Assert-Pass -Condition (Test-Path $uiPath) -Message 'HILOP Console UI script exists'
 
 $ui = Get-Content -LiteralPath $uiPath -Raw
 

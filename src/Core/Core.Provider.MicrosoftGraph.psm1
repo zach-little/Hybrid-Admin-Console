@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Core.Provider.MicrosoftGraph
-# Purpose: Provider-facing Microsoft Graph service wrapper for the Hybrid Administration Platform.
+# Purpose: Provider-facing Microsoft Graph service wrapper for the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: Core.ProviderBase, Core.Authentication.Manager, Core.Authentication, Core.TenantContext, Graph.Models
 # Exports: New-HybridMicrosoftGraphProviderContext, Initialize-HybridMicrosoftGraphProvider,
 #          Get-HybridMicrosoftGraphProviderHealth, Get-HybridMicrosoftGraphProviderCapabilities,

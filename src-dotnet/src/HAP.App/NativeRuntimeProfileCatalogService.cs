@@ -101,7 +101,7 @@ internal sealed class NativeRuntimeProfileCatalogService : IRuntimeProfileCatalo
                 CreateMailboxByDefault = GetBool(wizard, "CreateMailboxByDefault", true),
                 SendOnboardingNotification = GetBool(wizard, "SendOnboardingNotification", true),
                 RequireManagerValidation = GetBool(wizard, "RequireManagerValidation", true),
-                WindowTitle = GetString(branding, "WindowTitle", GetString(branding, "DisplayName", GetString(runtime, "DisplayName", "Hybrid Admin Platform"))),
+                WindowTitle = GetString(branding, "WindowTitle", GetString(branding, "DisplayName", GetString(runtime, "DisplayName", "HILOP"))),
                 ThemeName = GetString(branding, "ThemeName", string.Empty),
                 PrimaryColor = GetString(branding, "PrimaryColor", "#0F6CBD"),
                 AccentColor = GetString(branding, "AccentColor", "#38BDF8"),

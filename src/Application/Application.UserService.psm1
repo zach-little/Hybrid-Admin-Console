@@ -1,6 +1,6 @@
 #region Module Information
 # Name: Application.UserService
-# Purpose: Provider-agnostic user service API for the Hybrid Administration Platform.
+# Purpose: Provider-agnostic user service API for the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 # Dependencies: Core.ServiceRegistry, Hybrid.Models, a registered Directory service.
 # Exports: Initialize-HybridUserService, Search-HybridUser, Get-HybridUser, Get-HybridUserOverview, Get-HybridUserGroups, Get-HybridUserMailbox, Get-HybridUserDevices, Get-HybridUserLicenses, Get-HybridUserManager, Get-HybridUserDirectReports
 #endregion

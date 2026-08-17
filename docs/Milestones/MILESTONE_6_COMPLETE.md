@@ -2,7 +2,7 @@
 
 ## Microsoft 365 Platform Foundation
 
-Milestone 6 establishes the complete Microsoft 365 provider platform used by the Hybrid Admin Console.
+Milestone 6 establishes the complete Microsoft 365 provider platform used by the HILOP Console.
 
 ### Objectives
 

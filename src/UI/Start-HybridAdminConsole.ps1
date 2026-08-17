@@ -134,7 +134,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Hybrid Admin Platform" Height="900" Width="1480" MinHeight="720" MinWidth="1180" WindowStartupLocation="CenterScreen" Background="#0B1220">
+        Title="HILOP" Height="900" Width="1480" MinHeight="720" MinWidth="1180" WindowStartupLocation="CenterScreen" Background="#0B1220">
     <Window.Resources>
         <LinearGradientBrush x:Key="ShellBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#0B1220" Offset="0"/>
@@ -413,8 +413,8 @@ $xaml = @"
                         <Image x:Name="StartupBrandIcon" Source="assets/icons/HAP_Icon.png" Width="34" Height="34" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Hybrid Admin Platform" Foreground="#F8FAFC" FontSize="30" FontWeight="SemiBold"/>
-                        <TextBlock Text="Select a runtime profile and launch Hybrid Admin Console" Foreground="#38BDF8" FontSize="13" Margin="0,4,0,0"/>
+                        <TextBlock Text="HILOP" Foreground="#F8FAFC" FontSize="30" FontWeight="SemiBold"/>
+                        <TextBlock Text="Select a runtime profile and launch HILOP Console" Foreground="#38BDF8" FontSize="13" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Grid>
 
@@ -640,7 +640,7 @@ $xaml = @"
                             <Image x:Name="ConsoleBrandIcon" Source="assets/icons/HAP_Icon.png" Width="34" Height="34" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1">
-                            <TextBlock Text="Hybrid Admin Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
+                            <TextBlock Text="HILOP Console" Foreground="#E5E7EB" FontSize="30" FontWeight="SemiBold"/>
                             <TextBlock x:Name="HeaderRuntimeBadgeText" Text="Dashboard layout foundation | Runtime Profile Wizard ready" Foreground="#38BDF8" FontSize="13"/>
                         </StackPanel>
                     </Grid>
@@ -1055,7 +1055,7 @@ $xaml = @"
                                     <TextBlock Text="Package Name" Style="{StaticResource LabelText}"/>
                                     <TextBox x:Name="ThemePackageNameTextBox" Text="Branding" Height="34" Margin="0,4,0,12"/>
                                     <TextBlock Text="Window Title" Style="{StaticResource LabelText}"/>
-                                    <TextBox x:Name="ThemeWindowTitleTextBox" Text="Hybrid Admin Platform" Height="34" Margin="0,4,0,12"/>
+                                    <TextBox x:Name="ThemeWindowTitleTextBox" Text="HILOP" Height="34" Margin="0,4,0,12"/>
                                     <TextBlock Text="Organization Display Name" Style="{StaticResource LabelText}"/>
                                     <TextBox x:Name="ThemeOrganizationNameTextBox" Text="" Height="34" Margin="0,4,0,16"/>
                                     <TextBlock Text="Colors" Style="{StaticResource SectionTitle}"/>
@@ -1084,7 +1084,7 @@ $xaml = @"
                                 <TextBlock Text="Live Theme Preview" Style="{StaticResource SectionTitle}"/>
                                 <Border x:Name="ThemePreviewWindow" Background="#0B1220" BorderBrush="#26364F" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
                                     <StackPanel>
-                                        <TextBlock x:Name="ThemePreviewTitleText" Text="Hybrid Admin Platform" Foreground="#F8FAFC" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="ThemePreviewTitleText" Text="HILOP" Foreground="#F8FAFC" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                         <TextBlock x:Name="ThemePreviewAccentText" Text="Runtime profile branding package" Foreground="#38BDF8" Margin="0,4,0,14" TextWrapping="Wrap"/>
                                         <Border x:Name="ThemePreviewCard" Background="#0F172A" BorderBrush="#26364F" BorderThickness="1" CornerRadius="10" Padding="14">
                                             <StackPanel>
@@ -1495,7 +1495,7 @@ function Set-HybridLaunchButtonLabel {
     }
     $name = if ($null -eq $Profile -or [string]::IsNullOrWhiteSpace([string]$Profile.ProfileName)) { 'Console' } else { [string]$Profile.ProfileName }
     $controls.LaunchConsoleButton.Content = if ($name -eq 'Console') { 'Launch Console' } else { "Launch $name" }
-    $controls.LaunchConsoleButton.ToolTip = if ($name -eq 'Console') { 'Launch Hybrid Admin Console' } else { "Launch $name" }
+    $controls.LaunchConsoleButton.ToolTip = if ($name -eq 'Console') { 'Launch HILOP Console' } else { "Launch $name" }
 }
 
 
@@ -3123,7 +3123,7 @@ function Update-HybridRuntimeThemePreview {
     $controls.ThemePreviewWindow.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.BorderColor)
     $controls.ThemePreviewCard.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.PanelColor)
     $controls.ThemePreviewCard.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.BorderColor)
-    $controls.ThemePreviewTitleText.Text = if ([string]::IsNullOrWhiteSpace($theme.WindowTitle)) { 'Hybrid Admin Platform' } else { $theme.WindowTitle }
+    $controls.ThemePreviewTitleText.Text = if ([string]::IsNullOrWhiteSpace($theme.WindowTitle)) { 'HILOP' } else { $theme.WindowTitle }
     $controls.ThemePreviewTitleText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.ForegroundColor)
     $controls.ThemePreviewAccentText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.AccentColor)
     $controls.ThemePreviewMutedText.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($theme.MutedTextColor)
@@ -3141,7 +3141,7 @@ function Show-HybridRuntimeThemeEditor {
     $theme = if (Get-Command Resolve-HybridUiTheme -ErrorAction SilentlyContinue) { Resolve-HybridUiTheme -RepositoryRoot $repoRoot -ProfileName $profileName -ProfilePath $profilePath } else { $script:HybridUiTheme }
     $organizationName = Get-HybridSelectedRuntimeThemeOrganizationName
     $controls.ThemePackageNameTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.BrandPackageName)) { [string]$theme.BrandPackageName } else { 'Branding' }
-    $controls.ThemeWindowTitleTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.WindowTitle)) { [string]$theme.WindowTitle } else { 'Hybrid Admin Platform' }
+    $controls.ThemeWindowTitleTextBox.Text = if (-not [string]::IsNullOrWhiteSpace([string]$theme.WindowTitle)) { [string]$theme.WindowTitle } else { 'HILOP' }
     $controls.ThemeOrganizationNameTextBox.Text = $organizationName
     $controls.ThemeAccentColorTextBox.Text = [string]$theme.AccentColor
     $controls.ThemeBackgroundColorTextBox.Text = [string]$theme.BackgroundColor

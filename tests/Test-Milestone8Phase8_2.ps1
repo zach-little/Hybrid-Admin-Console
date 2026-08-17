@@ -11,7 +11,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $uiPath = Join-Path $repoRoot 'src\UI\Start-HybridAdminConsole.ps1'
 $managerPath = Join-Path $repoRoot 'src\Application\Application.RuntimeProfileManager.psm1'
 
-Assert-Pass -Condition (Test-Path $uiPath) -Message 'Hybrid Admin Console UI script exists'
+Assert-Pass -Condition (Test-Path $uiPath) -Message 'HILOP Console UI script exists'
 Assert-Pass -Condition (Test-Path $managerPath) -Message 'Runtime Profile Manager module exists'
 
 $ui = Get-Content -LiteralPath $uiPath -Raw

@@ -1,5 +1,5 @@
 {
-  "ProductName": "Hybrid Administration Platform",
+  "ProductName": "Hybrid Identity Lifecycle & Operations Platform (HILOP)",
   "DeploymentName": "HAP Simulation Console",
   "ProviderMode": "Mock",
   "TenantCloud": "Commercial",

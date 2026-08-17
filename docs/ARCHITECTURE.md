@@ -1,10 +1,10 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 **Document**
 Architecture
 
 **Purpose**
-Defines the technical architecture of the Hybrid Administration Platform and the relationships between its major subsystems.
+Defines the technical architecture of the Hybrid Identity Lifecycle & Operations Platform (HILOP) and the relationships between its major subsystems.
 
 **Scope**
 This document describes the architecture of the platform. Engineering philosophy is documented in **DESIGN_PRINCIPLES.md**.

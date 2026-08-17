@@ -1004,7 +1004,7 @@ public partial class NativeSimulationView : UserControl
         });
         header.Children.Add(new TextBlock
         {
-            Text = "Verify these values before HAP creates or updates anything.",
+            Text = "Verify these values before HILOP creates or updates anything.",
             Foreground = BrushResource("HapMutedBrush"),
             Margin = new Thickness(0, 4, 0, 0)
         });

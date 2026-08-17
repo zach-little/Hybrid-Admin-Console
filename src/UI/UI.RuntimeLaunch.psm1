@@ -45,7 +45,7 @@ function Set-HybridLaunchButtonProfileLabel {
 
     $name = if ($null -eq $Profile -or [string]::IsNullOrWhiteSpace([string]$Profile.ProfileName)) { 'Console' } else { [string]$Profile.ProfileName }
     $Button.Content = New-HybridLaunchButtonContent -ProfileName $name
-    $Button.ToolTip = if ($name -eq 'Console') { 'Launch Hybrid Admin Console' } else { "Launch $name" }
+    $Button.ToolTip = if ($name -eq 'Console') { 'Launch HILOP Console' } else { "Launch $name" }
 }
 
 Export-ModuleMember -Function @('New-HybridLaunchButtonContent','Set-HybridLaunchButtonProfileLabel')

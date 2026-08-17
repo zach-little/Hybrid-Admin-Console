@@ -17,7 +17,7 @@ $adProviderPath = Join-Path $repoRoot 'src\Infrastructure\Infrastructure.ActiveD
 $atlasConfigPath = Join-Path $repoRoot 'profiles\Atlas\config.json'
 $simulationProfilePath = Join-Path $repoRoot 'profiles\Runtime\Simulation.json'
 
-Assert-True (Test-Path -LiteralPath $uiPath) 'Hybrid Admin Console UI script exists'
+Assert-True (Test-Path -LiteralPath $uiPath) 'HILOP Console UI script exists'
 Assert-True (Test-Path -LiteralPath $servicePath) 'New User Wizard application service exists'
 
 $ui = Get-Content -LiteralPath $uiPath -Raw

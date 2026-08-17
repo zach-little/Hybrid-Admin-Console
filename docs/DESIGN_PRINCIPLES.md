@@ -1,10 +1,10 @@
-# Hybrid Administration Platform (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
 
 **Document**
 Design Principles
 
 **Purpose**
-Defines the engineering philosophies and architectural principles that guide the design and evolution of the Hybrid Administration Platform.
+Defines the engineering philosophies and architectural principles that guide the design and evolution of the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 
 **Scope**
 These principles apply to every module, provider, workflow, plugin, and future feature developed for HAP.

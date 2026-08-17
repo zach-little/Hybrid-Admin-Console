@@ -259,7 +259,7 @@ function Invoke-HybridMsalLoopbackInteractive {
         $returnedState = [string]$request.QueryString['state']
         $error = [string]$request.QueryString['error']
         $errorDescription = [string]$request.QueryString['error_description']
-        $message = if ([string]::IsNullOrWhiteSpace($error)) { 'Hybrid Admin Platform sign-in complete. You can close this browser window.' } else { "Hybrid Admin Platform sign-in failed: $error $errorDescription" }
+        $message = if ([string]::IsNullOrWhiteSpace($error)) { 'HILOP sign-in complete. You can close this browser window.' } else { "HILOP sign-in failed: $error $errorDescription" }
         $bytes = [Text.Encoding]::UTF8.GetBytes("<html><body><h2>$message</h2></body></html>")
         $context.Response.ContentType = 'text/html'
         $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
