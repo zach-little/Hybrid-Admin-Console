@@ -35,9 +35,9 @@ Selected initial workflow target for later cutover:
 
 Implemented:
 
-- `HAP.Providers.Abstractions.IProviderHealthCapability`
-- `HAP.Providers.Abstractions.IUserLookupCapability`
-- `HAP.Providers.Simulator.DirectorySimulatorProvider`
+- `HILOP.Providers.Abstractions.IProviderHealthCapability`
+- `HILOP.Providers.Abstractions.IUserLookupCapability`
+- `HILOP.Providers.Simulator.DirectorySimulatorProvider`
 - Deterministic seed data for the initial simulator users.
 - Focused simulator tests for provider health, seeded lookup, generated fallback, invalid query, unavailable provider, invalid configuration, cancellation, timeout, multiple matches, partial data, and no PowerShell assembly reference.
 
@@ -45,7 +45,7 @@ Implemented:
 
 Implemented:
 
-- `HAP.Application.ProviderRouting.SimulatorReadOnlyWorkflowRouter`
+- `HILOP.Application.ProviderRouting.SimulatorReadOnlyWorkflowRouter`
 - Explicit implementation values: `NativeDotNet` and `LegacyPowerShell`
 - Structured validation failure for unknown implementation values.
 - Route diagnostics for provider ID, implementation, capability, correlation ID, duration, status, and PowerShell launch state.
@@ -79,11 +79,11 @@ Implemented:
 
 - AD capability coverage gate in `docs/migration/ActiveDirectoryCapabilityCoverage.md`.
 - Native `ActiveDirectoryProvider` foundation for health, user search, user lookup, manager, groups, and direct reports.
-- AD write operations are represented with explicit gated/unsupported results until lab validation is configured.
+- Native AD write operations have completed non-production lab validation for manager, group membership, account enable/disable, password, object move, and ordinary allowlisted attribute paths.
 
-Gated:
+Validated:
 
-- Live LDAP writes, password operations, and object moves require a lab opt-in profile.
+- Live LDAP writes, password operations, and object moves passed validation using a dedicated lab OU and non-production accounts. Runtime execution remains subject to the signed-in technician's effective AD permissions and local safety confirmations.
 
 ## Tasks 39-40 Implementation State
 
@@ -183,13 +183,13 @@ Implemented:
 
 Implemented:
 
-- Removed temporary legacy projects from `HAP.sln`.
+- Removed temporary legacy projects from `HILOP.sln`.
 - Deleted:
-  - `src-dotnet/src/HAP.Providers.LegacyPowerShell`
-  - `src-dotnet/src/HAP.LegacyWorker.Protocol`
-  - `src-dotnet/src/HAP.LegacyPowerShellWorker`
-  - `src-dotnet/tests/HAP.Providers.LegacyPowerShell.Tests`
-  - `src/Compatibility/HAP.LegacyBridge.psm1`
+  - `src-dotnet/src/HILOP.Providers.LegacyPowerShell`
+  - `src-dotnet/src/HILOP.LegacyWorker.Protocol`
+  - `src-dotnet/src/HILOP.LegacyPowerShellWorker`
+  - `src-dotnet/tests/HILOP.Providers.LegacyPowerShell.Tests`
+  - `src/Compatibility/HILOP.LegacyBridge.psm1`
 - Full solution restore, build, and tests pass after deletion.
 
 ## Task 58 Implementation State
@@ -203,11 +203,11 @@ Implemented:
 
 Implemented:
 
-- Added `NativeFrameworkDependent` publish profile for `HAP.App`.
+- Added `NativeFrameworkDependent` publish profile for `HILOP.App`.
 - Added native provider project references so publish output includes Graph, AD, Exchange Online, Exchange on-premises, and simulator provider assemblies.
 - Added `SupportBundleService` with redaction for secrets, passwords, tokens, certificates, thumbprints, and client secrets.
 - Added packaging and diagnostics documentation.
-- Generated publish output at `src-dotnet/src/HAP.App/bin/Release/net10.0-windows/publish/native-framework-dependent`.
+- Generated publish output at `src-dotnet/src/HILOP.App/bin/Release/net10.0-windows/publish/native-framework-dependent`.
 
 ## Task 60 Implementation State
 

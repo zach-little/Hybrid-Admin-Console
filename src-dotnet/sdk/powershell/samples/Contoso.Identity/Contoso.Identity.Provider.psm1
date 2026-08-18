@@ -1,4 +1,4 @@
-$sdkPath = Join-Path $PSScriptRoot '..\..\HAP.ProviderSdk.psm1'
+$sdkPath = Join-Path $PSScriptRoot '..\..\HILOP.ProviderSdk.psm1'
 Import-Module -Name $sdkPath -Force
 
 function Invoke-HapProviderOperation {

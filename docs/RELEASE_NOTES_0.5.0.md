@@ -11,11 +11,11 @@
 
 # Summary
 
-Version 0.5 establishes the reusable Microsoft cloud foundation for HAP.
+Version 0.5 establishes the reusable Microsoft cloud foundation for HILOP.
 
 This release introduces cloud environment abstraction, tenant and organization context, authentication framework contracts, authentication session and token contracts, a shared HTTP pipeline, and the Microsoft Graph provider foundation.
 
-The release is intentionally infrastructure-first. It prepares HAP for live Microsoft cloud provider work in Version 0.6 without requiring future providers to reimplement authentication, endpoint resolution, retry logic, HTTP handling, query construction, diagnostics, or provider lifecycle behavior.
+The release is intentionally infrastructure-first. It prepares HILOP for live Microsoft cloud provider work in Version 0.6 without requiring future providers to reimplement authentication, endpoint resolution, retry logic, HTTP handling, query construction, diagnostics, or provider lifecycle behavior.
 
 ---
 

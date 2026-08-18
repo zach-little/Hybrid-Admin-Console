@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>HILOP.App</AssemblyName>
+    <RootNamespace>HILOP.App</RootNamespace>
+    <Product>HILOP</Product>
+    <Company>Little Innovation Tech</Company>
+    <Authors>Little Innovation Tech</Authors>
+    <Description>Hybrid Identity Lifecycle and Operations Platform</Description>
+    <Copyright>Copyright © Little Innovation Tech</Copyright>
+    <ApplicationIcon>HILOP_Logo.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HILOP.Presentation\HILOP.Presentation.csproj" />
+    <ProjectReference Include="..\HILOP.Application\HILOP.Application.csproj" />
+    <ProjectReference Include="..\HILOP.Configuration\HILOP.Configuration.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.ActiveDirectory\HILOP.Providers.ActiveDirectory.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.ExchangeOnline\HILOP.Providers.ExchangeOnline.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.ExchangeOnPremises\HILOP.Providers.ExchangeOnPremises.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.Graph\HILOP.Providers.Graph.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.Simulator\HILOP.Providers.Simulator.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Workflows\*.json" CopyToOutputDirectory="PreserveNewest" TargetPath="workflows\%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="HILOP_Logo.ico" />
+  </ItemGroup>
+  <Import Project="..\..\build\HILOP.Signing.targets" Condition="Exists('..\..\build\HILOP.Signing.targets')" />
+</Project>

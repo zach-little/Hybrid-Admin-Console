@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\HILOP.Application\HILOP.Application.csproj" />
+    <ProjectReference Include="..\HILOP.Contracts\HILOP.Contracts.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.Abstractions\HILOP.Providers.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

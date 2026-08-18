@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <ProjectReference Include="..\..\src\HILOP.Extensions.Abstractions\HILOP.Extensions.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\HILOP.Plugin.Protocol\HILOP.Plugin.Protocol.csproj" />
+  </ItemGroup>
+</Project>

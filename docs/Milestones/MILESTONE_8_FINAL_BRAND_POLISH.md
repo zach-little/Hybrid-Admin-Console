@@ -4,10 +4,10 @@ This final polish pass completes the Runtime Platform visual identity before the
 
 ## Changes
 
-- Adds `assets/icons/HAP_Icon.png` as the application icon.
+- Adds the primary application icon under `assets/icons`.
 - Displays the HILOP icon beside `HILOP` on the Runtime Home screen.
 - Displays the HILOP icon beside `HILOP Console` on the main console dashboard.
-- Replaces HAP text tiles in profile cards and runtime summary with the application icon.
+- Replaces HILOP text tiles in profile cards and runtime summary with the application icon.
 - Tightens the Launch button width to prevent clipping in the fixed footer.
 - Updates the Launch button label dynamically to include the selected runtime profile.
 - Adds stronger selected-profile visual emphasis with cyan accent border and glow.

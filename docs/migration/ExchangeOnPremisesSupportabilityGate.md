@@ -2,7 +2,7 @@
 
 ## Task 44 Disposition
 
-| Operation | Current HAP Use | Native Non-PowerShell Path | Disposition |
+| Operation | Current HILOP Use | Native Non-PowerShell Path | Disposition |
 | --- | --- | --- | --- |
 | Provider health/session | Runtime status | Connection/authentication checks only | NativeSupportedWithBehaviorChange |
 | Remote mailbox read | User mailbox panel | No approved Exchange admin API configured | UnsupportedWithoutApprovedApi |

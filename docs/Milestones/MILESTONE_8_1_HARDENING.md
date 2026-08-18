@@ -17,7 +17,7 @@ Milestone 8.1 hardens the completed Runtime Platform before Milestone 9 begins. 
 - Startup window dimensions were reduced and min-size constraints relaxed for smaller screens and RDP sessions.
 - Runtime action footer now scrolls/wraps instead of allowing command tiles to disappear.
 - Version strings were normalized to `v0.8.1`.
-- Dynamic UI theme resolution was added from runtime profile branding, organization branding, and optional `assets/themes/hap.theme.json`.
+- Dynamic UI theme resolution was added from runtime profile branding, organization branding, and an optional repository-level theme override.
 - Added a theme example file for organization-specific color compliance.
 - Added cumulative hardening tests for launcher, UI modules, responsive layout, launch wrapping, dynamic themes, and runtime profile behavior.
 
@@ -28,7 +28,7 @@ The UI theme resolver uses the following order:
 1. Built-in HILOP Dark defaults.
 2. Runtime profile `Branding` or `Theme` object, when present.
 3. Organization branding file at `profiles/<Organization>/branding.json`, when the selected runtime profile declares an organization.
-4. Optional repository override at `assets/themes/hap.theme.json`.
+4. Optional repository-level theme override.
 
 This allows Atlas or any other organization profile to enforce approved color values without changing UI code.
 

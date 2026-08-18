@@ -24,9 +24,9 @@ Primary sources inspected:
 
 ## Existing Direction
 
-HAP already treats providers, workflows, plugins, and services as extension points. The existing documentation emphasizes provider contracts, configuration-driven behavior, and avoiding customer-specific source changes.
+HILOP already treats providers, workflows, plugins, and services as extension points. The existing documentation emphasizes provider contracts, configuration-driven behavior, and avoiding customer-specific source changes.
 
-The current PowerShell plugin loader is not suitable as the target .NET extension model. `Core.PluginLoader.psm1` discovers `*.plugin.psm1` files, imports them into the host process, and registers scriptblock initialization. That is acceptable historical context, but the migration target requires explicit installation, approval, capability grants, exact-path loading, isolation, and no WPF injection.
+The current PowerShell plugin loader is not suitable as the target .NET extension model. `Core.PluginLoader.psm1` discovers `*.plugin.psm1` files, imports them into the host process, and registers scriptblock initialization. That is acceptable historical context, but the migration target requires explicit local installation and enablement, capability declarations, exact-path loading, isolation, and no WPF injection. These are workstation trust controls, not networked approval workflows or application RBAC.
 
 ## Likely Extension Verticals
 
@@ -34,14 +34,14 @@ The current PowerShell plugin loader is not suitable as the target .NET extensio
 |---|---|---|---|---|
 | MobilePass / MFA token platform | Customer-specific identity/security operation outside built-in Microsoft providers | `ProviderHealth`, `UserLookup`, `UserCredentialEnrollment`, `CredentialReset`, `TokenRevoke`, `AuditRead` | API endpoint, tenant/realm, auth method, enrollment policy, delivery methods, timeout | Example vertical for SDK design; do not implement during migration foundation |
 | JAMIS | External business/ERP integration named in roadmap | `UserLookup`, `UserProvisioning`, `UserUpdate`, `UserDeprovisioning`, `Reporting` | API base URL, environment, cost center mappings, auth profile, field mappings | Good candidate for customer-owned provider or native provider depending product strategy |
-| Paxton / Physical access | External access-control system named in roadmap | `UserLookup`, `AccessCredentialProvisioning`, `AccessCredentialDisable`, `AccessGroupMembership`, `AuditRead` | Site/controller endpoint, badge mappings, access group mappings, operator approval rules | Should integrate through operations, not hardcoded employee lifecycle steps |
+| Paxton / Physical access | External access-control system named in roadmap | `UserLookup`, `AccessCredentialProvisioning`, `AccessCredentialDisable`, `AccessGroupMembership`, `AuditRead` | Site/controller endpoint, badge mappings, access group mappings, provider authorization settings | Should integrate through operations, not hardcoded employee lifecycle steps |
 | SQL reporting | External reporting/data source | `Reporting`, `QueryRead`, `Export`, `ProviderHealth` | Connection reference, approved queries/views, parameter schema, redaction rules | Must avoid arbitrary SQL execution from UI |
 | SharePoint automation | External content/workflow integration | `DocumentProvisioning`, `WorkflowTrigger`, `Reporting`, `ProviderHealth` | Site URLs, list/library IDs, app auth, schema mappings | Could also be a first-party Microsoft provider later |
 | Sentinel integration | Security operations data provider | `SecurityAlertRead`, `RiskRead`, `InvestigationRead`, `Reporting`, `ProviderHealth` | Workspace IDs, cloud, auth, query templates, data retention | Read-only first; writes need separate elevated capability |
 | VMware | Infrastructure provider listed in architecture | `DeviceLookup`, `VirtualMachineRead`, `VirtualMachineAction`, `ProviderHealth` | vCenter endpoint, credential reference, datacenter/folder mappings, action policy | Destructive operations need explicit capability and confirmation |
 | Zammad / ticketing | External workflow/ticketing provider listed in architecture | `TicketCreate`, `TicketUpdate`, `TicketSearch`, `WorkflowTrigger`, `ProviderHealth` | API endpoint, project/queue mappings, templates, auth profile | Useful for audit-linked admin actions |
 | Teams administration | Roadmap enterprise operation | `TeamsRead`, `TeamsPolicyUpdate`, `GroupMembership`, `Reporting` | Tenant, scopes, policy mappings | Built-in Microsoft provider likely; third-party provider contract still useful |
-| Custom dashboards/reports | Milestone 13 extension area | `DashboardDataRead`, `Reporting`, `Export` | Declarative widgets, query/provider references, refresh interval | HAP should render UI; extension supplies schema/data only |
+| Custom dashboards/reports | Milestone 13 extension area | `DashboardDataRead`, `Reporting`, `Export` | Declarative widgets, query/provider references, refresh interval | HILOP should render UI; extension supplies schema/data only |
 
 ## Capability Inventory
 
@@ -69,7 +69,7 @@ Write capabilities should be split from read capabilities. Destructive capabilit
 
 ## MobilePass Example
 
-MobilePass should be modeled as a customer PowerShell provider behind permanent extension contracts, not as a built-in HAP workflow and not through the temporary legacy bridge.
+MobilePass should be modeled as a customer PowerShell provider behind permanent extension contracts, not as a built-in HILOP workflow and not through the temporary legacy bridge.
 
 Example provider identity:
 
@@ -85,11 +85,11 @@ Example operation form metadata:
 
 - `MobilePass.EnrollUser`
 - Fields: `userPrincipalName`, `deliveryMethod`, `phoneNumber`, `emailAddress`, `forceReenrollment`
-- HAP renders the form and validates field types.
+- HILOP renders the form and validates field types.
 - The provider receives a structured operation request.
 - The provider returns a structured result with warnings, errors, and audit-safe details.
 
-This example proves the SDK needs user-scoped lookups, write operations, declarative forms, choice lists, and audit events without letting the provider inject UI or modify HAP core code.
+This example proves the SDK needs user-scoped lookups, write operations, declarative forms, choice lists, and audit events without letting the provider inject UI or modify HILOP core code.
 
 ## Configuration Requirements
 
@@ -99,7 +99,7 @@ Required registry fields:
 
 - Provider ID, display name, publisher, version, and implementation type.
 - Extension API version and manifest schema version.
-- Exact installation path controlled by HAP.
+- Exact installation path controlled by HILOP.
 - Entry module for PowerShell providers.
 - File hashes for manifest and executable/module files.
 - Signature state and signing identity when available.
@@ -108,7 +108,7 @@ Required registry fields:
 - Configuration instance ID.
 - Safe configuration values.
 - Secret references, not raw secrets.
-- Install, update, approval, enablement, disablement, and last validation timestamps.
+- Install, update, local trust confirmation, enablement, disablement, and last validation timestamps.
 
 Runtime profile references should include:
 
@@ -126,7 +126,7 @@ Configuration schema needs:
 - Secret reference fields.
 - Choice fields and dynamic choice operation references.
 - Validation constraints.
-- Display metadata owned by HAP, not custom WPF.
+- Display metadata owned by HILOP, not custom WPF.
 - Safe defaults only when explicitly defined by the provider manifest or admin configuration.
 
 ## Trust and Security Requirements
@@ -135,29 +135,29 @@ PowerShell providers are installed executable code. They should be treated as tr
 
 Required trust controls:
 
-- Administrative approval before enablement.
+- Explicit local operator confirmation before enablement.
 - Exact-path loading from an HILOP-controlled provider directory.
 - No discovery from the general `PSModulePath`.
 - Manifest schema validation before any module code runs.
 - Hash validation before each launch.
 - Signature-state capture and optional policy enforcement.
-- Capability grants enforced by HAP before invocation.
+- Capability grants enforced by HILOP before invocation.
 - One isolated plugin-host process per provider instance where practical.
 - Operation timeouts and cancellation.
 - Forced termination and clean restart after a hung host.
 - Redaction of tokens, passwords, secure strings, connection strings, and authorization headers.
 - Separate user-safe error messages from diagnostic details.
-- Audit logs for installation, approval, enablement, invocation, failure, timeout, and disablement.
-- No WPF control injection, code-behind injection, arbitrary assembly loading into HAP.App, or custom UI inside the main process.
+- Audit logs for installation, local trust confirmation, enablement, invocation, failure, timeout, and disablement.
+- No WPF control injection, code-behind injection, arbitrary assembly loading into HILOP.App, or custom UI inside the main process.
 
 ## UI Extension Requirements
 
-HAP owns all UI. Extensions may provide declarative metadata only.
+HILOP owns all UI. Extensions may provide declarative metadata only.
 
 Allowed:
 
-- Configuration forms rendered by HAP from validated schema.
-- Operation forms rendered by HAP from validated schema.
+- Configuration forms rendered by HILOP from validated schema.
+- Operation forms rendered by HILOP from validated schema.
 - Read-only result metadata such as labels, columns, severity, and grouping.
 - Dynamic choice lists through declared read operations with timeout and caching.
 
@@ -166,8 +166,8 @@ Prohibited:
 - Custom WPF controls.
 - Code-behind.
 - Arbitrary XAML from providers.
-- Provider-owned windows inside the HAP process.
-- Provider callbacks that mutate HAP UI state directly.
+- Provider-owned windows inside the HILOP process.
+- Provider callbacks that mutate HILOP UI state directly.
 
 ## Legacy Bridge vs Permanent SDK Separation
 
@@ -176,14 +176,14 @@ Prohibited:
 | Purpose | Preserve first-party PowerShell behavior during migration | Support administrator-approved customer providers after migration |
 | Lifetime | Deleted after native parity/cutover | Permanent optional platform feature |
 | Scope | Narrow HILOP-owned bridge commands | Public provider contract and capability model |
-| Module source | Existing HAP modules only | Exact approved customer provider package |
-| Protocol | `HAP.LegacyWorker.Protocol` | `HAP.Plugin.Protocol` |
-| Host | `HAP.LegacyPowerShellWorker` | `HAP.PowerShellPluginHost` |
-| UI | None | Declarative schemas only; HAP renders UI |
+| Module source | Existing HILOP modules only | Exact approved customer provider package |
+| Protocol | `HILOP.LegacyWorker.Protocol` | `HILOP.Plugin.Protocol` |
+| Host | `HILOP.LegacyPowerShellWorker` | `HILOP.PowerShellPluginHost` |
+| UI | None | Declarative schemas only; HILOP renders UI |
 | Fallback behavior | Explicit migration implementation only | Never fallback for built-in providers |
-| Security posture | Compatibility isolation | Admin approval, hash/signature/capability enforcement |
+| Security posture | Compatibility isolation | Local trust confirmation, hash/signature/capability enforcement |
 
-The permanent plugin host must never import `HAP.LegacyBridge.psm1`. The legacy bridge must never be documented as the customer provider SDK.
+The permanent plugin host must never import `HILOP.LegacyBridge.psm1`. The legacy bridge must never be documented as the customer provider SDK.
 
 ## Contract Shapes Needed Later
 
@@ -216,7 +216,7 @@ Future implementation tasks should add tests for:
 
 - Valid manifest accepted.
 - Invalid manifest rejected before module load.
-- Unsupported HAP extension API version rejected.
+- Unsupported HILOP extension API version rejected.
 - Missing capability denied.
 - Disabled provider cannot be invoked.
 - Changed module hash blocks launch.
@@ -235,11 +235,11 @@ Future implementation tasks should add tests for:
 - Exact supported initial PowerShell 7 version band for the public SDK.
 - Whether native .NET third-party providers are supported in the first SDK or reserved for later.
 - Signature enforcement policy: warn, require trusted signer, or organization-configurable.
-- Provider installation UX and administrative approval workflow.
+- Provider installation and local trust-confirmation UX.
 - Whether a Windows PowerShell 5.1 extension host is ever supported for customer modules. The migration plan says not to promise this in the first public SDK.
 
 ## Recommendation
 
 Build the early .NET migration around provider/capability contracts that are strong enough for the future extension platform, but do not implement the plugin host until the base runtime contracts and legacy worker boundary are stable.
 
-Use MobilePass as a conformance sample later because it exercises the right shape: identity lookup, credential enrollment/reset, write operations, declarative forms, dynamic choices, secrets, audit, and provider health. Keep it outside first-party HAP business logic.
+Use MobilePass as a conformance sample later because it exercises the right shape: identity lookup, credential enrollment/reset, write operations, declarative forms, dynamic choices, secrets, audit, and provider health. Keep it outside first-party HILOP business logic.

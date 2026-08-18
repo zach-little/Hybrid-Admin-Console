@@ -6,7 +6,7 @@ Implemented as a provider-facing Microsoft Graph service wrapper.
 
 ## Architectural intent
 
-Phase 3 adds the Microsoft Graph provider surface that consumes the platform authentication manager and returns canonical HAP domain models. This phase intentionally does not perform live Graph HTTP calls. Live Graph request execution remains behind the existing Version 0.5 Graph client and HTTP pipeline foundation.
+Phase 3 adds the Microsoft Graph provider surface that consumes the platform authentication manager and returns canonical HILOP domain models. This phase intentionally does not perform live Graph HTTP calls. Live Graph request execution remains behind the existing Version 0.5 Graph client and HTTP pipeline foundation.
 
 ## Added capability
 

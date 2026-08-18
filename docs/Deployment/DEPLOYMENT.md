@@ -60,7 +60,7 @@ Expected behavior:
 
 ## Security Notes
 
-Device Code authentication is intentionally not used. GCC High Conditional Access policies commonly block that flow, and HAP must remain compatible with Interactive and App-only MSAL flows only.
+Device Code authentication is intentionally not used. GCC High Conditional Access policies commonly block that flow. Microsoft Graph uses interactive delegated MSAL authentication so the local instance operates within the signed-in technician's Entra ID permissions. App-only profile fields remain only for providers or compatibility paths that explicitly support them.
 
 Packaging and validation do not perform live authentication or provider connectivity checks.
 

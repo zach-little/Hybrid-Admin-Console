@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\HAP.Contracts\HAP.Contracts.csproj" />
-    <ProjectReference Include="..\HAP.Extensions.Abstractions\HAP.Extensions.Abstractions.csproj" />
-    <ProjectReference Include="..\HAP.Extensions.Registry\HAP.Extensions.Registry.csproj" />
-    <ProjectReference Include="..\HAP.Plugin.Protocol\HAP.Plugin.Protocol.csproj" />
-  </ItemGroup>
-</Project>

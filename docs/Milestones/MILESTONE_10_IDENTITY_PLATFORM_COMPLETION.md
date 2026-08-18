@@ -48,7 +48,7 @@ Fix user Graph profile propagation so license fields reach the UI:
 ### PIM
 
 - Validate cloud and permission requirements.
-- Support delegated access where app-only is insufficient.
+- Use delegated Microsoft Graph access so results remain subject to the signed-in technician's Entra ID permissions and activation state.
 - Display eligible and active assignments where available.
 - Return clear diagnostics when unavailable.
 

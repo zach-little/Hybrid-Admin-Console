@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HILOP.Contracts\HILOP.Contracts.csproj" />
+    <ProjectReference Include="..\HILOP.Domain\HILOP.Domain.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.Abstractions\HILOP.Providers.Abstractions.csproj" />
+    <ProjectReference Include="..\HILOP.Extensions.Abstractions\HILOP.Extensions.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

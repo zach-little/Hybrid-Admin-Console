@@ -92,4 +92,4 @@ The test validates:
 
 ## Result
 
-Milestone 8 is now ready for closeout documentation. HAP has a runtime platform that can be initialized, diagnosed, configured through profiles, launched through a startup shell, and packaged for deployment.
+Milestone 8 is now ready for closeout documentation. HILOP has a runtime platform that can be initialized, diagnosed, configured through profiles, launched through a startup shell, and packaged for deployment.

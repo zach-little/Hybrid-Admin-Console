@@ -4,7 +4,7 @@ Use this note when starting the next Codex session.
 
 ## Direction
 
-HAP is identity-first. User Lookup is the identity hub. Do not split identity facts into standalone modules.
+HILOP is identity-first. User Lookup is the identity hub. Do not split identity facts into standalone modules.
 
 ## Immediate Task
 

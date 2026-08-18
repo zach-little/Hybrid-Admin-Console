@@ -22,3 +22,19 @@ Thumbs.db
 
 # Visual Studio local workspace
 **/.vs/
+*.pubxml.user
+
+# Visual Studio / .NET generated files
+.vs/
+**/bin/
+**/obj/
+
+# Visual Studio Installer output
+src-dotnet/HILOP.Installer/Release/
+
+# Generated distribution archives
+src-dotnet.zip
+littleinnovationtech-site.zip
+
+# Visual Studio Installer build output
+src-dotnet/HILOP.Installer/Release/

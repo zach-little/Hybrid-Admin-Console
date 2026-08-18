@@ -10,7 +10,7 @@ Complete.
 
 ## Summary
 
-Milestone 8.2 promotes HAP branding from static assets into a runtime-profile-aware branding and theme system.
+Milestone 8.2 promotes HILOP branding from static assets into a runtime-profile-aware branding and theme system.
 
 The application now supports a profile/organization brand package that can define colors, window title, display name, and brand asset paths without changing UI code.
 

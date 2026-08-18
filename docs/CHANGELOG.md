@@ -68,7 +68,7 @@
 ## Milestone 8 Final Icon Startup Fix
 
 - Fixed WPF startup failure caused by declaring a PNG file as the `Window.Icon` in XAML.
-- Centralized HAP brand asset resolution.
+- Centralized HILOP brand asset resolution.
 - Uses PNG branding inside the UI and ICO branding for the native window/taskbar icon.
 
 ## v0.9C - Workflow Framework and New User Wizard Shell

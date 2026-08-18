@@ -4,7 +4,7 @@ Status: analysis and compatibility testing only. This follows `Migration.MD` Tas
 
 ## Objective
 
-Test the existing HAP PowerShell runtime under Windows PowerShell 5.1, PowerShell 7, nested in-process runspaces, and out-of-process worker-style execution. Document compatibility findings and recommend a temporary legacy hosting approach for the C# migration.
+Test the existing HILOP PowerShell runtime under Windows PowerShell 5.1, PowerShell 7, nested in-process runspaces, and out-of-process worker-style execution. Document compatibility findings and recommend a temporary legacy hosting approach for the C# migration.
 
 ## Environment Observed
 
@@ -25,7 +25,7 @@ The spike intentionally avoided live authentication prompts and live write opera
 - Enumerated runtime profiles and resolved the selected profile in both engines.
 - Imported `Core.Runtime.psm1` and launched the `Simulation` runtime in both engines.
 - Checked module availability for `ActiveDirectory`, `ExchangeOnlineManagement`, `Microsoft.Graph.Authentication`, `Microsoft.Graph.Users`, and `MSAL.PS`.
-- Imported HAP auth, Graph, Exchange Online, and Exchange On-Premises provider modules in both engines.
+- Imported HILOP auth, Graph, Exchange Online, and Exchange On-Premises provider modules in both engines.
 - Created Exchange Online deferred provider health with intentionally empty app-only configuration in both engines.
 - Created nested runspaces inside both engines and repeated runtime profile enumeration.
 - Created nested runspaces inside both engines and repeated simulation runtime initialization.
@@ -38,12 +38,12 @@ The spike intentionally avoided live authentication prompts and live write opera
 | Runtime profile module import | Pass | Pass | Pass | Pass | `Core.RuntimeProfile` and `Application.RuntimeProfileManager` import cleanly. |
 | Runtime profile enumeration | Pass | Pass | Pass | Pass | Both engines returned 2 profiles, first profile `Simulation`, and a valid selection. |
 | Simulation runtime initialization | Pass with warnings | Pass with warnings | Pass with warnings | Pass with warnings | Both engines registered `DirectorySimulator`, `ActiveDirectory`, `MicrosoftGraph`, `ExchangeOnline`, and `ExchangeOnPremises`; diagnostics reported `Warning` with no errors. |
-| HAP auth/provider module imports | Pass | Pass | Not separately tested | Not separately tested | Auth, MSAL, tenant, Graph provider, Exchange Online provider, and Exchange On-Premises provider modules import in both engines. |
+| HILOP auth/provider module imports | Pass | Pass | Not separately tested | Not separately tested | Auth, MSAL, tenant, Graph provider, Exchange Online provider, and Exchange On-Premises provider modules import in both engines. |
 | Active Directory module availability | Available | Available | Not separately tested | Not separately tested | AD module is visible to both engines at the Windows PowerShell module path. |
 | Active Directory runtime readiness | Unavailable in current environment | Unavailable in current environment | Not separately tested | Not separately tested | Import succeeds, but runtime readiness reports unavailable because no default ADWS server is reachable. |
 | Microsoft Graph PowerShell modules | Available | Not available | Not separately tested | Not separately tested | `Microsoft.Graph.Authentication` and `Microsoft.Graph.Users` are installed for Windows PowerShell profile/module path, not visible to PowerShell 7 in this environment. |
 | ExchangeOnlineManagement module | Not available | Not available | Not separately tested | Not separately tested | Both engines report missing ExchangeOnlineManagement. |
-| `MSAL.PS` module | Not available | Not available | Not separately tested | Not separately tested | HAP's current MSAL module has internal HTTP/contract logic, but external `MSAL.PS` is not present. |
+| `MSAL.PS` module | Not available | Not available | Not separately tested | Not separately tested | HILOP's current MSAL module has internal HTTP/contract logic, but external `MSAL.PS` is not present. |
 | Exchange Online deferred provider health | Pass with stream noise | Pass with stream noise | Not separately tested | Not separately tested | Returns structured `NotConfigured` health, but emits strict-mode property errors after JSON when given an empty config object. Worker protocol must capture streams separately. |
 | Interactive Graph delegated auth | Not live-tested | Not live-tested | Not live-tested | Not live-tested | Requires a controlled interactive test because it opens browser/loopback auth and can prompt MFA. |
 | Exchange On-Premises live remoting | Not live-tested | Not live-tested | Not live-tested | Not live-tested | Should be treated as high risk until tested against a real endpoint with timeout/cancellation. |
@@ -58,7 +58,7 @@ The simulator is the safest first bridge target. It works in Windows PowerShell 
 
 ### Active Directory
 
-The `ActiveDirectory` module is installed and visible to both engines. HAP's AD provider module imports, but live readiness is unavailable in the current test context with this warning:
+The `ActiveDirectory` module is installed and visible to both engines. HILOP's AD provider module imports, but live readiness is unavailable in the current test context with this warning:
 
 `Unable to find a default server with Active Directory Web Services running.`
 
@@ -66,19 +66,19 @@ This is an environmental connectivity/readiness issue, not a parser/import issue
 
 ### Microsoft Graph
 
-HAP Graph-related modules import in both engines. Microsoft Graph PowerShell SDK modules are installed only where Windows PowerShell can see them in this environment. HAP's current Graph provider uses internal HTTP/MSAL-style functions as well as shared auth modules, so module import compatibility is better than Graph SDK availability alone suggests.
+HILOP Graph-related modules import in both engines. Microsoft Graph PowerShell SDK modules are installed only where Windows PowerShell can see them in this environment. HILOP's current Graph provider uses internal HTTP/MSAL-style functions as well as shared auth modules, so module import compatibility is better than Graph SDK availability alone suggests.
 
 Delegated interactive auth was not live-tested because it can launch a browser and MFA prompt. The existing code has loopback-browser behavior and launch-time delegated auth requirements, so the legacy worker needs an explicit host-interaction policy before this is automated.
 
 ### Exchange Online
 
-`ExchangeOnlineManagement` is not installed for either engine in the tested environment. HAP's Exchange Online provider module imports and can return structured `NotConfigured` health when deferred, but the test surfaced extra strict-mode errors after the JSON result when configuration is empty.
+`ExchangeOnlineManagement` is not installed for either engine in the tested environment. HILOP's Exchange Online provider module imports and can return structured `NotConfigured` health when deferred, but the test surfaced extra strict-mode errors after the JSON result when configuration is empty.
 
 Implication: the worker protocol must never parse all human output as data. It needs an operation envelope, correlation ID, a data channel, warnings, errors, and captured stream diagnostics.
 
 ### Exchange On-Premises
 
-The HAP Exchange On-Premises provider module imports in both engines. Live remoting was not tested. Because on-prem Exchange often depends on remote PowerShell behavior, authentication mode, endpoint policy, and older module assumptions, this provider should be treated as a strong reason to prefer an out-of-process legacy worker.
+The HILOP Exchange On-Premises provider module imports in both engines. Live remoting was not tested. Because on-prem Exchange often depends on remote PowerShell behavior, authentication mode, endpoint policy, and older module assumptions, this provider should be treated as a strong reason to prefer an out-of-process legacy worker.
 
 ## In-Process vs Out-of-Process Assessment
 

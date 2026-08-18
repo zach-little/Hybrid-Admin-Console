@@ -1,4 +1,4 @@
-# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
 **Document**
 Architecture
@@ -13,7 +13,7 @@ This document describes the architecture of the platform. Engineering philosophy
 
 # 1. Architectural Goals
 
-The architecture of HAP is designed to satisfy the following objectives:
+The architecture of HILOP is designed to satisfy the following objectives:
 
 * Provider independence
 * Enterprise scalability
@@ -26,6 +26,22 @@ The architecture of HAP is designed to satisfy the following objectives:
 * Long-term evolution
 
 The platform is designed as reusable infrastructure rather than a collection of administrative scripts.
+
+## 1.1 Deployment and Authorization Boundary
+
+HILOP is a local, single-operator desktop application. Each instance runs on a technician's workstation under that technician's operating-system and directory identity. It is not a server, shared web application, or network coordination service.
+
+HILOP therefore does not implement application-level role-based access control (RBAC). Authorization is enforced by the systems being administered:
+
+* Microsoft Graph requests use delegated access and are limited by the signed-in technician's Microsoft Entra ID permissions, tenant consent, Conditional Access, and other applicable Entra controls.
+* Active Directory operations run with the technician's effective AD permissions.
+* Other providers remain responsible for enforcing the identity and permissions supplied to them.
+
+HILOP must not grant, simulate, or elevate permissions beyond those external controls. Authorization failures are reported to the operator rather than bypassed.
+
+Centralized or multi-user approval workflows are also outside the product boundary. A local instance has no network awareness through which to discover approvers, route requests, or coordinate approval state. Local confirmations for destructive or high-impact actions remain appropriate safeguards, but they are not approval workflows.
+
+Adding a server or peer-to-peer network layer solely to support RBAC or approvals is explicitly out of scope. Such a layer would change the product from a technician-operated local console into a network service and would require a separate architectural and product decision.
 
 ---
 
@@ -99,6 +115,7 @@ Examples include:
 * Caching
 * Telemetry
 * Health Monitoring
+* Profile-scoped append-only auditing
 * Module Loading
 * Environment Detection
 

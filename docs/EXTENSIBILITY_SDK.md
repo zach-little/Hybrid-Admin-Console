@@ -1,4 +1,4 @@
-# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
 **Document**
 Extensibility SDK
@@ -23,7 +23,7 @@ The objective is to allow new functionality to be introduced while preserving pr
 
 # 2. Extension Types
 
-HAP supports several categories of extensions.
+HILOP supports several categories of extensions.
 
 ## Providers
 
@@ -90,7 +90,7 @@ Every extension should:
 * Register through the platform.
 * Consume shared infrastructure.
 
-Extensions should integrate with HAP rather than alter HAP.
+Extensions should integrate with HILOP rather than alter HILOP.
 
 ---
 
@@ -188,7 +188,7 @@ Extensions obtain dependencies through the Service Registry.
 
 They should never instantiate platform services directly.
 
-Future versions of HAP may expose these services through a unified Platform Context.
+Future versions of HILOP may expose these services through a unified Platform Context.
 
 Extensions should remain compatible with either approach.
 
@@ -236,7 +236,7 @@ This allows the platform to evolve without breaking existing extensions.
 
 # 12. Long-Term Vision
 
-The long-term objective is that extending HAP becomes predictable.
+The long-term objective is that extending HILOP becomes predictable.
 
 Adding a new provider, workflow, or plugin should primarily involve implementing established platform contracts while automatically benefiting from shared infrastructure including:
 

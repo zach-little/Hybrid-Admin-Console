@@ -1,4 +1,4 @@
-# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
 **Document**
 Design Principles
@@ -7,7 +7,7 @@ Design Principles
 Defines the engineering philosophies and architectural principles that guide the design and evolution of the Hybrid Identity Lifecycle & Operations Platform (HILOP).
 
 **Scope**
-These principles apply to every module, provider, workflow, plugin, and future feature developed for HAP.
+These principles apply to every module, provider, workflow, plugin, and future feature developed for HILOP.
 
 ---
 
@@ -35,7 +35,7 @@ Platform infrastructure should always be reusable and provider-agnostic.
 
 # 2. Enterprise First
 
-HAP is designed for enterprise environments.
+HILOP is designed for enterprise environments.
 
 Architectural decisions should prioritize:
 
@@ -265,7 +265,7 @@ New providers should primarily implement provider-specific logic while inheritin
 
 # 16. Long-Term Objective
 
-The long-term objective of HAP is to provide a unified administration platform capable of managing heterogeneous enterprise environments through reusable infrastructure, provider abstraction, and workflow orchestration.
+The long-term objective of HILOP is to provide a unified administration platform capable of managing heterogeneous enterprise environments through reusable infrastructure, provider abstraction, and workflow orchestration.
 
 Future providers should integrate by implementing established contracts while automatically benefiting from the platform's shared services.
 
@@ -296,3 +296,11 @@ Whenever a new customer, tenant, cloud environment, or provider can be supported
 Platform behavior should be data-driven wherever possible.
 
 This principle reduces maintenance effort, improves extensibility, minimizes customer-specific branching, and enables the platform to evolve without modifying core architecture.
+
+# 18. Local Execution and External Authorization
+
+HILOP is deployed as a local desktop application on a technician's workstation and runs under that technician's user context. It is not designed as a multi-user server or as a network-aware coordination service.
+
+Application-level RBAC must not be added. Microsoft Graph authorization is provided through delegated access and Microsoft Entra ID controls; Active Directory authorization is provided through the technician's effective AD permissions. Provider-side authorization remains the source of truth for every operation.
+
+HILOP may require an explicit local confirmation before a destructive or high-impact action. It must not implement centralized, routed, or multi-user approval workflows. Implementing those workflows would require a network service and persistent shared state that are outside the local-workstation product model.

@@ -2,10 +2,10 @@
 
 ## Task 28 Disposition
 
-| Capability | Current HAP Use | Native Surface | Permission Notes | Disposition |
+| Capability | Current HILOP Use | Native Surface | Permission Notes | Disposition |
 | --- | --- | --- | --- | --- |
 | Delegated authentication | Launch-time user sign-in for Graph profile/auth posture | OAuth/MSAL public client equivalent | `User.Read.All`, `Directory.Read.All`, auth/risk scopes as configured | NativeSupported |
-| Application authentication | App-only read flow for profile/device/license data | OAuth client credentials equivalent | `.default` app permissions | NativeSupported |
+| Application authentication | Legacy/compatibility app-only read flow; not the local product authorization posture | OAuth client credentials equivalent | `.default` app permissions | CompatibilityOnly |
 | User search/profile | User search, mailboxless ADM profile lookups | Microsoft Graph users | Directory read permissions | NativeSupported |
 | Authentication methods | MFA/auth posture card | Microsoft Graph authentication methods | Authentication method read permissions | NativeSupported |
 | Sign-in/password/risk fields | Last sign-in, password changed, risk state | Microsoft Graph user/risk/signInActivity surfaces when licensed/permissioned | Audit/risk permissions may be tenant/license gated | NativeSupportedWithBehaviorChange |

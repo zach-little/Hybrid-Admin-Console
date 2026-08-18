@@ -4,12 +4,12 @@ This final polish fix separates visible UI branding from the native WPF window i
 
 ## Changes
 
-- Uses `assets/icons/HAP_Icon.png` for in-application branding images.
+- Uses the primary application icon under `assets/icons` for in-application branding images.
 - Removes the PNG from the XAML `Window.Icon` attribute so the XAML parser no longer fails at startup.
 - Adds centralized brand asset resolution helpers.
-- Assigns the taskbar/window icon after the window loads, using `assets/icons/HAP_Icon.ico` when present.
-- Falls back to the existing `HAP_Logo.png` and `HAP_Logo.ico` assets when the new icon filenames are not present.
-- Keeps branding failures non-blocking so missing icon files do not prevent HAP from launching.
+- Assigns the taskbar/window icon after the window loads, using the primary ICO asset when present.
+- Falls back to the existing logo assets when the primary icon files are not present.
+- Keeps branding failures non-blocking so missing icon files do not prevent HILOP from launching.
 
 ## Validation
 

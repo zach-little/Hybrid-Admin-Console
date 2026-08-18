@@ -6,7 +6,7 @@ Planned.
 
 ## Purpose
 
-Milestone 13 makes HAP production-grade, deployable, auditable, extensible, and maintainable as an enterprise platform.
+Milestone 13 makes HILOP production-grade, deployable, auditable, extensible, and maintainable as an enterprise platform.
 
 ## Areas
 

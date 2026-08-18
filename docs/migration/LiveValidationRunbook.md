@@ -22,4 +22,4 @@ Task 23 should validate native simulator behavior with deterministic fixtures on
 
 ## Future Live Validation
 
-Live validation starts with the Graph, Active Directory, and Exchange supportability gates. Those tasks must add environment prerequisites, required permissions, safe read-only test accounts, rollback expectations, and explicit write-operation approval steps before any live mutation is attempted.
+Live validation starts with the Graph, Active Directory, and Exchange supportability gates. Those tasks must add environment prerequisites, required permissions, safe read-only test accounts, rollback expectations, and explicit local operator confirmation before any live mutation is attempted. Any organizational change authorization occurs outside HILOP; this runbook does not imply an application approval workflow.

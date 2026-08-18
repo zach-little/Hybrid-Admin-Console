@@ -1,4 +1,4 @@
-# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
 # Engineering Guide
 
@@ -14,7 +14,7 @@ This guide explains where information lives, the expected development workflow, 
 
 # Engineering Philosophy
 
-HAP is developed as a long-lived enterprise software platform.
+HILOP is developed as a long-lived enterprise software platform.
 
 The objective is not simply to build administrative tools, but to establish reusable infrastructure capable of supporting multiple organizations, providers, workflows, and cloud environments.
 
@@ -34,7 +34,7 @@ Read them in the following order.
 
 **Question answered**
 
-> Why does HAP exist?
+> Why does HILOP exist?
 
 Defines the mission, vision, and non-negotiable architectural principles of the platform.
 
@@ -54,7 +54,7 @@ Defines the architectural philosophy that guides platform evolution.
 
 **Question answered**
 
-> How is HAP built?
+> How is HILOP built?
 
 Describes the platform architecture, layering, dependencies, and major subsystems.
 
@@ -74,7 +74,7 @@ Defines engineering expectations for all production code.
 
 **Question answered**
 
-> Where is HAP going?
+> Where is HILOP going?
 
 Describes the strategic direction of future platform development.
 
@@ -94,7 +94,7 @@ Provides the current development snapshot.
 
 **Question answered**
 
-> What version of HAP is this?
+> What version of HILOP is this?
 
 Defines the current development version and release information.
 
@@ -198,7 +198,7 @@ A feature is not complete until the relevant documentation has been updated.
 
 # Engineering Expectations
 
-When contributing to HAP:
+When contributing to HILOP:
 
 * Preserve provider abstraction.
 * Preserve domain model integrity.

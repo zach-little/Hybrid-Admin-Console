@@ -8,7 +8,7 @@ v0.10.x - Identity Platform Completion
 
 ## Current Assessment
 
-HAP has moved beyond the older roadmap language that described Milestone 10 as a broad set of independent enterprise modules.
+HILOP has moved beyond the older roadmap language that described Milestone 10 as a broad set of independent enterprise modules.
 
 The current implementation is identity-first. The User Lookup workflow acts as the central identity hub and already includes a large portion of the originally planned Milestone 10 capability set.
 
@@ -45,6 +45,7 @@ Status: Mostly complete; stabilization and parity fixes remain.
 - Active Directory attributes are pulled and displayed.
 - Manager data is pulled from Active Directory.
 - Direct reports are represented through Active Directory-derived data where available.
+- Active Directory write operations are validated for manager, group membership, account enable/disable, password, object move, and ordinary allowlisted attribute paths.
 - Groups are pulled and displayed.
 - Microsoft Graph user data is wired into the user hydration flow.
 - Exchange Online mailbox information is wired into the user flow.
@@ -116,7 +117,7 @@ Milestone 12 should add cross-environment operational visibility:
 
 Status: Planned.
 
-Milestone 13 should make HAP production-grade and extensible:
+Milestone 13 should make HILOP production-grade and extensible:
 
 - Plugin framework.
 - Workflow SDK.

@@ -1,4 +1,4 @@
-# Hybrid Identity Lifecycle & Operations Platform (HILOP) (HAP)
+# Hybrid Identity Lifecycle & Operations Platform (HILOP)
 
 ## Engineering Workflow
 

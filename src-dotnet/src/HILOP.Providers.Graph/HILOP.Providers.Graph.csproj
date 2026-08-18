@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\HILOP.Contracts\HILOP.Contracts.csproj" />
+    <ProjectReference Include="..\HILOP.Providers.Abstractions\HILOP.Providers.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Graph" />
+  </ItemGroup>
+</Project>

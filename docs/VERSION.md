@@ -50,7 +50,7 @@ Known issues / next stabilization work:
 - Fix the license display/hydration path so richer Graph profile license fields reach the UI.
 - Confirm whether the active UI path prefers `Get-HybridUserGraphProfile` over `Get-HybridGraphProfile`, and if so, bring the former to property parity or route through the richer service.
 - Preserve `Licenses`, `AssignedLicenses`, `LicenseAssignmentStates`, license diagnostics, PIM roles, and PIM diagnostics in the user profile returned to the UI.
-- Validate PIM behavior in the target cloud and delegated/app-only permission model.
+- Validate PIM behavior in the target cloud using the delegated Microsoft Graph permission model.
 - Expand risk details beyond yes/no.
 - Improve authentication posture diagnostics.
 - Live-validate Exchange Online and Exchange On-Premises mailbox details.

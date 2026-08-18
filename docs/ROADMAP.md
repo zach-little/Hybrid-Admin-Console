@@ -8,7 +8,7 @@ v0.10.x - Identity Platform Completion
 
 ## Roadmap Principle
 
-HAP is an identity-first hybrid administration console.
+HILOP is an identity-first hybrid administration console.
 
 The User Lookup workflow is the central identity hub. Identity facts that describe a person should remain in the user hydration model and user panels. Operational actions that administer objects should become workflows. External systems should remain providers.
 
@@ -17,6 +17,12 @@ Architectural rule:
 > Everything that describes a person belongs to the HybridCompositeUser / User workflow. Everything that performs an operation belongs to a workflow. Everything that communicates with an external system belongs to a provider.
 
 This prevents identity attributes such as licenses, mailbox facts, groups, authentication posture, risk, manager, and PIM from being incorrectly split into standalone modules.
+
+Deployment and authorization rule:
+
+> HILOP remains a local, single-operator workstation application. It will not implement application-level RBAC, centralized approvals, or a network coordination layer.
+
+Microsoft Graph uses delegated access in the signed-in technician's context. Microsoft Entra ID and Active Directory permissions remain authoritative. Workflows may use local operator confirmations for high-impact actions, but HILOP will not route or track approvals between users.
 
 ---
 
@@ -85,7 +91,7 @@ Current capability areas:
 #### PIM
 
 - Validate whether PIM data can be queried in the target cloud.
-- Preserve delegated-access requirements where app-only access is insufficient.
+- Use delegated Microsoft Graph access so PIM visibility remains subject to the signed-in technician's Entra ID permissions and activation state.
 - Display eligible and active role assignments where available.
 - Display clear unavailable/deferred/error diagnostics when PIM cannot be queried.
 
@@ -141,7 +147,7 @@ Device Management scope:
 
 Status: Started / planned.
 
-Goal: move HAP beyond User Lookup into dedicated administration workspaces. These workflows perform operations and manage object types; they should not duplicate identity facts already shown in the User workflow.
+Goal: move HILOP beyond User Lookup into dedicated administration workspaces. These workflows perform operations and manage object types; they should not duplicate identity facts already shown in the User workflow.
 
 ### Device Management
 
@@ -268,7 +274,7 @@ Goal: add cross-environment operations, investigations, reporting, and enterpris
 
 Status: Planned.
 
-Goal: turn HAP into a production-grade extensible enterprise platform.
+Goal: turn HILOP into a production-grade extensible enterprise platform.
 
 ### Plugin and extension framework
 
@@ -310,13 +316,13 @@ Goal: turn HAP into a production-grade extensible enterprise platform.
 
 ## Long-Term Vision: v1.0 - Hybrid Enterprise Platform
 
-After Milestone 13, HAP should evolve from a unified admin console into a hybrid enterprise operations platform.
+After Milestone 13, HILOP should evolve from a unified admin console into a hybrid enterprise operations platform.
 
 Examples:
 
 - Create New Employee: AD -> Entra -> Exchange -> Licensing -> JAMIS -> Paxton.
 - Offboard Employee: coordinated reverse workflow across connected systems.
-- Approval-based administrative actions.
+- Locally confirmed administrative actions, subject to the technician's existing Entra ID and AD permissions.
 - Scheduled automation jobs.
 - Provider health monitoring.
 - Cross-provider search across AD, Entra, Exchange, Intune, JAMIS, Paxton, SQL, and other systems.

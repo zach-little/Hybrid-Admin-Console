@@ -2,23 +2,23 @@
 
 ## Task 59 Packaging Policy
 
-- Core HAP publishes from `src-dotnet/src/HAP.App/HAP.App.csproj`.
+- Core HILOP publishes from `src-dotnet/src/HILOP.App/HILOP.App.csproj`.
 - The initial package is framework-dependent for `win-x64`.
 - The production package must include native built-in providers and must not include the deleted legacy worker, bridge, protocol, or adapter.
-- The permanent `HAP.PowerShellPluginHost` remains optional and separately policy-controlled for administrator-approved third-party providers.
+- The permanent `HILOP.PowerShellPluginHost` remains optional and separately policy-controlled for administrator-approved third-party providers.
 
 ## Publish Profile
 
 Use:
 
 ```powershell
-dotnet publish .\src\HAP.App\HAP.App.csproj -p:PublishProfile=NativeFrameworkDependent
+dotnet publish .\src\HILOP.App\HILOP.App.csproj -p:PublishProfile=NativeFrameworkDependent
 ```
 
 Expected output:
 
 ```text
-src\HAP.App\bin\Release\net10.0-windows\publish\native-framework-dependent\
+src\HILOP.App\bin\Release\net10.0-windows\publish\native-framework-dependent\
 ```
 
 ## Diagnostics

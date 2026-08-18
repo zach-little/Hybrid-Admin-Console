@@ -1,4 +1,4 @@
-Import-Module -Name (Join-Path $PSScriptRoot '..\HAP.ProviderSdk.psm1') -Force
+Import-Module -Name (Join-Path $PSScriptRoot '..\HILOP.ProviderSdk.psm1') -Force
 
 function Invoke-HapProviderOperation {
     [CmdletBinding()]

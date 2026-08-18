@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hap.local/schemas/hap-extension-manifest.schema.json",
-  "title": "HAP Extension Manifest",
+  "title": "HILOP Extension Manifest",
   "type": "object",
   "required": [
     "manifestVersion",
