@@ -1,10 +1,10 @@
 {
   "SchemaVersion": "1.0",
   "Id": "onboarding-workflow",
-  "Name": "Onboarding Workflow",
+  "Name": "Example - Little Innovation Tech Onboarding Workflow",
   "Category": "Onboarding",
   "Form": {
-    "Title": "Onboarding Workflow",
+    "Title": "Example - Little Innovation Tech Onboarding",
     "SubmitText": "Create User",
     "Fields": [
       {
@@ -55,12 +55,30 @@
         "Control": "ComboBox",
         "Required": true,
         "Options": [
-          { "Label": "1. Rivers", "Value": "1" },
-          { "Label": "2. Remount", "Value": "2" },
-          { "Label": "3. Virginia Beach", "Value": "3" },
-          { "Label": "4. San Diego", "Value": "4" },
-          { "Label": "5. Alexandria", "Value": "5" },
-          { "Label": "6. Lexington", "Value": "6" }
+          {
+            "Label": "1. Demo Headquarters",
+            "Value": "1"
+          },
+          {
+            "Label": "2. Demo Research Campus",
+            "Value": "2"
+          },
+          {
+            "Label": "3. Demo East Coast Office",
+            "Value": "3"
+          },
+          {
+            "Label": "4. Demo West Coast Office",
+            "Value": "4"
+          },
+          {
+            "Label": "5. Demo Capital Office",
+            "Value": "5"
+          },
+          {
+            "Label": "6. Demo Remote Operations",
+            "Value": "6"
+          }
         ]
       },
       {
@@ -69,16 +87,46 @@
         "Control": "ComboBox",
         "Required": true,
         "Options": [
-          { "Label": "1. Dept 00 - Accounting", "Value": "1" },
-          { "Label": "2. Dept 00 - Information Technology", "Value": "2" },
-          { "Label": "3. Dept 00 - Executive", "Value": "3" },
-          { "Label": "4. Dept 00 - Human Resources", "Value": "4" },
-          { "Label": "5. Dept 01 - Contracts", "Value": "5" },
-          { "Label": "6. Dept 01 - Operations", "Value": "6" },
-          { "Label": "7. Dept 02 - DC/PAX/Charleston Division", "Value": "7" },
-          { "Label": "8. Dept 03 - VABeach Division", "Value": "8" },
-          { "Label": "9. Dept 04 - San Diego Division", "Value": "9" },
-          { "Label": "10. Service Account", "Value": "10" }
+          {
+            "Label": "1. Corporate - Accounting",
+            "Value": "1"
+          },
+          {
+            "Label": "2. Corporate - Information Technology",
+            "Value": "2"
+          },
+          {
+            "Label": "3. Corporate - Executive",
+            "Value": "3"
+          },
+          {
+            "Label": "4. Corporate - Human Resources",
+            "Value": "4"
+          },
+          {
+            "Label": "5. Business - Contracts",
+            "Value": "5"
+          },
+          {
+            "Label": "6. Business - Operations",
+            "Value": "6"
+          },
+          {
+            "Label": "7. Technology - Engineering",
+            "Value": "7"
+          },
+          {
+            "Label": "8. Customer - Customer Success",
+            "Value": "8"
+          },
+          {
+            "Label": "9. Product - Product Management",
+            "Value": "9"
+          },
+          {
+            "Label": "10. Service Account",
+            "Value": "10"
+          }
         ]
       },
       {
@@ -87,9 +135,18 @@
         "Control": "ComboBox",
         "Required": true,
         "Options": [
-          { "Label": "1. Draco Team", "Value": "1" },
-          { "Label": "2. Pavo Team", "Value": "2" },
-          { "Label": "3. Corvus Team", "Value": "3" }
+          {
+            "Label": "1. Aurora Team",
+            "Value": "1"
+          },
+          {
+            "Label": "2. Beacon Team",
+            "Value": "2"
+          },
+          {
+            "Label": "3. Catalyst Team",
+            "Value": "3"
+          }
         ]
       },
       {
@@ -124,6 +181,14 @@
         "ValidationMessage": "Start date must be blank or YYYY-MM-DD."
       },
       {
+        "Key": "TemporaryPassword",
+        "Label": "Temporary Password",
+        "Control": "TextBox",
+        "Required": true,
+        "ValidationRegex": "^.{12,}$",
+        "ValidationMessage": "Temporary password must be at least 12 characters."
+      },
+      {
         "Key": "CreateMailbox",
         "Label": "Create Microsoft 365 / cloud mailbox",
         "Control": "CheckBox",
@@ -137,7 +202,7 @@
       },
       {
         "Key": "JamisClaimSetup",
-        "Label": "Launch JAMIS claim setup",
+        "Label": "Launch example HR / ERP setup",
         "Control": "CheckBox",
         "DefaultValue": "true"
       },
@@ -163,7 +228,7 @@
         "Key": "SmtpServer",
         "Label": "SMTP Server",
         "Control": "TextBox",
-        "DefaultValue": "atlastechcloud.mail.protection.office365.us"
+        "DefaultValue": "smtp.example.invalid"
       },
       {
         "Key": "NothingRequested",
@@ -240,14 +305,43 @@
     ]
   },
   "ComputedVariables": [
-    { "Key": "SamAccountName", "Type": "SamAccountName" },
-    { "Key": "DisplayName", "Type": "DisplayName" },
-    { "Key": "UserPrincipalName", "Type": "UserPrincipalName", "Value": "littleinnovation.tech" },
-    { "Key": "OfficePhoneNormalized", "Type": "OfficePhone12OrNA", "Value": "OfficePhone" },
-    { "Key": "RunDate", "Type": "CurrentDateTime", "Value": "yyyy-MM-dd HH:mm:ss" },
-    { "Key": "RunBy", "Type": "CurrentUser" },
-    { "Key": "OfficeDisplay", "Type": "StripNumberPrefix", "Value": "LocationNumberText" },
-    { "Key": "DepartmentDisplay", "Type": "LegacyDepartmentDisplay", "Value": "DepartmentNumberText" },
+    {
+      "Key": "SamAccountName",
+      "Type": "SamAccountName"
+    },
+    {
+      "Key": "DisplayName",
+      "Type": "DisplayName"
+    },
+    {
+      "Key": "UserPrincipalName",
+      "Type": "UserPrincipalName",
+      "Value": "littleinnovation.tech"
+    },
+    {
+      "Key": "OfficePhoneNormalized",
+      "Type": "OfficePhone12OrNA",
+      "Value": "OfficePhone"
+    },
+    {
+      "Key": "RunDate",
+      "Type": "CurrentDateTime",
+      "Value": "yyyy-MM-dd HH:mm:ss"
+    },
+    {
+      "Key": "RunBy",
+      "Type": "CurrentUser"
+    },
+    {
+      "Key": "OfficeDisplay",
+      "Type": "StripNumberPrefix",
+      "Value": "LocationNumberText"
+    },
+    {
+      "Key": "DepartmentDisplay",
+      "Type": "LegacyDepartmentDisplay",
+      "Value": "DepartmentNumberText"
+    },
     {
       "Key": "AssignStandardGroups",
       "Type": "Map",
@@ -261,32 +355,25 @@
       "Key": "TargetOu",
       "Type": "Map",
       "Value": "{{LocationNumber}}:{{DepartmentNumber}}",
-      "Fallback": "CN=Users,DC=atlas-tech,DC=com",
+      "Fallback": "OU=Users,OU=HILOP Demo,DC=example,DC=invalid",
       "Map": {
-        "1:1": "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:2": "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:3": "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:4": "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:5": "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:6": "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:7": "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:1": "OU=Users,OU=Accounting,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:2": "OU=Users,OU=IT,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:3": "OU=Users,OU=Exec,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:4": "OU=Users,OU=HR,OU=Dept-00,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:5": "OU=Users,OU=Contracts,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:6": "OU=Users,OU=Operations,OU=Dept-01,OU=HQ,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:7": "OU=Users,OU=Dept-02,OU=SC,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "3:8": "OU=Users,OU=Dept-03,OU=VA,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "4:9": "OU=Users,OU=Dept-04,OU=CA,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "5:7": "OU=Users,OU=Dept-02,OU=DC,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "6:7": "OU=Users,OU=Dept-02,OU=MD,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "1:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "2:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "3:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "4:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "5:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com",
-        "6:10": "OU=Service Accounts,OU=Atlas-tech,DC=atlas-tech,DC=com"
+        "1:1": "OU=Users,OU=Accounting,OU=Corporate,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:2": "OU=Users,OU=Information Technology,OU=Corporate,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:3": "OU=Users,OU=Executive,OU=Corporate,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:4": "OU=Users,OU=Human Resources,OU=Corporate,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:5": "OU=Users,OU=Contracts,OU=Business,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:6": "OU=Users,OU=Operations,OU=Business,OU=Demo Headquarters,OU=HILOP Demo,DC=example,DC=invalid",
+        "2:7": "OU=Users,OU=Engineering,OU=Technology,OU=Demo Research Campus,OU=HILOP Demo,DC=example,DC=invalid",
+        "3:8": "OU=Users,OU=Customer Success,OU=Customer,OU=Demo East Coast Office,OU=HILOP Demo,DC=example,DC=invalid",
+        "4:9": "OU=Users,OU=Product Management,OU=Product,OU=Demo West Coast Office,OU=HILOP Demo,DC=example,DC=invalid",
+        "5:5": "OU=Users,OU=Contracts,OU=Business,OU=Demo Capital Office,OU=HILOP Demo,DC=example,DC=invalid",
+        "6:6": "OU=Users,OU=Operations,OU=Business,OU=Demo Remote Operations,OU=HILOP Demo,DC=example,DC=invalid",
+        "1:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid",
+        "2:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid",
+        "3:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid",
+        "4:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid",
+        "5:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid",
+        "6:10": "OU=Service Accounts,OU=HILOP Demo,DC=example,DC=invalid"
       }
     },
     {
@@ -295,12 +382,12 @@
       "Value": "{{LocationNumber}}",
       "Fallback": "Not Entered",
       "Map": {
-        "1": "North Charleston",
-        "2": "North Charleston",
-        "3": "Virginia Beach",
-        "4": "San Diego",
-        "5": "Alexandria",
-        "6": "Lexington"
+        "1": "Innovation City",
+        "2": "Research Park",
+        "3": "Eastview",
+        "4": "Westview",
+        "5": "Capital District",
+        "6": "Remote"
       }
     },
     {
@@ -309,12 +396,12 @@
       "Value": "{{LocationNumber}}",
       "Fallback": "Not Entered",
       "Map": {
-        "1": "5416-A Rivers Avenue - Suite 105",
-        "2": "1101 Remount Rd, Suite 800",
-        "3": "168 Business Park Drive, Suite 103",
-        "4": "4250 Pacific Highway, 105",
-        "5": "5911 Kingstowne Village Parkway Suite 310",
-        "6": "Not Available"
+        "1": "100 Innovation Way (Simulated)",
+        "2": "200 Research Loop (Simulated)",
+        "3": "300 Eastview Avenue (Simulated)",
+        "4": "400 Westview Boulevard (Simulated)",
+        "5": "500 Capital Plaza (Simulated)",
+        "6": "Remote / No Fixed Office"
       }
     },
     {
@@ -323,12 +410,12 @@
       "Value": "{{LocationNumber}}",
       "Fallback": "NA",
       "Map": {
-        "1": "SC",
-        "2": "SC",
+        "1": "VA",
+        "2": "NC",
         "3": "VA",
         "4": "CA",
-        "5": "VA",
-        "6": "MD"
+        "5": "DC",
+        "6": "NA"
       }
     },
     {
@@ -337,26 +424,26 @@
       "Value": "{{LocationNumber}}",
       "Fallback": "Not Available",
       "Map": {
-        "1": "29406",
-        "2": "29406",
-        "3": "23462",
-        "4": "92110",
-        "5": "22315",
-        "6": "Not Available"
+        "1": "00001",
+        "2": "00002",
+        "3": "00003",
+        "4": "00004",
+        "5": "00005",
+        "6": "N/A"
       }
     },
     {
       "Key": "LocationGroup",
       "Type": "Map",
       "Value": "{{LocationNumber}}",
-      "Fallback": "Atlas-Charleston",
+      "Fallback": "LIT-Demo-HQ",
       "Map": {
-        "1": "Atlas-Charleston",
-        "2": "Atlas-Charleston",
-        "3": "Atlas-VABeach",
-        "4": "Atlas-SD",
-        "5": "Atlas-DC",
-        "6": "Atlas-MD"
+        "1": "LIT-Demo-HQ",
+        "2": "LIT-Demo-Research",
+        "3": "LIT-Demo-East",
+        "4": "LIT-Demo-West",
+        "5": "LIT-Demo-Capital",
+        "6": "LIT-Demo-Remote"
       }
     },
     {
@@ -365,9 +452,9 @@
       "Value": "{{HomeOrganizationNumber}}",
       "Fallback": "NA",
       "Map": {
-        "1": "Draco.Team",
-        "2": "Pavo.Team",
-        "3": "Corvus.Team"
+        "1": "LIT.Aurora.Team",
+        "2": "LIT.Beacon.Team",
+        "3": "LIT.Catalyst.Team"
       }
     },
     {
@@ -376,9 +463,9 @@
       "Value": "{{HomeOrganizationNumber}}",
       "Fallback": "",
       "Map": {
-        "1": "Draco Team",
-        "2": "Pavo Team",
-        "3": "Corvus Team"
+        "1": "LIT Aurora Team",
+        "2": "LIT Beacon Team",
+        "3": "LIT Catalyst Team"
       }
     }
   ],
@@ -399,7 +486,7 @@
         "DisplayName": "{{DisplayName}}",
         "UserPrincipalName": "{{UserPrincipalName}}",
         "TargetOu": "{{TargetOu}}",
-        "Company": "Atlas Technologies, Inc.",
+        "Company": "Little Innovation Tech",
         "EmployeeId": "{{EmployeeId}}",
         "BadgeId": "{{BadgeId}}",
         "OfficePhone": "{{OfficePhoneNormalized}}",
@@ -408,7 +495,7 @@
         "StreetAddress": "{{StreetAddress}}",
         "State": "{{State}}",
         "PostalCode": "{{PostalCode}}",
-        "TemporaryPassword": "Temp123456",
+        "TemporaryPassword": "{{TemporaryPassword}}",
         "Attribute:title": "{{JobTitle}}",
         "Attribute:badgeID": "{{BadgeId}}",
         "Attribute:ipPhone": "{{OfficePhoneNormalized}}"
@@ -416,27 +503,36 @@
     },
     {
       "Id": "add-sc-cgusers",
-      "Name": "Add SC_CGUsers",
+      "Name": "Add demo baseline users group",
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "SC_CGUsers" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "LIT_Demo_AllUsers"
+      }
     },
     {
       "Id": "add-sd-cgusers",
-      "Name": "Add SD_CGUsers",
+      "Name": "Add demo collaboration group",
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "SD_CGUsers" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "LIT_Demo_Collaboration"
+      }
     },
     {
       "Id": "add-va-cgusers",
-      "Name": "Add VABeach_CGUsers",
+      "Name": "Add demo security baseline group",
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "VABeach_CGUsers" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "LIT_Demo_SecurityBaseline"
+      }
     },
     {
       "Id": "add-location-group",
@@ -444,7 +540,10 @@
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{LocationGroup}}" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "{{LocationGroup}}"
+      }
     },
     {
       "Id": "add-home-organization-display-group",
@@ -452,7 +551,10 @@
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{HomeOrganizationDisplayGroup}}" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "{{HomeOrganizationDisplayGroup}}"
+      }
     },
     {
       "Id": "add-home-organization-group",
@@ -460,23 +562,32 @@
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "{{HomeOrganizationGroup}}" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "{{HomeOrganizationGroup}}"
+      }
     },
     {
       "Id": "add-cac-group",
-      "Name": "Add CAC holders group",
+      "Name": "Add demo strong-authentication group",
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true && {{CacRequired}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "CAC_Holders" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "LIT_Demo_StrongAuth"
+      }
     },
     {
       "Id": "add-teentry",
-      "Name": "Add TEEntry",
+      "Name": "Add demo time-entry group",
       "Type": "AddGroup",
       "ProviderId": "ActiveDirectory",
       "RunWhen": "{{AssignStandardGroups}} == true",
-      "Inputs": { "Identity": "{{SamAccountName}}", "Group": "TEEntry" }
+      "Inputs": {
+        "Identity": "{{SamAccountName}}",
+        "Group": "LIT_Demo_TimeEntry"
+      }
     },
     {
       "Id": "enable-remote-mailbox",
@@ -487,7 +598,7 @@
       "Inputs": {
         "Identity": "{{SamAccountName}}",
         "PrimarySmtpAddress": "{{UserPrincipalName}}",
-        "RemoteRoutingAddress": "{{SamAccountName}}@atlastechcloud.mail.onmicrosoft.com"
+        "RemoteRoutingAddress": "{{SamAccountName}}@mail.example.invalid"
       }
     },
     {
@@ -501,17 +612,17 @@
         "From": "{{NotificationSender}}",
         "Subject": "[NEW-HIRE-INFO] New Hire Account {{DisplayName}} Has Been Created",
         "IsBodyHtml": "true",
-        "Body": "<div style='font-family:Arial; font-size:14px;'><p><b>THIS EMAIL MAY CONTAIN CONFIDENTIAL OR PII DATA.<br>DO NOT FORWARD OUTSIDE THE ORGANIZATION.</b></p><p>The account for <b>{{DisplayName}}</b> has been created.<br>Please complete the ERP and inventory portions of onboarding.</p><h3 style='margin-top:25px;'>General Information</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Field</th><th align='left'>Value</th></tr><tr><td>Expected Start Date</td><td>{{StartDate}}</td></tr><tr><td>Script Run By</td><td>{{RunBy}}</td></tr><tr><td>Script Run Date</td><td>{{RunDate}}</td></tr><tr><td>Network Username</td><td>{{SamAccountName}}</td></tr><tr><td>User Principal Name</td><td>{{UserPrincipalName}}</td></tr><tr><td>Temporary Password</td><td>Temp123456</td></tr><tr><td>First Name</td><td>{{FirstName}}</td></tr><tr><td>Last Name</td><td>{{LastName}}</td></tr><tr><td>Middle Initial</td><td>{{MiddleInitial}}</td></tr><tr><td>Display Name</td><td>{{DisplayName}}</td></tr><tr><td>Use Middle Initial in Username</td><td>{{IncludeMiddleInitial}}</td></tr><tr><td>Title</td><td>{{JobTitle}}</td></tr><tr><td>Manager</td><td>{{ManagerSamAccountName}}</td></tr><tr><td>Department</td><td>{{DepartmentDisplay}}</td></tr><tr><td>Employee ID</td><td>{{EmployeeId}}</td></tr><tr><td>Badge ID</td><td>{{BadgeId}}</td></tr><tr><td>Office Phone</td><td>{{OfficePhoneNormalized}}</td></tr><tr><td>Mobile Phone</td><td>{{MobilePhone}}</td></tr><tr><td>Company</td><td>Atlas Technologies, Inc.</td></tr><tr><td>Office</td><td>{{OfficeDisplay}}</td></tr><tr><td>Street Address</td><td>{{StreetAddress}}</td></tr><tr><td>City</td><td>{{City}}</td></tr><tr><td>State</td><td>{{State}}</td></tr><tr><td>Postal Code</td><td>{{PostalCode}}</td></tr><tr><td>Email Address</td><td>{{UserPrincipalName}}</td></tr></table><h3 style='margin-top:25px;'>Group Assignments</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Group</th><th align='left'>Value</th></tr><tr><td>RODC SC</td><td>SC_CGUsers</td></tr><tr><td>RODC SD</td><td>SD_CGUsers</td></tr><tr><td>RODC VA</td><td>VABeach_CGUsers</td></tr><tr><td>Default Email Distribution</td><td>{{LocationGroup}}</td></tr></table><h3 style='margin-top:25px;'>Equipment &amp; Workspace Requests</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Asset</th><th align='left'>Requested</th></tr><tr><td>Nothing Requested</td><td>{{NothingRequested}}</td></tr><tr><td>Temporary Office Space</td><td>{{TemporaryOfficeSpace}}</td></tr><tr><td>Permanent Office Space</td><td>{{PermanentOfficeSpace}}</td></tr><tr><td>Desktop</td><td>{{Desktop}}</td></tr><tr><td>Laptop</td><td>{{Laptop}}</td></tr><tr><td>Docking Station</td><td>{{DockingStation}}</td></tr><tr><td>Mouse/Keyboard Combo</td><td>{{MouseKeyboard}}</td></tr><tr><td>Monitor</td><td>{{Monitor}}</td></tr><tr><td>Dual Monitors</td><td>{{DualMonitor}}</td></tr><tr><td>Desk Phone</td><td>{{DeskPhone}}</td></tr><tr><td>Cell Phone</td><td>{{CellPhone}}</td></tr><tr><td>Speakers</td><td>{{Speakers}}</td></tr></table></div>"
+        "Body": "<div style='font-family:Arial; font-size:14px;'><p><b>THIS EMAIL MAY CONTAIN CONFIDENTIAL OR PII DATA.<br>DO NOT FORWARD OUTSIDE THE ORGANIZATION.</b></p><p>The account for <b>{{DisplayName}}</b> has been created.<br>Please complete the ERP and inventory portions of onboarding.</p><h3 style='margin-top:25px;'>General Information</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Field</th><th align='left'>Value</th></tr><tr><td>Expected Start Date</td><td>{{StartDate}}</td></tr><tr><td>Script Run By</td><td>{{RunBy}}</td></tr><tr><td>Script Run Date</td><td>{{RunDate}}</td></tr><tr><td>Network Username</td><td>{{SamAccountName}}</td></tr><tr><td>User Principal Name</td><td>{{UserPrincipalName}}</td></tr><tr><td>Temporary Password</td><td>Supplied securely through the workflow; not included in e-mail.</td></tr><tr><td>First Name</td><td>{{FirstName}}</td></tr><tr><td>Last Name</td><td>{{LastName}}</td></tr><tr><td>Middle Initial</td><td>{{MiddleInitial}}</td></tr><tr><td>Display Name</td><td>{{DisplayName}}</td></tr><tr><td>Use Middle Initial in Username</td><td>{{IncludeMiddleInitial}}</td></tr><tr><td>Title</td><td>{{JobTitle}}</td></tr><tr><td>Manager</td><td>{{ManagerSamAccountName}}</td></tr><tr><td>Department</td><td>{{DepartmentDisplay}}</td></tr><tr><td>Employee ID</td><td>{{EmployeeId}}</td></tr><tr><td>Badge ID</td><td>{{BadgeId}}</td></tr><tr><td>Office Phone</td><td>{{OfficePhoneNormalized}}</td></tr><tr><td>Mobile Phone</td><td>{{MobilePhone}}</td></tr><tr><td>Company</td><td>Little Innovation Tech</td></tr><tr><td>Office</td><td>{{OfficeDisplay}}</td></tr><tr><td>Street Address</td><td>{{StreetAddress}}</td></tr><tr><td>City</td><td>{{City}}</td></tr><tr><td>State</td><td>{{State}}</td></tr><tr><td>Postal Code</td><td>{{PostalCode}}</td></tr><tr><td>Email Address</td><td>{{UserPrincipalName}}</td></tr></table><h3 style='margin-top:25px;'>Group Assignments</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Group</th><th align='left'>Value</th></tr><tr><td>RODC SC</td><td>LIT_Demo_AllUsers</td></tr><tr><td>RODC SD</td><td>LIT_Demo_Collaboration</td></tr><tr><td>RODC VA</td><td>LIT_Demo_SecurityBaseline</td></tr><tr><td>Default Email Distribution</td><td>{{LocationGroup}}</td></tr></table><h3 style='margin-top:25px;'>Equipment &amp; Workspace Requests</h3><table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'><tr><th align='left'>Asset</th><th align='left'>Requested</th></tr><tr><td>Nothing Requested</td><td>{{NothingRequested}}</td></tr><tr><td>Temporary Office Space</td><td>{{TemporaryOfficeSpace}}</td></tr><tr><td>Permanent Office Space</td><td>{{PermanentOfficeSpace}}</td></tr><tr><td>Desktop</td><td>{{Desktop}}</td></tr><tr><td>Laptop</td><td>{{Laptop}}</td></tr><tr><td>Docking Station</td><td>{{DockingStation}}</td></tr><tr><td>Mouse/Keyboard Combo</td><td>{{MouseKeyboard}}</td></tr><tr><td>Monitor</td><td>{{Monitor}}</td></tr><tr><td>Dual Monitors</td><td>{{DualMonitor}}</td></tr><tr><td>Desk Phone</td><td>{{DeskPhone}}</td></tr><tr><td>Cell Phone</td><td>{{CellPhone}}</td></tr><tr><td>Speakers</td><td>{{Speakers}}</td></tr></table></div>"
       }
     },
     {
       "Id": "launch-jamis-browser",
-      "Name": "Launch JAMIS claim setup",
+      "Name": "Launch example HR / ERP setup",
       "Type": "LaunchBrowser",
       "RunWhen": "{{AssignStandardGroups}} == true && {{JamisClaimSetup}} == true",
       "Inputs": {
         "Browser": "Chrome",
-        "Url": "https://axisng.littleinnovation.tech/Main.aspx?ScreenId=DH000100&SilentLogin=Federation"
+        "Url": "https://portal.example.invalid/onboarding/{{SamAccountName}}"
       }
     }
   ]

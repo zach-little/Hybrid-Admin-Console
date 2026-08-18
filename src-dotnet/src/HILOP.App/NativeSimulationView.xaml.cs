@@ -31,6 +31,7 @@ public partial class NativeSimulationView : UserControl
     private readonly IAuditLog _audit;
     private readonly DirectorySimulatorProvider _simulator = new();
     private readonly BuiltInCapabilityCatalog _capabilityCatalog = new();
+    private readonly WorkflowStorage _workflowStorage;
     private readonly string _workflowDirectory;
     private readonly NativeDeviceManagementService _deviceManagement;
     private readonly IUserLookupCapability _userLookup;
@@ -67,7 +68,9 @@ public partial class NativeSimulationView : UserControl
         _exchangeWriter = new AuditedWriteCapability(ProviderName(providers.ExchangeWriter), providers.ExchangeWriter, _audit);
         _healthProviders = providers.HealthProviders;
         _bindingSummary = providers.BindingSummary;
-        _workflowDirectory = Path.Combine(AppContext.BaseDirectory, "workflows");
+        _workflowStorage = WorkflowStorage.CreateDefault(AppContext.BaseDirectory);
+        _workflowStorage.Initialize();
+        _workflowDirectory = _workflowStorage.WorkflowDirectory;
         InitializeComponent();
         _deviceManagement = new NativeDeviceManagementService(providers.DeviceProviders);
         Loaded += OnLoaded;
